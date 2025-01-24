@@ -8,6 +8,5 @@ int main(int argc, char *argv[]) {
 
     window.showMaximized();
 
-    window.show();
     return QApplication::exec();
 }
