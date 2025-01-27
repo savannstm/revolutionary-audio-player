@@ -1,11 +1,14 @@
+#include <QApplication>
+#include <QGuiApplication>
+#include <QPalette>
+
 #include "mainwindow.h"
 
-#include <QApplication>
+int main(int argc, char* argv[]) {
+    QApplication const app(argc, argv);
+    QApplication::setStyle("fusion");
 
-int main(int argc, char *argv[]) {
-    QApplication app(argc, argv);
     MainWindow window;
-
     window.showMaximized();
 
     return QApplication::exec();
