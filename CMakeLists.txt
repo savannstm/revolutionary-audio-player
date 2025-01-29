@@ -13,7 +13,11 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(LIBRARY_PATH "${CMAKE_SOURCE_DIR}/lib")
+set(LIBRARY_NAME "rusty_decoder")
+
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia)
+find_package(TagLib REQUIRED)
 
 set(PROJECT_SOURCES
         src/main.cpp
@@ -28,7 +32,11 @@ qt_add_executable(revolutionary-audio-player
     ${PROJECT_SOURCES}
 )
 
+find_library(rusty_decoder NAMES ${LIBRARY_NAME} PATHS ${LIBRARY_PATH})
+
 target_link_libraries(revolutionary-audio-player PRIVATE Qt6::Widgets Qt6::Multimedia)
+target_link_libraries(revolutionary-audio-player PRIVATE TagLib::TagLib)
+target_link_libraries(revolutionary-audio-player PRIVATE ${rusty_decoder})
 
 set_target_properties(revolutionary-audio-player PROPERTIES
     ${BUNDLE_ID_OPTION}
