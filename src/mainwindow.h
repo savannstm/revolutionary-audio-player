@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QStandardItemModel>
+#include <QSystemTrayIcon>
 #include <QTextEdit>
 #include <fstream>
 #include <iostream>
@@ -17,6 +18,7 @@ namespace Ui {
 class MainWindow;
 }  // namespace Ui
 QT_END_NAMESPACE
+#include <filesystem>
 
 class AudioCache {
    private:
@@ -41,8 +43,8 @@ class AudioCache {
         cacheFile.close();
     }
 
-    auto loadPaths() -> std::vector<std::string> {
-        std::vector<std::string> paths;
+    auto loadPaths() -> std::vector<std::filesystem::path> {
+        std::vector<std::filesystem::path> paths;
         std::ifstream cacheFile(cachePath);
 
         if (!cacheFile) {
@@ -77,16 +79,13 @@ class MainWindow : public QMainWindow {
     Ui::MainWindow* ui;
     QMediaPlayer* player;
     QAudioOutput* audioOutput;
-    QSlider* slider;
-    QTextEdit* input;
-    QPushButton* playButton;
-    QPushButton* stopButton;
-    QPushButton* nextButton;
-    QPushButton* previousButton;
     QAction* exitAction;
     QAction* openFileAction;
     QAction* openFolderAction;
     QStandardItemModel* tracksModel;
+
+    QSystemTrayIcon* trayIcon;
+    QMenu* trayIconMenu;
     AudioCache cache;
 };
 

@@ -53,14 +53,16 @@ constexpr u8 DEFAULT_VOLUME = 100;
 constexpr array<cstr, 5> EXTENSIONS = {".mp3", ".flac", ".opus", ".aac",
                                        ".wav"};
 
+enum Direction : u8 { Forward, Backward };
+
 auto restorePaths(AudioCache *cache, QStandardItemModel *tracksModel) -> void {
-    vector<string> restored = cache->loadPaths();
+    vector<path> restored = cache->loadPaths();
 
     for (const auto [i, path] : views::enumerate(restored)) {
-        auto *item = new MusicItem(path.c_str());
+        auto *item = new MusicItem(path.filename().string().c_str());
 
         item->setEditable(false);
-        item->setPath(path.c_str());
+        item->setPath(path.string().c_str());
 
         tracksModel->setItem(static_cast<i32>(i), 0, item);
     }
@@ -79,6 +81,30 @@ auto formatSecondsToMinutes(u64 secs) -> string {
     return formatted;
 }
 
+void jumpToTrack(QTableView *tracksTable, QStandardItemModel *tracksModel,
+                 QMediaPlayer *player, QPushButton *playButton,
+                 Direction direction) {
+    const auto idx = tracksTable->currentIndex();
+    const u16 nextIdx =
+        direction == Direction::Forward ? idx.row() + 1 : idx.row() - 1;
+    tracksTable->selectRow(nextIdx);
+
+    const QString data =
+        tracksModel->data(tracksTable->currentIndex(), Qt::DisplayRole)
+            .toString();
+    const auto *item = static_cast<MusicItem *>(
+        tracksModel->itemFromIndex(tracksTable->currentIndex()));
+
+    if (item != nullptr) {
+        cstr path = item->getPath();
+        player->setSource(QUrl::fromLocalFile(path));
+
+        if (playButton->icon().name() == "media-playback-pause") {
+            player->play();
+        }
+    }
+}
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindow),
@@ -87,7 +113,8 @@ MainWindow::MainWindow(QWidget *parent)
       exitAction(new QAction("Exit")),
       openFileAction(new QAction("Open File")),
       openFolderAction(new QAction("Open Folder")),
-      tracksModel(new QStandardItemModel) {
+      tracksModel(new QStandardItemModel(this)),
+      trayIcon(new QSystemTrayIcon(this)) {
     ui->setupUi(this);
 
     audioOutput->setVolume(DEFAULT_VOLUME);
@@ -101,6 +128,11 @@ MainWindow::MainWindow(QWidget *parent)
     static auto *forwardButton = ui->forwardButton;
     static auto *tracksTable = ui->tracksTable;
 
+    trayIcon->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::Battery));
+    trayIcon->setVisible(true);
+
+    connect(trayIcon, &QSystemTrayIcon::messageClicked, []() {});
+
     tracksTable->setModel(tracksModel);
     tracksTable->verticalHeader()->setSectionResizeMode(
         QHeaderView::ResizeToContents);
@@ -109,24 +141,25 @@ MainWindow::MainWindow(QWidget *parent)
 
     restorePaths(&cache, tracksModel);
 
-    connect(
-        tracksTable, &QTableView::clicked, this, [&](const QModelIndex &index) {
-            QString data = tracksModel->data(index, Qt::DisplayRole).toString();
-            auto *item =
-                static_cast<MusicItem *>(tracksModel->itemFromIndex(index));
+    connect(tracksTable, &QTableView::clicked, this,
+            [&](const QModelIndex &index) {
+                const QString data =
+                    tracksModel->data(index, Qt::DisplayRole).toString();
+                const auto *item =
+                    static_cast<MusicItem *>(tracksModel->itemFromIndex(index));
 
-            if (item) {
-                cstr path = item->getPath();
-                player->setSource(QUrl::fromLocalFile(path));
-            }
-        });
+                if (item) {
+                    cstr path = item->getPath();
+                    player->setSource(QUrl::fromLocalFile(path));
+                }
+            });
 
     connect(openFolderAction, &QAction::triggered, this, [&]() {
-        auto directory = QFileDialog::getExistingDirectory(
+        const auto directory = QFileDialog::getExistingDirectory(
             this, "Select Directory", QDir::homePath(),
             QFileDialog::ShowDirsOnly);
 
-        auto entries = fs::recursive_directory_iterator(
+        const auto entries = fs::recursive_directory_iterator(
             directory.toStdString(),
             fs::directory_options::skip_permission_denied);
 
@@ -156,7 +189,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(playButton, &QPushButton::clicked, this, [&]() {
         if (!player->source().isEmpty()) {
-            auto currentIcon = playButton->icon();
+            const auto currentIcon = playButton->icon();
 
             if (currentIcon.name() == "media-playback-start") {
                 player->play();
@@ -170,7 +203,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
-    connect(exitAction, &QAction::triggered, this, []() { std::exit(1); });
+    connect(exitAction, &QAction::triggered, this, []() { std::exit(0); });
     ui->menuFile->addAction(exitAction);
 
     connect(stopButton, &QPushButton::clicked, this, [&]() {
@@ -180,16 +213,18 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     connect(ui->forwardButton, &QPushButton::clicked, this, [&]() {
-        // TODO
+        jumpToTrack(tracksTable, tracksModel, player, playButton,
+                    Direction::Forward);
     });
 
     connect(ui->backwardButton, &QPushButton::clicked, this, [&]() {
-        // TODO
+        jumpToTrack(tracksTable, tracksModel, player, playButton,
+                    Direction::Backward);
     });
 
     connect(player, &QMediaPlayer::metaDataChanged, this, [&]() {
-        auto metadata = player->metaData();
-        auto metadataKeys = metadata.keys();
+        const auto metadata = player->metaData();
+        const auto metadataKeys = metadata.keys();
     });
 
     connect(player, &QMediaPlayer::mediaStatusChanged, this,
@@ -203,7 +238,8 @@ MainWindow::MainWindow(QWidget *parent)
 
                     input->setText(timer.c_str());
                 } else if (status == QMediaPlayer::EndOfMedia) {
-                    qDebug("ended playing");
+                    jumpToTrack(tracksTable, tracksModel, player, playButton,
+                                Direction::Forward);
                 }
             });
 

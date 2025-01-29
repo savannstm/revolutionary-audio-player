@@ -5,7 +5,7 @@ class MusicItem : public QStandardItem {
     MusicItem(const char *title) : QStandardItem(title) {}
 
     void setPath(const char *pathStr) { path = pathStr; }
-    auto getPath() -> const char * { return path.c_str(); }
+    [[nodiscard]] auto getPath() const -> const char * { return path.c_str(); }
 
    private:
     std::string path;
