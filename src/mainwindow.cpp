@@ -1,27 +1,20 @@
 // local
 #include "mainwindow.h"
 
-#include <taglib/fileref.h>
-#include <taglib/tag.h>
-
-extern "C" {
-auto decode1251(const char *input) -> const char *;
-}
-
 #include "./ui_mainwindow.h"
+#include "indexset.h"
 #include "musicitem.h"
 
 // std
+#include <algorithm>
 #include <filesystem>
 #include <print>
 #include <random>
 #include <ranges>
 
 // qt
-#include <QAbstractItemModel>
 #include <QAction>
 #include <QApplication>
-#include <QAudioFormat>
 #include <QAudioOutput>
 #include <QDebug>
 #include <QFileDialog>
@@ -33,17 +26,23 @@ auto decode1251(const char *input) -> const char *;
 #include <QMenu>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSettings>
 #include <QStandardItemModel>
-#include <QTableView>
+#include <QTreeView>
 
-using std::array;
-using std::string;
-using std::to_string;
-using std::vector;
+// other
+#include <taglib/fileref.h>
+#include <taglib/tag.h>
 
 namespace fs = std::filesystem;
 namespace views = std::views;
 namespace ranges = std::ranges;
+
+using fs::path;
+using std::array;
+using std::string;
+using std::to_string;
+using std::vector;
 
 using u8 = std::uint8_t;
 using u16 = std::uint16_t;
@@ -57,59 +56,66 @@ using str = char *;
 using cstr = const char *;
 using f32 = float;
 using f64 = double;
-using path = fs::path;
 
-constexpr u8 DEFAULT_VOLUME = 100;
-constexpr array<cstr, 5> EXTENSIONS = {".mp3", ".flac", ".opus", ".aac",
-                                       ".wav"};
+enum Direction : u8 { Forward, BackwardRandom, Backward, Random };
 
-enum Direction : u8 { Forward, Backward, Random };
+static u8 DEFAULT_VOLUME = 100;
+static array<cstr, 5> EXTENSIONS = {".mp3", ".flac", ".opus", ".aac", ".wav"};
 
-static std::random_device rd;   // Non-deterministic random number generator
-static std::mt19937 gen(rd());  // Mersenne Twister PRNG seeded with `rd()`
+static std::random_device rng;
+static std::mt19937 gen(rng());
+static IndexSet<u32> playHistory;
 
-auto restorePaths(AudioCache *cache, QStandardItemModel *tracksModel) -> void {
-    vector<path> restored = cache->loadPaths();
-
-    tracksModel->setHorizontalHeaderLabels({"Title", "Author", "No."});
-
-    for (const auto [row, path] : views::enumerate(restored)) {
+void fillTable(QStandardItemModel *treeModel, const vector<path> &paths) {
+    for (const auto [row, path] : views::enumerate(paths)) {
         for (u32 col = 0; col < 3; col++) {
             auto *item = new MusicItem();
-            const string pathString = path.string();
-            cstr pathStr = pathString.c_str();
 
-            TagLib::FileRef file(pathStr);
-            TagLib::Tag *tag = file.tag();
+#ifdef _WIN32
+            const TagLib::FileRef file(path.wstring().c_str());
+#else
+            const TagLib::FileRef file(path.string().c_str());
+#endif
+
+            const TagLib::Tag *tag = file.tag();
 
             item->setEditable(false);
-            item->setPath(pathStr);
+            item->setPath(path);
 
             string content;
 
             switch (col) {
-                case 0:
-                    content = tag->title().toCString(true);
+                case 0: {
+                    cstr title = tag->title().toCString(true);
+                    content = title;
                     break;
-                case 1:
-                    content = tag->artist().toCString(true);
+                }
+                case 1: {
+                    cstr artist = tag->artist().toCString(true);
+                    content = artist;
                     break;
-                case 2:
-                    content = std::to_string(tag->track());
+                }
+                case 2: {
+                    item->setData(tag->track(), Qt::EditRole);
                     break;
+                }
                 default:
                     break;
             }
 
-            item->setText(content.c_str());
+            if (col != 2) {
+                item->setText(content.c_str());
+            }
 
-            tracksModel->setItem(static_cast<i32>(row), static_cast<i32>(col),
-                                 item);
+            treeModel->setItem(static_cast<i32>(row), static_cast<i32>(col),
+                               item);
         }
     }
+
+    treeModel->sort(2);
 }
 
-auto formatSecondsToMinutes(u64 secs) -> string {
+auto inline formatSecondsToMinutes(u64 secs) -> string {
     constexpr u64 sixty = 60;
     const u64 minutes = secs / sixty;
     const u64 seconds = secs % sixty;
@@ -122,45 +128,69 @@ auto formatSecondsToMinutes(u64 secs) -> string {
     return formatted;
 }
 
-void jumpToTrack(QTableView *tracksTable, QStandardItemModel *tracksModel,
+void jumpToTrack(QTreeView *trackTree, QStandardItemModel *treeModel,
                  QMediaPlayer *player, QPushButton *playButton,
                  Direction direction) {
-    const auto idx = tracksTable->currentIndex();
+    const auto idx = trackTree->currentIndex();
 
-    u32 nextIdx =
-        direction == Direction::Forward ? idx.row() + 1 : idx.row() - 1;
+    if (!idx.isValid()) {
+        return;
+    }
+
+    u32 nextIdx;
+    const u64 row = idx.row();
 
     switch (direction) {
         case Direction::Forward:
-            nextIdx = idx.row() + 1;
+            if (row == treeModel->rowCount() - 1) {
+                player->stop();
+                return;
+            }
+
+            nextIdx = row + 1;
             break;
+        case Direction::BackwardRandom: {
+            if (playHistory.empty()) {
+                goto backward;
+            }
+
+            const u32 lastPlayed = playHistory.last();
+            playHistory.remove(lastPlayed);
+            nextIdx = lastPlayed;
+            break;
+        }
         case Direction::Backward:
-            nextIdx = idx.row() - 1;
+        backward:
+            if (row == 0) {
+                return;
+            }
+
+            nextIdx = row - 1;
             break;
         case Direction::Random:
-            std::uniform_int_distribution<unsigned int> dist(
-                0, tracksTable->model()->rowCount());
+            playHistory.insert(row);
 
-            nextIdx = dist(gen);
+            const u32 totalTracks = trackTree->model()->rowCount();
+
+            do {
+                std::uniform_int_distribution<u32> dist(0, totalTracks - 1);
+                nextIdx = dist(gen);
+            } while (playHistory.contains(nextIdx));
             break;
     }
-    if (direction == Direction::Random) {
-    }
-    tracksTable->selectRow((i32)nextIdx);
 
-    const QString data =
-        tracksModel->data(tracksTable->currentIndex(), Qt::DisplayRole)
-            .toString();
-    const auto *item = static_cast<MusicItem *>(
-        tracksModel->itemFromIndex(tracksTable->currentIndex()));
+    QModelIndex index = trackTree->model()->index((i32)nextIdx, 0);
+    trackTree->setCurrentIndex(index);
 
-    if (item != nullptr) {
-        cstr path = item->getPath();
-        player->setSource(QUrl::fromLocalFile(path));
+    const auto data = treeModel->data(index, Qt::DisplayRole).toString();
+    const auto *item =
+        static_cast<MusicItem *>(treeModel->itemFromIndex(index));
 
-        if (playButton->icon().name() == "media-playback-pause") {
-            player->play();
-        }
+    cstr path = item->getPath();
+    player->setSource(QUrl::fromLocalFile(path));
+
+    if (playButton->icon().name() == "media-playback-pause") {
+        player->play();
     }
 }
 
@@ -179,54 +209,133 @@ MainWindow::MainWindow(QWidget *parent)
     audioOutput->setVolume(DEFAULT_VOLUME);
     player->setAudioOutput(audioOutput);
 
-    static auto *slider = ui->horizontalSlider;
+    slider = ui->horizontalSlider;
+    slider->setMouseTracking(true);
+
     static auto *input = ui->textEdit;
     static auto *playButton = ui->playButton;
     static auto *stopButton = ui->stopButton;
     static auto *backwardButton = ui->backwardButton;
     static auto *forwardButton = ui->forwardButton;
-    static auto *tracksTable = ui->tracksTable;
+    static auto *trackTree = ui->tracksTable;
     static auto *repeatButton = ui->repeatButton;
     static auto *randomButton = ui->randomButton;
+    static auto *fileMenu = ui->menuFile;
+
+    repeatButton->setCheckable(true);
+    randomButton->setCheckable(true);
 
     static bool repeat = false;
     static bool random = false;
 
-    trayIcon->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::Battery));
-    trayIcon->setVisible(true);
+    tracksModel->setHorizontalHeaderLabels({"Title", "Author", "No."});
 
-    connect(trayIcon, &QSystemTrayIcon::messageClicked, []() {});
+    trackTree->setModel(tracksModel);
+    static auto *header = trackTree->header();
+    header->setSectionResizeMode(QHeaderView::Interactive);
+
+    trayIcon->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::AudioVolumeHigh));
+    trayIcon->show();
+
+    fileMenu->addAction(openFileAction);
+    fileMenu->addAction(openFolderAction);
+    fileMenu->addAction(exitAction);
+
+    static QMenu *trayIconMenu;
+
+    trayIconMenu = new QMenu(this);
+    trayIconMenu->addAction(exitAction);
+
+    trayIcon->setContextMenu(trayIconMenu);
+
+    static auto *settings = new QSettings("MyCompany", "MyApp");
+
+    static QString lastDir =
+        settings->value("lastOpenedDir", QDir::homePath()).toString();
+
+    static QModelIndex currentIndex;
+
+    connect(exitAction, &QAction::triggered, this, &QApplication::quit);
+    connect(trayIcon, &QSystemTrayIcon::activated, [&](auto reason) {
+        switch (reason) {
+            case QSystemTrayIcon::ActivationReason::Trigger:
+                if (player->isPlaying()) {
+                    player->pause();
+                } else {
+                    player->play();
+                }
+                break;
+            case QSystemTrayIcon::ActivationReason::DoubleClick:
+                this->show();
+            default:
+                break;
+        }
+    });
 
     connect(repeatButton, &QPushButton::clicked, []() { repeat = !repeat; });
-    connect(randomButton, &QPushButton::clicked, []() { random = !random; });
+    connect(randomButton, &QPushButton::clicked, []() {
+        random = !random;
 
-    tracksTable->setModel(tracksModel);
-    tracksTable->verticalHeader()->setSectionResizeMode(
-        QHeaderView::ResizeToContents);
-    tracksTable->horizontalHeader()->setSectionResizeMode(
-        QHeaderView::ResizeToContents);
+        if (!random) {
+            playHistory.clear();
+        }
+    });
 
-    restorePaths(&cache, tracksModel);
+    connect(trackTree, &QTreeView::pressed, [&](const QModelIndex &index) {
+        switch (QApplication::mouseButtons()) {
+            case Qt::RightButton: {
+                QMenu menu(this);
 
-    connect(tracksTable, &QTableView::clicked, this,
-            [&](const QModelIndex &index) {
-                const QString data =
-                    tracksModel->data(index, Qt::DisplayRole).toString();
-                const auto *item =
-                    static_cast<MusicItem *>(tracksModel->itemFromIndex(index));
+                QAction *action1 = menu.addAction("Option 1");
+                QAction *action2 = menu.addAction("Option 2");
 
-                if (item) {
-                    cstr path = item->getPath();
-                    player->setSource(QUrl::fromLocalFile(path));
+                connect(action1, &QAction::triggered, this,
+                        [&]() { tracksModel->removeRow(index.row()); });
+
+                menu.exec(QCursor::pos());
+                break;
+            }
+            case Qt::LeftButton: {
+                if (index != currentIndex) {
+                    const QString data =
+                        tracksModel->data(index, Qt::DisplayRole).toString();
+                    const auto *item = static_cast<MusicItem *>(
+                        tracksModel->itemFromIndex(index));
+
+                    if (item) {
+                        cstr path = item->getPath();
+                        player->setSource(QUrl::fromLocalFile(path));
+
+                        if (playButton->icon().name() ==
+                            "media-playback-pause") {
+                            player->play();
+                        }
+                    }
+
+                    currentIndex = index;
                 }
-            });
+                break;
+            }
+            default:
+                break;
+        }
+    });
+
+    connect(header, &QHeaderView::sectionClicked, [&](int logicalIndex) {
+        if (header->sortIndicatorOrder() == Qt::SortOrder::AscendingOrder) {
+            tracksModel->sort(logicalIndex, Qt::SortOrder::DescendingOrder);
+        } else {
+            tracksModel->sort(logicalIndex, Qt::SortOrder::AscendingOrder);
+        }
+    });
 
     connect(openFolderAction, &QAction::triggered, this, [&]() {
         const auto directory = QFileDialog::getExistingDirectory(
-            this, "Select Directory", QDir::homePath(),
-            QFileDialog::ShowDirsOnly);
+            this, "Select Directory", lastDir, QFileDialog::ShowDirsOnly);
 
         if (directory != nullptr) {
+            settings->setValue("lastOpenedDir", directory);
+
             const auto entries = fs::recursive_directory_iterator(
                 directory.toStdString(),
                 fs::directory_options::skip_permission_denied);
@@ -239,23 +348,15 @@ MainWindow::MainWindow(QWidget *parent)
                         }));
             });
 
-            vector<string> vec = {};
+            vector<path> vec_entries;
 
-            for (const auto [i, entry] : views::enumerate(music_entries)) {
-                const path path = entry.path();
-                auto *item = new MusicItem(path.filename().string().c_str());
+            std::ranges::transform(music_entries,
+                                   std::back_inserter(vec_entries),
+                                   [](auto &entry) { return entry.path(); });
 
-                item->setEditable(false);
-                item->setPath(path.string().c_str());
-                vec.push_back(path.string());
-
-                tracksModel->setItem(static_cast<i32>(i), 0, item);
-            }
-
-            cache.savePaths(vec);
+            fillTable(tracksModel, vec_entries);
         }
     });
-    ui->menuFile->addAction(openFolderAction);
 
     connect(playButton, &QPushButton::clicked, this, [&]() {
         if (!player->source().isEmpty()) {
@@ -273,9 +374,6 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
-    connect(exitAction, &QAction::triggered, this, []() { std::exit(0); });
-    ui->menuFile->addAction(exitAction);
-
     connect(stopButton, &QPushButton::clicked, this, [&]() {
         player->stop();
         playButton->setIcon(
@@ -283,19 +381,16 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     connect(ui->forwardButton, &QPushButton::clicked, this, [&]() {
-        jumpToTrack(tracksTable, tracksModel, player, playButton,
-                    Direction::Forward);
+        jumpToTrack(trackTree, tracksModel, player, playButton,
+                    random ? Direction::Random : Direction::Forward);
     });
 
     connect(ui->backwardButton, &QPushButton::clicked, this, [&]() {
-        jumpToTrack(tracksTable, tracksModel, player, playButton,
-                    Direction::Backward);
+        jumpToTrack(trackTree, tracksModel, player, playButton,
+                    random ? Direction::BackwardRandom : Direction::Backward);
     });
 
-    connect(player, &QMediaPlayer::metaDataChanged, this, [&]() {
-        const auto metadata = player->metaData();
-        const auto metadataKeys = metadata.keys();
-    });
+    connect(player, &QMediaPlayer::metaDataChanged, this, [&]() {});
 
     connect(player, &QMediaPlayer::mediaStatusChanged, this,
             [&](QMediaPlayer::MediaStatus status) {
@@ -310,24 +405,43 @@ MainWindow::MainWindow(QWidget *parent)
                 } else if (status == QMediaPlayer::EndOfMedia) {
                     if (repeat) {
                         player->setPosition(0);
+                        player->play();
                     } else {
                         jumpToTrack(
-                            tracksTable, tracksModel, player, playButton,
+                            trackTree, tracksModel, player, playButton,
                             random ? Direction::Random : Direction::Forward);
                     }
                 }
             });
 
     connect(player, &QMediaPlayer::positionChanged, this, [&](i64 pos) {
+        if (!slider->isSliderDown()) {
+            const string timer =
+                formatSecondsToMinutes(pos / 1000) + "/" +
+                formatSecondsToMinutes(player->duration() / 1000);
+
+            input->setText(timer.c_str());
+            slider->setSliderPosition(static_cast<i32>(pos));
+        }
+    });
+
+    connect(slider, &CustomSlider::mouseMoved, this, [&](u32 pos) {
+        player->setPosition(pos);
+
         const string timer = formatSecondsToMinutes(pos / 1000) + "/" +
                              formatSecondsToMinutes(player->duration() / 1000);
 
         input->setText(timer.c_str());
-        slider->setSliderPosition(static_cast<i32>(pos));
     });
 
-    connect(slider, &QSlider::sliderMoved, this,
-            [&](u32 pos) { player->setPosition(pos); });
+    connect(slider, &CustomSlider::mousePressed, this, [&](u32 pos) {
+        player->setPosition(pos);
+
+        const string timer = formatSecondsToMinutes(pos / 1000) + "/" +
+                             formatSecondsToMinutes(player->duration() / 1000);
+
+        input->setText(timer.c_str());
+    });
 }
 
 MainWindow::~MainWindow() { delete ui; }

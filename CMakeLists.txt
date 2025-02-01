@@ -9,23 +9,16 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ./target/lib)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(LIBRARY_PATH "${CMAKE_SOURCE_DIR}/lib")
-set(LIBRARY_NAME "rusty_decoder")
+set(LIBRARY_PATH ${CMAKE_SOURCE_DIR}/lib)
+set(LIBRARY_NAME rusty_decoder)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia)
 find_package(TagLib REQUIRED)
 
-set(PROJECT_SOURCES
-        src/main.cpp
-        src/mainwindow.cpp
-        src/mainwindow.h
-        src/mainwindow.ui
-        src/musicitem.h
-)
+file(GLOB PROJECT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 
 qt_add_executable(revolutionary-audio-player
     MANUAL_FINALIZATION
@@ -44,6 +37,11 @@ set_target_properties(revolutionary-audio-player PROPERTIES
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
+)
+
+target_include_directories(revolutionary-audio-player
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
 )
 
 include(GNUInstallDirs)
