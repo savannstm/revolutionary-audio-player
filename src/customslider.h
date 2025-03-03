@@ -16,9 +16,9 @@ class CustomSlider : public QSlider {
 
    protected:
     void mouseMoveEvent(QMouseEvent* event) override {
-        if (event->button() == Qt::LeftButton) {
-            QPoint pos = event->pos();
-            double ratio = static_cast<double>(pos.x()) / this->width();
+        if (event->buttons() & Qt::MouseButton::LeftButton) {
+            const auto pos = event->pos();
+            const double ratio = static_cast<double>(pos.x()) / this->width();
             int value =
                 this->minimum() + (ratio * (this->maximum() - this->minimum()));
             value = qBound(this->minimum(), value, this->maximum());
@@ -30,8 +30,8 @@ class CustomSlider : public QSlider {
 
     void mousePressEvent(QMouseEvent* event) override {
         if (event->button() == Qt::LeftButton) {
-            QPoint pos = event->pos();
-            double ratio = static_cast<double>(pos.x()) / this->width();
+            const auto pos = event->pos();
+            const double ratio = static_cast<double>(pos.x()) / this->width();
             int value =
                 this->minimum() + (ratio * (this->maximum() - this->minimum()));
             value = qBound(this->minimum(), value, this->maximum());

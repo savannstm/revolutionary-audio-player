@@ -7,9 +7,7 @@
 int main(int argc, char* argv[]) {
     QApplication const app(argc, argv);
 
-#ifdef _WIN32
-    QApplication::setStyle("fusion");
-#endif
+    QApplication::setStyle("breeze");
 
     MainWindow window;
     window.showMaximized();

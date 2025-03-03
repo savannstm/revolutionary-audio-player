@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(revolutionary-audio-player VERSION 0.1 LANGUAGES CXX)
+project(rap VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ./target/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ./target/lib)
@@ -12,37 +12,34 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(LIBRARY_PATH ${CMAKE_SOURCE_DIR}/lib)
-set(LIBRARY_NAME rusty_decoder)
+include(FetchContent)
+
+FetchContent_Declare(
+    iir
+    GIT_REPOSITORY https://github.com/berndporr/iir1.git
+    GIT_TAG master
+)
+
+FetchContent_MakeAvailable(iir)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia)
 find_package(TagLib REQUIRED)
+find_package(SndFile REQUIRED)
 
-file(GLOB PROJECT_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
+file(GLOB PROJECT_SOURCES src/*.cpp src/*.h)
 
 qt_add_executable(revolutionary-audio-player
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}
+    ${AUTOGEN}
 )
-
-find_library(rusty_decoder NAMES ${LIBRARY_NAME} PATHS ${LIBRARY_PATH})
 
 target_link_libraries(revolutionary-audio-player PRIVATE Qt6::Widgets Qt6::Multimedia)
 target_link_libraries(revolutionary-audio-player PRIVATE TagLib::TagLib)
-target_link_libraries(revolutionary-audio-player PRIVATE ${rusty_decoder})
+target_link_libraries(revolutionary-audio-player PRIVATE iir::iir_static)
+target_link_libraries(revolutionary-audio-player PRIVATE SndFile::sndfile)
 
-set_target_properties(revolutionary-audio-player PROPERTIES
-    ${BUNDLE_ID_OPTION}
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
-)
-
-target_include_directories(revolutionary-audio-player
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/src
-)
+target_include_directories(revolutionary-audio-player PRIVATE src)
 
 include(GNUInstallDirs)
 install(TARGETS revolutionary-audio-player
@@ -51,6 +48,4 @@ install(TARGETS revolutionary-audio-player
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(revolutionary-audio-player)
-endif()
+qt_finalize_executable(revolutionary-audio-player)

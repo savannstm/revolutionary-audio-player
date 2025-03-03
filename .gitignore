@@ -15,3 +15,4 @@
 /.clangd
 /Makefile
 /lib
+/_deps
