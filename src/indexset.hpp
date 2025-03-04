@@ -3,11 +3,13 @@
 #include <unordered_map>
 #include <vector>
 
+#include "type_aliases.hpp"
+
 template <typename T>
 class IndexSet {
    private:
     std::vector<T> elements;
-    std::unordered_map<T, size_t> map;
+    std::unordered_map<T, usize> map;
 
    public:
     auto insert(const T& element) -> bool {
@@ -25,8 +27,8 @@ class IndexSet {
             return false;
         }
 
-        size_t indexToRemove = map[element];
-        size_t lastIndex = elements.size() - 1;
+        const usize indexToRemove = map[element];
+        const usize lastIndex = elements.size() - 1;
 
         if (indexToRemove != lastIndex) {
             elements[indexToRemove] = std::move(elements[lastIndex]);
@@ -42,7 +44,7 @@ class IndexSet {
         return map.contains(element);
     }
 
-    [[nodiscard]] auto at(size_t index) const -> const T& {
+    [[nodiscard]] auto at(const usize index) const -> const T& {
         if (index >= elements.size()) {
             throw std::out_of_range("Index out of range");
         }
@@ -50,7 +52,7 @@ class IndexSet {
         return elements[index];
     }
 
-    [[nodiscard]] auto indexOf(const T& element) const -> size_t {
+    [[nodiscard]] auto indexOf(const T& element) const -> usize {
         if (!map.contains(element)) {
             throw std::runtime_error("Element not found");
         }
@@ -58,7 +60,7 @@ class IndexSet {
         return map.at(element);
     }
 
-    [[nodiscard]] auto size() const noexcept -> size_t {
+    [[nodiscard]] auto size() const noexcept -> usize {
         return elements.size();
     }
 

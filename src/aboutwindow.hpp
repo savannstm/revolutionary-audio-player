@@ -1,8 +1,9 @@
 #ifndef ABOUTWINDOW_H
 #define ABOUTWINDOW_H
 
-#include <qmainwindow.h>
 #include <QDialog>
+#include <QMainWindow>
+
 #include "./ui_aboutwindow.h"
 
 QT_BEGIN_NAMESPACE

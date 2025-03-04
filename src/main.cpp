@@ -2,9 +2,9 @@
 #include <QGuiApplication>
 #include <QPalette>
 
-#include "mainwindow.h"
+#include "mainwindow.hpp"
 
-int main(int argc, char* argv[]) {
+auto main(int argc, char* argv[]) -> int {
     QApplication const app(argc, argv);
 
     QApplication::setStyle("breeze");

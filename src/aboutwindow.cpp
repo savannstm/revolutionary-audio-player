@@ -1,5 +1,6 @@
-#include "aboutwindow.h"
-#include <qmainwindow.h>
+#include "aboutwindow.hpp"
+
+#include <QMainWindow>
 
 AboutWindow::AboutWindow(QWidget *parent) : QMainWindow(parent) {
     ui->setupUi(this);

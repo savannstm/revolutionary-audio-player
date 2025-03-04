@@ -1,16 +1,17 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
-set -x
 
-cd ./src/rusty-decoder
-cargo b -r
+if [ "$1" == "-r" ]; then
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B build
+else
+    cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B build
+fi
 
-mkdir ../../lib
-mv ./target/release/librusty_decoder.so ../../lib/
+pkill -f "rap" || true
 
-cd ../../
-
-cmake --build .
-
-XDG_CURRENT_DESKTOP="KDE" ./target/bin/revolutionary-audio-player
+(
+    cd build || exit 1
+    cmake --build .
+    ./target/bin/rap
+)

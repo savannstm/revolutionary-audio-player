@@ -1,24 +1,22 @@
 // local
-#include "mainwindow.h"
+#include "mainwindow.hpp"
 
-#include "./ui_mainwindow.h"
-#include "aboutwindow.h"
-#include "equalizer.h"
-#include "indexset.h"
-#include "musicitem.h"
+#include "aboutwindow.hpp"
+#include "equalizer.hpp"
+#include "indexset.hpp"
+#include "musicitem.hpp"
+#include "type_aliases.hpp"
+#include "ui_mainwindow.h"
 
 // std
-#include <algorithm>
-#include <filesystem>
-#include <print>
 #include <random>
-#include <ranges>
 
 // qt
 #include <QAction>
 #include <QApplication>
 #include <QAudioDevice>
 #include <QAudioOutput>
+#include <QAudioSink>
 #include <QDebug>
 #include <QFileDialog>
 #include <QIcon>
@@ -35,38 +33,13 @@
 
 // audio
 #include <sndfile.h>
-
-// other
 #include <taglib/fileref.h>
-
-namespace fs = std::filesystem;
-namespace views = std::views;
-namespace ranges = std::ranges;
-
-using fs::path;
-using std::array;
-using std::string;
-using std::to_string;
-using std::vector;
-
-using u8 = std::uint8_t;
-using u16 = std::uint16_t;
-using u32 = std::uint32_t;
-using u64 = std::uint64_t;
-using i8 = std::int8_t;
-using i16 = std::int16_t;
-using i32 = std::int32_t;
-using i64 = std::int64_t;
-using str = char *;
-using cstr = const char *;
-using f32 = float;
-using f64 = double;
 
 enum Direction : u8 { Forward, BackwardRandom, Backward, Random };
 
 constexpr static u8 DEFAULT_VOLUME = 100;
-constexpr static array<cstr, 5> EXTENSIONS = {".mp3", ".flac", ".opus", ".aac",
-                                              ".wav"};
+constexpr static array<cstr, 6> EXTENSIONS = {".mp3", ".flac", ".opus",
+                                              ".aac", ".wav",  ".ogg"};
 
 static std::random_device rng;
 static std::mt19937 gen(rng());
@@ -219,6 +192,9 @@ MainWindow::MainWindow(QWidget *parent)
     audioOutput->setVolume(DEFAULT_VOLUME);
     player->setAudioOutput(audioOutput);
 
+    constexpr std::array<f32, 10> bands = {1, 1, 1, 1, 1, 2, 2, 2, 2, 2};
+
+    static auto *sink = new QAudioSink();
     static auto *progressSlider = ui->progressSlider;
     static auto *progressTimer = ui->progressTimer;
     static auto *playButton = ui->playButton;
@@ -234,8 +210,8 @@ MainWindow::MainWindow(QWidget *parent)
     static auto *openFolderAction = ui->actionOpenFolder;
     static auto *aboutAction = ui->actionAbout;
 
-    static bool repeat = false;
-    static bool random = false;
+    static auto repeat = false;
+    static auto random = false;
 
     static auto *trackTree = ui->tracksTable;
     static auto *header = trackTree->header();
@@ -286,7 +262,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
-    connect(trackTree, &QTreeView::pressed, [&](const QModelIndex &index) {
+    connect(trackTree, &QTreeView::pressed, [&](const auto &index) {
         switch (QApplication::mouseButtons()) {
             case Qt::RightButton: {
                 QMenu menu(this);

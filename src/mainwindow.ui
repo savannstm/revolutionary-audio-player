@@ -362,7 +362,7 @@ border: none;</string>
   <customwidget>
    <class>CustomSlider</class>
    <extends>QSlider</extends>
-   <header>customslider.h</header>
+   <header>customslider.hpp</header>
   </customwidget>
  </customwidgets>
  <resources/>
