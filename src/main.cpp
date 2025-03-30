@@ -1,3 +1,6 @@
+#include <qapplication.h>
+#include <qpalette.h>
+
 #include <QApplication>
 #include <QGuiApplication>
 #include <QPalette>
@@ -6,8 +9,13 @@
 
 auto main(int argc, char* argv[]) -> int {
     QApplication const app(argc, argv);
+    QApplication::setStyle("fusion");
 
-    QApplication::setStyle("breeze");
+    auto* palette = new QPalette();
+    palette->setColor(QPalette::ColorGroup::All, QPalette::ColorRole::Dark,
+                      "dark");
+
+    QApplication::setPalette(*palette);
 
     MainWindow window;
     window.showMaximized();

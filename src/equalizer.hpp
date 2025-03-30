@@ -1,82 +1,113 @@
+#include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_dsp/juce_dsp.h>
+#include <omp.h>
+#include <qbuffer.h>
 #include <sndfile.h>
 
-#include "type_aliases.hpp"
-constexpr u8 BANDS = 10;
+#include <QBuffer>
 
+#include "type_aliases.hpp"
+
+constexpr u8 BANDS = 10;
 using namespace juce::dsp::IIR;
 
-void equalizeAudioFile(const std::string& inputFile,
-                       const std::string& outputFile,
-                       const std::array<f32, BANDS>& gains) {
+auto readAudioFile(const path& inputFile) -> tuple<SF_INFO, vector<f32>> {
     SF_INFO sfInfo;
-    auto* inFile = sf_open(inputFile.c_str(), SFM_READ, &sfInfo);
+    SNDFILE* inFile = sf_open(inputFile.string().c_str(), SFM_READ, &sfInfo);
+
     if (inFile == nullptr) {
-        std::cerr << "Error opening input file: " << sf_strerror(inFile)
+        std::cerr << "Error opening input file: " << sf_strerror(nullptr)
                   << '\n';
-        return;
+        return {};
     }
 
-    const u32 sampleRate = sfInfo.samplerate;
-    const u32 channels = sfInfo.channels;
-    const u32 numFrames = sfInfo.frames;
+    i32 channels = sfInfo.channels;
+    i64 numFrames = sfInfo.frames;
 
-    std::vector<f32> audioData(numFrames * channels);
+    vector<f32> audioData(numFrames * channels);
     sf_readf_float(inFile, audioData.data(), numFrames);
     sf_close(inFile);
 
-    constexpr std::array<f32, BANDS> centerFrequencies = {
+    return {sfInfo, audioData};
+}
+
+auto outputAudioFile(SF_INFO info, const path& outputFile,
+                     const vector<f32>& data) -> bool {
+    SNDFILE* outFile = sf_open(outputFile.string().c_str(), SFM_WRITE, &info);
+
+    if (outFile == nullptr) {
+        std::cerr << "Error opening output file." << '\n';
+        return false;
+    }
+
+    sf_write_float(outFile, data.data(), static_cast<sf_count_t>(data.size()));
+    sf_close(outFile);
+    return true;
+}
+
+auto makeAudioBuffer(const vector<f32>& audioData) -> QBuffer* {
+    auto* qBuffer = new QBuffer();
+    qBuffer->setData(reinterpret_cast<const char*>(audioData.data()),
+                     static_cast<i32>(audioData.size() * sizeof(f32)));
+    qBuffer->open(QIODevice::ReadOnly);
+    return qBuffer;
+}
+
+auto equalizeAudioFile(const path& inputFile, const path& outputFile,
+                       const array<f32, BANDS>& gains)
+    -> tuple<i32, i32, QBuffer*> {
+    auto [sfInfo, audioData] = readAudioFile(inputFile);
+    if (audioData.empty()) {
+        return {};
+    }
+
+    u32 sampleRate = sfInfo.samplerate;
+    i32 channels = sfInfo.channels;
+    i64 numFrames = sfInfo.frames;
+
+    constexpr array<f32, BANDS> centerFrequencies = {
         31.0,   62.0,   125.0,  250.0,  500.0,
         1000.0, 2000.0, 4000.0, 8000.0, 16000.0};
-
     constexpr f32 QFactor = 1.0;
 
-    std::vector<std::array<Filter<f32>, BANDS>> filters(channels);
+    vector<array<Filter<f32>, BANDS>> filters(channels);
 
-    for (u32 ch = 0; ch < channels; ch++) {
+#pragma omp parallel for collapse(2)
+    for (i32 ch = 0; ch < channels; ch++) {
         for (u8 band = 0; band < BANDS; band++) {
-            const auto coeffs = Coefficients<f32>::makePeakFilter(
+            filters[ch][band].coefficients = Coefficients<f32>::makePeakFilter(
                 sampleRate, centerFrequencies[band], QFactor, gains[band]);
-
-            *filters[ch][band].coefficients = *coeffs;
             filters[ch][band].reset();
         }
     }
 
-    for (sf_count_t frame = 0; frame < numFrames; frame++) {
-        const u32 mul = (frame * channels);
+    juce::AudioBuffer<f32> buffer(channels, static_cast<int>(numFrames));
 
-        for (u32 ch = 0; ch < channels; ch++) {
-            const u32 idx = mul + ch;
-            f32 sample = audioData[idx];
+#pragma omp parallel for
+    for (i32 ch = 0; ch < channels; ch++) {
+        memcpy(buffer.getWritePointer(ch), &audioData[ch * numFrames],
+               numFrames * sizeof(f32));
+    }
 
-            for (u32 band = 0; band < BANDS; band++) {
-                sample = filters[ch][band].processSample(sample);
-            }
+#pragma omp parallel for
+    for (i32 ch = 0; ch < channels; ch++) {
+        f32* ptr = buffer.getWritePointer(ch);
+        f32* const* ref = &ptr;
 
-            audioData[idx] = sample;
+        juce::dsp::AudioBlock<f32> channelBlock(ref, 1, numFrames);
+        juce::dsp::ProcessContextReplacing<f32> context(channelBlock);
+
+        for (u8 band = 0; band < BANDS; band++) {
+            filters[ch][band].process(context);
         }
     }
 
-    auto outSfInfo = sfInfo;  // Inherit all info
-    auto* outFile = sf_open(outputFile.c_str(), SFM_WRITE, &outSfInfo);
-
-    // TODO: Inherit bitrate mode from input file
-    constexpr u32 bitrateMode = SF_BITRATE_MODE_CONSTANT;
-    sf_command(outFile, SFC_SET_BITRATE_MODE, (void*)&bitrateMode,
-               sizeof(bitrateMode));
-
-    // Lower means better, for MPEG/Vorbis/FLAC
-    constexpr f64 compression = 0.0;
-    sf_command(outFile, SFC_SET_COMPRESSION_LEVEL, (void*)&compression,
-               sizeof(compression));
-
-    if (outFile == nullptr) {
-        std::cerr << "Error opening output file: " << sf_strerror(outFile)
-                  << '\n';
-        return;
+#pragma omp parallel for
+    for (i32 ch = 0; ch < channels; ch++) {
+        memcpy(&audioData[ch * numFrames], buffer.getReadPointer(ch),
+               numFrames * sizeof(f32));
     }
 
-    sf_writef_float(outFile, audioData.data(), numFrames);
-    sf_close(outFile);
+    outputAudioFile(sfInfo, outputFile, audioData);
+    return {sampleRate, static_cast<u32>(channels), makeAudioBuffer(audioData)};
 }

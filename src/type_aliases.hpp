@@ -1,10 +1,12 @@
-// common_aliases.hpp
-#ifndef COMMON_ALIASES_HPP
-#define COMMON_ALIASES_HPP
+#ifndef TYPE_ALIASES_HPP
+#define TYPE_ALIASES_HPP
 
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <ranges>
+#include <string>
+#include <vector>
 
 using usize = std::size_t;
 using isize = std::intptr_t;
@@ -29,6 +31,7 @@ using fs::path;
 using std::array;
 using std::string;
 using std::to_string;
+using std::tuple;
 using std::vector;
 
-#endif  // COMMON_ALIASES_HPP
+#endif  // TYPE_ALIASES_HPP

@@ -1,10 +1,10 @@
-#ifndef ABOUTWINDOW_H
-#define ABOUTWINDOW_H
+#ifndef ABOUTWINDOW_HPP
+#define ABOUTWINDOW_HPP
 
 #include <QDialog>
 #include <QMainWindow>
 
-#include "./ui_aboutwindow.h"
+#include "ui_aboutwindow.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -22,4 +22,4 @@ class AboutWindow : public QMainWindow {
    private:
     Ui::AboutWindow* ui;
 };
-#endif  // ABOUTWINDOW_H
+#endif  // ABOUTWINDOW_HPP

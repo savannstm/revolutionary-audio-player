@@ -1,17 +1,18 @@
+// local
+#include "type_aliases.hpp"
+
+// qt
 #include <QStandardItem>
-#include <filesystem>
 
 class MusicItem : public QStandardItem {
    public:
     using QStandardItem::QStandardItem;
 
-    void setPath(const char *pathStr) { path = pathStr; }
-    void setPath(const std::filesystem::path &fsPath) {
-        path = fsPath.string();
-    }
+    void setPath(cstr pathStr) { path = pathStr; }
+    void setPath(const path &fsPath) { path = fsPath; }
 
-    [[nodiscard]] auto getPath() const -> const char * { return path.c_str(); }
+    [[nodiscard]] auto getPath() const -> auto { return path; }
 
    private:
-    std::string path;
+    path path;
 };

@@ -1,5 +1,5 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef MAINWINDOW_HPP
+#define MAINWINDOW_HPP
 
 #include <QAction>
 #include <QAudioOutput>
@@ -35,11 +35,9 @@ class MainWindow : public QMainWindow {
 
    private:
     Ui::MainWindow* ui;
-    QMediaPlayer* player;
-    QAudioOutput* audioOutput;
     QStandardItemModel* tracksModel;
     QSystemTrayIcon* trayIcon;
     QMenu* trayIconMenu;
 };
 
-#endif  // MAINWINDOW_H
+#endif  // MAINWINDOW_HPP
