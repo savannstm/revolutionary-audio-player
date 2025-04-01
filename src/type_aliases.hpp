@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <iostream>
 #include <ranges>
 #include <string>
 #include <vector>
@@ -29,6 +30,9 @@ namespace ranges = std::ranges;
 
 using fs::path;
 using std::array;
+using std::cerr;
+using std::cout;
+using std::println;
 using std::string;
 using std::to_string;
 using std::tuple;

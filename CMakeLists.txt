@@ -6,9 +6,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY target/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY target/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY target/lib)
 
-# probably to remove
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -38,7 +35,13 @@ install(TARGETS rap
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    WIN32_EXECUTABLE
 )
 
 qt_finalize_executable(rap)
+
+if(WIN32)
+    add_custom_command(TARGET rap POST_BUILD
+        COMMAND windeployqt.exe \"$<TARGET_FILE:rap>\"
+        COMMENT "Deploying Qt DLLs..."
+    )
+endif()

@@ -2,9 +2,11 @@
 #include "mainwindow.hpp"
 
 #include "aboutwindow.hpp"
+#include "customslider.hpp"
 #include "equalizer.hpp"
 #include "indexset.hpp"
 #include "musicitem.hpp"
+#include "progressmonitor.hpp"
 #include "type_aliases.hpp"
 #include "ui_mainwindow.h"
 
@@ -15,30 +17,23 @@
 // qt
 #include <QAction>
 #include <QApplication>
-#include <QAudioDevice>
-#include <QAudioOutput>
 #include <QAudioSink>
 #include <QDebug>
 #include <QFileDialog>
 #include <QIcon>
 #include <QMainWindow>
 #include <QMediaFormat>
-#include <QMediaMetaData>
-#include <QMediaPlayer>
 #include <QMenu>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSettings>
 #include <QStandardItemModel>
+#include <QTimer>
 #include <QTreeView>
 
 // audio
-#include <qaudio.h>
-#include <qaudiosink.h>
-#include <qbytearrayview.h>
-#include <qevent.h>
-#include <qkeysequence.h>
 #include <taglib/fileref.h>
+#include <taglib/tstring.h>
 
 enum Direction : u8 { Forward, BackwardRandom, Backward, Random };
 
@@ -49,6 +44,13 @@ constexpr static array<cstr, 7> EXTENSIONS = {".mp3", ".flac", ".opus", ".aac",
 static std::random_device rng;
 static std::mt19937 gen(rng());
 static IndexSet<u32> playHistory;
+
+static auto pauseIcon = QIcon::fromTheme("media-playback-pause");
+static auto startIcon = QIcon::fromTheme("media-playback-start");
+static i32 byteOffset;
+static i32 duration;
+static auto *audioBuffer = new QBuffer();
+static auto *audioSink = new QAudioSink();
 
 inline void fillTable(QStandardItemModel *treeModel,
                       const vector<path> &paths) {
@@ -64,22 +66,22 @@ inline void fillTable(QStandardItemModel *treeModel,
             item->setEditable(false);
             item->setPath(path);
 
-            QString content;
+            auto *content = new QString();
 
             switch (col) {
                 case 0: {
-                    cstr title = tag->title().toCString(true);
+                    const TagLib::String title = tag->title();
 
-                    if (strcmp(title, "\0") != 0) {
-                        content = title;
+                    if (title.isEmpty()) {
+                        content = new QString(title.toCWString());
                     } else {
-                        content = QString(path.filename().c_str());
+                        content = new QString(path.filename().string().c_str());
                     }
                     break;
                 }
                 case 1: {
-                    cstr artist = tag->artist().toCString(true);
-                    content = artist;
+                    const auto *artist = tag->artist().toCWString();
+                    content = new QString(artist);
                     break;
                 }
                 case 2: {
@@ -91,7 +93,7 @@ inline void fillTable(QStandardItemModel *treeModel,
             }
 
             if (col != 2) {
-                item->setText(content);
+                item->setText(*content);
             }
 
             treeModel->setItem(static_cast<i32>(row), static_cast<i32>(col),
@@ -102,30 +104,21 @@ inline void fillTable(QStandardItemModel *treeModel,
     treeModel->sort(2);
 }
 
-auto inline formatSecondsToMinutes(const u64 secs) -> string {
-    const u64 minutes = secs / 60;
-    const u64 seconds = secs % 60;
-
-    const string secondsString = to_string(seconds);
-    const string secondsPadded =
-        seconds < 10 ? "0" + secondsString : secondsString;
-
-    const string formatted = to_string(minutes) + ":" + secondsPadded;
-    return formatted;
-}
-
-inline void updatePosition(const u32 pos, QMediaPlayer *player,
-                           QPlainTextEdit *input) {
-    player->setPosition(pos);
+inline void updatePosition(const u32 pos, QBuffer *audioBuffer,
+                           QAudioSink *player, QPlainTextEdit *input,
+                           i32 duration, i32 byteOffset) {
+    audioBuffer->seek(pos * byteOffset);
 
     const string timer = formatSecondsToMinutes(pos / 1000) + "/" +
-                         formatSecondsToMinutes(player->duration() / 1000);
+                         formatSecondsToMinutes(duration);
 
     input->setPlainText(timer.c_str());
 }
 
 inline void jumpToTrack(QTreeView *trackTree, QStandardItemModel *treeModel,
                         QAudioSink *sink, QPushButton *playButton,
+                        CustomSlider *progressSlider,
+                        QPlainTextEdit *progressTimer, AudioMonitor *monitor,
                         Direction direction) {
     const auto idx = trackTree->currentIndex();
 
@@ -180,24 +173,38 @@ inline void jumpToTrack(QTreeView *trackTree, QStandardItemModel *treeModel,
 
     const auto path = item->getPath();
 
-    const auto [_info, buffer] = readAudioFile(path.c_str());
-    auto *qBuffer = makeAudioBuffer(buffer);
-    sink = new QAudioSink();
+    const auto [info, dur, buf] = getAudioFile(path.c_str());
 
-    if (playButton->icon().name() == "media-playback-pause") {
-        sink->start(qBuffer);
+    audioBuffer = buf;
+    duration = dur;
+
+    const i32 sampleRate = info.samplerate;
+    const i32 channels = info.channels;
+
+    byteOffset = sampleRate * channels * 4;
+
+    QAudioFormat format;
+    format.setSampleRate(sampleRate);
+    format.setChannelCount(channels);
+    format.setSampleFormat(QAudioFormat::SampleFormat::Float);
+
+    playButton->setIcon(pauseIcon);
+
+    const auto formatted = formatSecondsToMinutes(dur);
+
+    progressSlider->setRange(0, duration);
+    progressTimer->setPlainText(("0:00/" + formatted).c_str());
+
+    if (audioSink != nullptr) {
+        audioSink->stop();
     }
-}
 
-auto endsWith(const char *str, const char *suffix) -> bool {
-    usize strLen = strlen(str);
-    usize suffixLen = strlen(suffix);
+    audioSink = new QAudioSink(format);
 
-    if (suffixLen > strLen) {
-        return false;
-    }
+    monitor->updateDuration(formatted);
+    monitor->updateBuffer(audioBuffer);
 
-    return strcmp(str + (strLen - suffixLen), suffix) == 0;
+    audioSink->start(audioBuffer);
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -208,7 +215,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     constexpr u8 bandsN = 10;
 
-    static QAudioSink *audioSink;
     static auto *progressSlider = ui->progressSlider;
     static auto *progressTimer = ui->progressTimer;
     static auto *playButton = ui->playButton;
@@ -232,6 +238,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     static auto *trackTree = ui->tracksTable;
     static auto *trackTreeHeader = trackTree->header();
+
+    static AudioMonitor monitor(audioBuffer, progressTimer, progressSlider,
+                                this);
 
     trackTreeHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
     tracksModel->setHorizontalHeaderLabels({"Title", "Author", "No."});
@@ -284,13 +293,7 @@ MainWindow::MainWindow(QWidget *parent)
             case Qt::RightButton: {
                 QMenu menu(this);
 
-                const QAction *action1 = menu.addAction("Option 1");
-                const QAction *action2 = menu.addAction("Option 2");
-
-                connect(action1, &QAction::triggered, this,
-                        [&]() { tracksModel->removeRow(index.row()); });
-
-                menu.exec(QCursor::pos());
+                // TODO: Remove row button, properies etc.
                 break;
             }
             case Qt::LeftButton: {
@@ -301,36 +304,45 @@ MainWindow::MainWindow(QWidget *parent)
                         tracksModel->itemFromIndex(index));
 
                     if (item != nullptr) {
-                        auto path = item->getPath();
-                        i32 rate;
-                        i32 chn;
-                        QBuffer *buf;
+                        const auto path = item->getPath();
 
-                        if (eqEnabled) {
-                            auto tuple = equalizeAudioFile(
-                                path, "./processed.mp3", eqGains);
+                        const auto [info, dur, buf] =
+                            eqEnabled ? equalizeAudioFile(
+                                            path, "./processed.mp3", eqGains)
+                                      : getAudioFile(path);
 
-                            rate = std::get<0>(tuple);
-                            chn = std::get<1>(tuple);
-                            buf = std::get<2>(tuple);
-                        } else {
-                            auto [info, buffer] = readAudioFile(path);
+                        audioBuffer = buf;
+                        duration = dur;
 
-                            rate = info.samplerate;
-                            chn = info.channels;
-                            buf = makeAudioBuffer(buffer);
-                        }
+                        const i32 sampleRate = info.samplerate;
+                        const i32 channels = info.channels;
+
+                        byteOffset = sampleRate * channels * 4;
 
                         QAudioFormat format;
-                        format.setSampleRate(rate);
-                        format.setChannelCount(chn);
+                        format.setSampleRate(sampleRate);
+                        format.setChannelCount(channels);
                         format.setSampleFormat(
                             QAudioFormat::SampleFormat::Float);
 
+                        playButton->setIcon(pauseIcon);
+
+                        const auto formatted = formatSecondsToMinutes(duration);
+
+                        progressSlider->setRange(0, duration);
+                        progressTimer->setPlainText(
+                            ("0:00/" + formatted).c_str());
+
+                        if (audioSink != nullptr) {
+                            audioSink->stop();
+                        }
+
                         audioSink = new QAudioSink(format, this);
-                        audioSink->start(buf);
-                        playButton->setIcon(QIcon::fromTheme(
-                            QIcon::ThemeIcon::MediaPlaybackPause));
+
+                        monitor.updateDuration(formatted);
+                        monitor.updateBuffer(audioBuffer);
+
+                        audioSink->start(audioBuffer);
                     }
 
                     currentIndex = index;
@@ -362,7 +374,7 @@ MainWindow::MainWindow(QWidget *parent)
 
         settings->setValue("lastOpenedDir", directory);
 
-        const auto directoryString = directory.toStdWString();
+        const auto directoryString = directory.toStdU16String();
 
         const auto entries = fs::recursive_directory_iterator(
             directoryString, fs::directory_options::skip_permission_denied);
@@ -390,76 +402,51 @@ MainWindow::MainWindow(QWidget *parent)
 
             if (currentIcon.name() == "media-playback-start") {
                 audioSink->resume();
-                playButton->setIcon(
-                    QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaybackPause));
+                playButton->setIcon(pauseIcon);
             } else {
                 audioSink->suspend();
-                playButton->setIcon(
-                    QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaybackStart));
+                playButton->setIcon(startIcon);
             }
         }
     });
 
     connect(stopButton, &QPushButton::clicked, this, [&]() {
         audioSink->stop();
-        playButton->setIcon(
-            QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaybackStart));
+        playButton->setIcon(startIcon);
     });
 
     connect(ui->forwardButton, &QPushButton::clicked, this, [&]() {
         jumpToTrack(trackTree, tracksModel, audioSink, playButton,
+                    progressSlider, progressTimer, &monitor,
                     random ? Direction::Random : Direction::Forward);
     });
 
     connect(ui->backwardButton, &QPushButton::clicked, this, [&]() {
         jumpToTrack(trackTree, tracksModel, audioSink, playButton,
+                    progressSlider, progressTimer, &monitor,
                     random ? Direction::BackwardRandom : Direction::Backward);
     });
 
-    /*
-    connect(player, &QMediaPlayer::mediaStatusChanged, this,
-            [&](const QMediaPlayer::MediaStatus status) {
-                if (status == QMediaPlayer::LoadedMedia) {
-                    const i64 duration = audioSink->();
-                    progressSlider->setRange(0, static_cast<i16>(duration));
-
-                    const string timer =
-                        "0:00/" + formatSecondsToMinutes(duration / 1000);
-
-                    progressTimer->setPlainText(timer.c_str());
-                } else if (status == QMediaPlayer::EndOfMedia) {
-                    if (repeat) {
-                        player->setPosition(0);
-                        player->play();
-                    } else {
-                        jumpToTrack(
-                            trackTree, tracksModel, player, playButton,
-                            random ? Direction::Random : Direction::Forward);
-                    }
-                }
-            });
-
-    connect(player, &QMediaPlayer::positionChanged, this, [&](const u16 pos) {
-        if (!progressSlider->isSliderDown()) {
-            const string timer =
-                formatSecondsToMinutes(pos / 1000) + "/" +
-                formatSecondsToMinutes(player->duration() / 1000);
-
-            progressTimer->setPlainText(timer.c_str());
-            progressSlider->setSliderPosition(pos);
-        }
-    });*/
-
-    /*
     connect(progressSlider, &CustomSlider::mouseMoved, this,
-            [&](const u32 pos) { updatePosition(pos, player, progressTimer); });
+            [&](const u32 pos) {
+                updatePosition(pos, audioBuffer, audioSink, progressTimer,
+                               duration, byteOffset);
+            });
     connect(progressSlider, &CustomSlider::mousePressed, this,
-            [&](const u32 pos) { updatePosition(pos, player, progressTimer);
-    });*/
+            [&](const u32 pos) {
+                updatePosition(pos, audioBuffer, audioSink, progressTimer,
+                               duration, byteOffset);
+            });
 
     connect(openFileAction, &QAction::triggered, this, [&] {
         const auto file = QFileDialog::getOpenFileUrl(this, "Select Directory");
-        fillTable(tracksModel, vector<path>({file.path().toStdWString()}));
+        fillTable(tracksModel, vector<path>({file.path().toStdU16String()}));
+    });
+
+    connect(&monitor, &AudioMonitor::playbackFinished, this, [&] {
+        jumpToTrack(trackTree, tracksModel, audioSink, playButton,
+                    progressSlider, progressTimer, &monitor,
+                    random ? Direction::Random : Direction::Forward);
     });
 
     connect(aboutAction, &QAction::triggered, this, [&] {

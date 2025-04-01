@@ -2,3 +2,4 @@
 /.clangd
 /.cache
 /CMakeLists.txt.user
+/.vscode

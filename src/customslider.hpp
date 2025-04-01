@@ -13,8 +13,8 @@ class CustomSlider : public QSlider {
     using QSlider::QSlider;
 
    signals:
-    void mouseMoved(std::uint32_t value);
-    void mousePressed(std::uint32_t value);
+    void mouseMoved(u32 value);
+    void mousePressed(u32 value);
 
    protected:
     void mouseMoveEvent(QMouseEvent* event) override {

@@ -2,15 +2,12 @@
 #define MAINWINDOW_HPP
 
 #include <QAction>
-#include <QAudioOutput>
 #include <QCloseEvent>
 #include <QMainWindow>
-#include <QMediaPlayer>
 #include <QPushButton>
 #include <QSlider>
 #include <QStandardItemModel>
 #include <QStyle>
-#include <QStyleOptionSlider>
 #include <QSystemTrayIcon>
 #include <QTextEdit>
 
