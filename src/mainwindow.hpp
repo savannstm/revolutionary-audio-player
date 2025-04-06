@@ -11,6 +11,8 @@
 #include <QSystemTrayIcon>
 #include <QTextEdit>
 
+#include "type_aliases.hpp"
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -25,10 +27,12 @@ class MainWindow : public QMainWindow {
     ~MainWindow() override;
 
    protected:
-    void closeEvent(QCloseEvent* event) override {
-        this->hide();
-        event->ignore();
-    }
+    void closeEvent(QCloseEvent* event) override;
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
+
+   signals:
+    void filesDropped(vector<path> filePaths);
 
    private:
     Ui::MainWindow* ui;

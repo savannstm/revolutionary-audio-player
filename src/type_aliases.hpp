@@ -5,8 +5,13 @@
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <ranges>
+#include <set>
+#include <stdexcept>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using usize = std::size_t;
@@ -37,5 +42,13 @@ using std::string;
 using std::to_string;
 using std::tuple;
 using std::vector;
+using panic = std::runtime_error;
+template <typename K, typename V>
+using hashmap = std::unordered_map<K, V>;
+template <typename K, typename V>
+using hashset = std::unordered_set<K, V>;
+
+using std::map;
+using std::set;
 
 #endif  // TYPE_ALIASES_HPP

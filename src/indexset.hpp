@@ -1,15 +1,12 @@
 #include <ranges>
-#include <stdexcept>
-#include <unordered_map>
-#include <vector>
 
 #include "type_aliases.hpp"
 
 template <typename T>
 class IndexSet {
    private:
-    std::vector<T> elements;
-    std::unordered_map<T, usize> map;
+    vector<T> elements;
+    hashmap<T, usize> map;
 
    public:
     auto insert(const T& element) -> bool {
@@ -46,7 +43,8 @@ class IndexSet {
 
     [[nodiscard]] auto at(const usize index) const -> const T& {
         if (index >= elements.size()) {
-            throw std::out_of_range("Index out of range");
+            throw panic(
+                format("Index {} out of range {}", index, elements.size()));
         }
 
         return elements[index];
@@ -54,7 +52,7 @@ class IndexSet {
 
     [[nodiscard]] auto indexOf(const T& element) const -> usize {
         if (!map.contains(element)) {
-            throw std::runtime_error("Element not found");
+            throw panic("Element not found");
         }
 
         return map.at(element);
@@ -72,7 +70,7 @@ class IndexSet {
         return elements.back();
     }
 
-    [[nodiscard]] auto pop() noexcept -> const T& {
+    auto pop() noexcept -> const T& {
         const T element = std::move(this->last());
         elements.pop_back();
 
@@ -91,5 +89,5 @@ class IndexSet {
     auto begin() const noexcept { return elements.begin(); }
     auto end() const noexcept { return elements.end(); }
 
-    auto view() const noexcept { return std::ranges::views::all(elements); }
+    auto view() const noexcept { return views::all(elements); }
 };

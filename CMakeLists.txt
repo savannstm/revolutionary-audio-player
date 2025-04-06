@@ -16,8 +16,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia)
 find_package(TagLib REQUIRED)
-find_package(SndFile REQUIRED)
 find_package(juce REQUIRED)
+find_package(FFmpeg REQUIRED COMPONENTS avcodec avformat avutil swresample swscale)
 
 file(GLOB PROJECT_SOURCES src/*.cpp src/*.hpp src/*.h)
 
@@ -27,8 +27,18 @@ qt_add_executable(rap
     ${AUTOGEN}
 )
 
-target_link_libraries(rap PRIVATE Qt6::Widgets Qt6::Multimedia TagLib::TagLib SndFile::sndfile juce::juce_dsp)
 target_include_directories(rap PRIVATE src)
+target_link_libraries(rap PRIVATE
+    Qt6::Widgets
+    Qt6::Multimedia
+    TagLib::TagLib
+    juce::juce_dsp
+    avcodec
+    avformat
+    avutil
+    swresample
+    swscale
+)
 
 include(GNUInstallDirs)
 install(TARGETS rap

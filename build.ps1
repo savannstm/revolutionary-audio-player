@@ -2,17 +2,21 @@
 
 $ErrorActionPreference = "Stop"
 
-if ($args[0] -eq "-r") {
-    Start-Process "cmake" -ArgumentList "-DCMAKE_BUILD_TYPE=Release -B build" -NoNewWindow -Wait
-} else {
-    Start-Process "cmake" -ArgumentList "-DCMAKE_BUILD_TYPE=Debug -B build" -NoNewWindow -Wait
-}
+Start-Process "cmake" -ArgumentList "-B build" -NoNewWindow -Wait
 
 try {
     Stop-Process -Name "rap" -Force
 } catch {}
 
-& {
-    Set-Location -Path build
-    Start-Process "cmake" -ArgumentList "--build ." -NoNewWindow -Wait
+Set-Location "build"
+
+if ($args[0] -eq "-r") {
+    Start-Process "cmake" -ArgumentList "--build . --config Release" -NoNewWindow -Wait
+} elseif ($args[0] -eq "-m") {
+    Start-Process "cmake" -ArgumentList "--build . --config MinSizeRel" -NoNewWindow -Wait
+} else {
+    Start-Process "cmake" -ArgumentList "--build . --config Debug" -NoNewWindow -Wait
 }
+
+
+Set-Location ".."

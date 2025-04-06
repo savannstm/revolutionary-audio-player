@@ -8,11 +8,9 @@ class MusicItem : public QStandardItem {
    public:
     using QStandardItem::QStandardItem;
 
-    void setPath(cstr pathStr) { path = pathStr; }
-    void setPath(const path &fsPath) { path = fsPath; }
-
-    [[nodiscard]] auto getPath() const -> auto { return path; }
+    void setPath(const path &path) { _path = path; }
+    [[nodiscard]] auto getPath() const -> path { return _path; }
 
    private:
-    path path;
+    path _path;
 };

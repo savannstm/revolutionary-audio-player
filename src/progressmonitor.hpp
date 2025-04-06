@@ -1,9 +1,7 @@
 #ifndef PROGRESSMONITOR_HPP
 #define PROGRESSMONITOR_HPP
 
-#include <QAudioSink>
 #include <QBuffer>
-#include <QDebug>
 #include <QPlainTextEdit>
 #include <QTimer>
 #include <utility>
@@ -45,27 +43,32 @@ class AudioMonitor : public QObject {
 
    private slots:
     void checkPosition() {
-        const i64 bytePosition = buffer->pos();
-        const i64 bufferSize = buffer->size();
+        if (buffer != nullptr) {
+            const i64 bytePosition = buffer->pos();
+            const i64 bufferSize = buffer->size();
 
-        if (bufferSize > 0) {
-            if (previousPosition != bytePosition) {
-                const i64 playbackSecond = bytePosition / (4 * 2 * 44100);
+            if (bufferSize > 0) {
+                if (previousPosition != bytePosition) {
+                    const i64 playbackSecond =
+                        bytePosition / (static_cast<i64>(4 * 2 * 44100));
 
-                if (previousSecond != playbackSecond) {
-                    progressTimer->setPlainText(
-                        (format("{}/{}", formatSecondsToMinutes(playbackSecond),
-                                duration))
-                            .c_str());
-                    progressSlider->setSliderPosition(playbackSecond);
-                    previousSecond = playbackSecond;
+                    if (previousSecond != playbackSecond) {
+                        progressTimer->setPlainText(
+                            (format("{}/{}",
+                                    formatSecondsToMinutes(playbackSecond),
+                                    duration))
+                                .c_str());
+                        progressSlider->setSliderPosition(
+                            static_cast<u16>(playbackSecond));
+                        previousSecond = playbackSecond;
+                    }
+
+                    previousPosition = bytePosition;
                 }
 
-                previousPosition = bytePosition;
-            }
-
-            if (buffer->atEnd()) {
-                emit playbackFinished();
+                if (buffer->atEnd()) {
+                    emit playbackFinished();
+                }
             }
         }
     }
