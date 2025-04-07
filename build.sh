@@ -2,15 +2,18 @@
 
 set -e
 
+cmake -B build
+
+pkill -f rap || true
+
+cd build
+
 if [ "$1" == "-r" ]; then
-    cmake -DCMAKE_BUILD_TYPE=Release -B build
+    cmake --build . --config Release
+elif [ "$1" == "-m" ]; then
+    cmake --build . --config MinSizeRel
 else
-    cmake -DCMAKE_BUILD_TYPE=Debug -B build
+    cmake --build . --config Debug
 fi
 
-pkill -f "rap" || true
-
-(
-    cd build || exit 1
-    cmake --build .
-)
+cd ..

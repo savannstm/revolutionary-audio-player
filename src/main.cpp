@@ -1,6 +1,3 @@
-#include <qapplication.h>
-#include <qpalette.h>
-
 #include <QApplication>
 #include <QGuiApplication>
 #include <QPalette>
@@ -8,7 +5,9 @@
 #include "mainwindow.hpp"
 
 auto main(int argc, char* argv[]) -> int {
-    QApplication const app(argc, argv);
+    std::locale::global(std::locale(".UTF-8"));
+
+    const auto app = QApplication(argc, argv);
     QApplication::setStyle("fusion");
 
     auto* palette = new QPalette();

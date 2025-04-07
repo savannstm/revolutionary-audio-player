@@ -2,7 +2,7 @@
 
 $ErrorActionPreference = "Stop"
 
-Start-Process "cmake" -ArgumentList "-B build" -NoNewWindow -Wait
+Start-Process "cmake" -ArgumentList "-DVCPKG_TARGET_TRIPLET=x64-windows-static -B build" -NoNewWindow -Wait
 
 try {
     Stop-Process -Name "rap" -Force

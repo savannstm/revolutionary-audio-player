@@ -39,7 +39,7 @@ static constexpr array<cstr, 9> EXTENSIONS = {
     ".mp3", ".flac", ".opus", ".aac", ".wav", ".ogg", ".m4a", ".mp4", ".mkv"};
 
 static std::random_device rng;
-static std::mt19937 gen(rng());
+static std::mt19937 gen = std::mt19937(rng());
 static IndexSet<u32> playHistory;
 
 static auto pauseIcon = QIcon::fromTheme("media-playback-pause");
@@ -50,16 +50,17 @@ static QBuffer *audioBuffer;
 static QAudioSink *audioSink;
 static QPlainTextEdit *progressTimer;
 
+static constexpr u8 sampleSize = sizeof(f32);
+
 inline void fillTable(QStandardItemModel *treeModel,
                       const vector<path> &paths) {
-    for (u32 row = 0; row < paths.size(); row++) {
+    for (u32 row = treeModel->rowCount(); row < paths.size(); row++) {
         const auto &path = paths[row];
 
         for (u16 col = 0; col < 3; col++) {
             auto *item = new MusicItem();
 
             const auto file = TagLib::FileRef(path.c_str());
-
             const auto *tag = file.tag();
 
             item->setEditable(false);
@@ -69,7 +70,11 @@ inline void fillTable(QStandardItemModel *treeModel,
 
             switch (col) {
                 case 0: {
-                    const auto title = tag->title();
+                    TagLib::String title = "";
+
+                    if (!tag->isEmpty()) {
+                        title = tag->title();
+                    }
 
                     content = new QString(
                         !title.isEmpty() ? title.toCString(true)
@@ -77,11 +82,21 @@ inline void fillTable(QStandardItemModel *treeModel,
                     break;
                 }
                 case 1: {
-                    content = new QString(tag->artist().toCWString());
+                    TagLib::String artist = "";
+
+                    if (!tag->isEmpty()) {
+                        artist = tag->artist();
+                    }
+
+                    if (!artist.isEmpty()) {
+                        content = new QString(tag->artist().toCWString());
+                    }
                     break;
                 }
                 case 2: {
-                    item->setData(tag->track(), Qt::EditRole);
+                    if (!tag->isEmpty()) {
+                        item->setData(tag->track(), Qt::EditRole);
+                    }
                     break;
                 }
                 default:
@@ -92,9 +107,7 @@ inline void fillTable(QStandardItemModel *treeModel,
                 item->setText(*content);
             }
 
-            treeModel->setItem(
-                static_cast<u16>(row + treeModel->columnCount() - 1), col,
-                item);
+            treeModel->setItem(static_cast<u16>(row), col, item);
         }
     }
 
@@ -127,14 +140,16 @@ inline void jumpToTrack(QTreeView *trackTree, QStandardItemModel *treeModel,
 
             nextIdx = row + 1;
             break;
-        case Direction::BackwardRandom: {
-            if (playHistory.empty()) {
-                goto backward;
-            }
+        case Direction::ForwardRandom: {
+            playHistory.insert(row);
 
-            const u64 lastPlayed = playHistory.last();
-            playHistory.remove(lastPlayed);
-            nextIdx = lastPlayed;
+            const u64 totalTracks = trackTree->model()->rowCount();
+
+            auto dist = std::uniform_int_distribution<u32>(0, totalTracks - 1);
+
+            do {
+                nextIdx = dist(gen);
+            } while (playHistory.contains(nextIdx));
             break;
         }
         case Direction::Backward:
@@ -145,16 +160,16 @@ inline void jumpToTrack(QTreeView *trackTree, QStandardItemModel *treeModel,
 
             nextIdx = row - 1;
             break;
-        case Direction::ForwardRandom:
-            playHistory.insert(row);
+        case Direction::BackwardRandom: {
+            if (playHistory.empty()) {
+                goto backward;
+            }
 
-            const u64 totalTracks = trackTree->model()->rowCount();
-
-            do {
-                std::uniform_int_distribution<u64> dist(0, totalTracks - 1);
-                nextIdx = dist(gen);
-            } while (playHistory.contains(nextIdx));
+            const u64 lastPlayed = playHistory.last();
+            playHistory.remove(lastPlayed);
+            nextIdx = lastPlayed;
             break;
+        }
     }
 
     const auto index = trackTree->model()->index(static_cast<i32>(nextIdx), 0);
@@ -171,10 +186,10 @@ inline void jumpToTrack(QTreeView *trackTree, QStandardItemModel *treeModel,
     audioBuffer = buf;
     duration = dur;
 
-    const i32 sampleRate = info.sample_rate;
-    const i32 channels = info.ch_layout.nb_channels;
+    const u16 sampleRate = info.sample_rate;
+    const u8 channels = info.ch_layout.nb_channels;
 
-    byteOffset = sampleRate * channels * 4;
+    byteOffset = sampleRate * channels * sampleSize;
 
     QAudioFormat format;
     format.setSampleRate(sampleRate);
@@ -319,7 +334,7 @@ MainWindow::MainWindow(QWidget *parent)
                         const i32 sampleRate = info.sample_rate;
                         const i32 channels = info.ch_layout.nb_channels;
 
-                        byteOffset = sampleRate * channels * 4;
+                        byteOffset = sampleRate * channels * sampleSize;
 
                         QAudioFormat format;
                         format.setSampleRate(sampleRate);
