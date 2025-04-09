@@ -1,6 +1,7 @@
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_dsp/juce_dsp.h>
 #include <omp.h>
+#include <qelapsedtimer.h>
 
 #include <QBuffer>
 
@@ -13,16 +14,17 @@ extern "C" {
 #include <libswresample/swresample.h>
 }
 
-constexpr u8 BANDS = 10;
-using namespace juce::dsp::IIR;
+constexpr u8 BANDS_NUMBER = 10;
+constexpr u32 BUFFER_CHUNK = 4096;
 
-inline auto getDuration(const u16 chn, const u32 sampleRate,
-                        const vector<f32>& data) -> u32 {
-    return data.size() / (static_cast<u32>(chn * sampleRate));
-}
+struct AudioMetadata {
+    const u8 channels;
+    const u16 sampleRate;
+    const u32 frames;
+};
 
-auto extractSamples(const path& filename)
-    -> tuple<AVCodecContext, u32, vector<f32>> {
+inline auto extractSamples(const path& filename, vector<i16>& samples)
+    -> tuple<AudioMetadata, u32> {
     AVFormatContext* format_ctx = nullptr;
 
     if (avformat_open_input(&format_ctx, filename.string().c_str(), nullptr,
@@ -54,20 +56,20 @@ auto extractSamples(const path& filename)
         throw panic("Failed to open codec.");
     }
 
-    const u16 sampleRate = codec_ctx->sample_rate;
     const auto channelLayout = codec_ctx->ch_layout;
-    const u16 channels = codec_ctx->ch_layout.nb_channels;
-    const i64 frames = codec_ctx->frame_num;
+
+    const u8 channels = channelLayout.nb_channels;
+    const u16 sampleRate = codec_ctx->sample_rate;
+    const u32 frames = codec_ctx->frame_num;
 
     AVChannelLayout layout;
-    av_channel_layout_default(&layout, codec_ctx->ch_layout.nb_channels);
+    av_channel_layout_default(&layout, channels);
 
-    struct SwrContext* swr_ctx = nullptr;
-    const i32 ret = swr_alloc_set_opts2(
-        &swr_ctx, &layout, AV_SAMPLE_FMT_FLT, sampleRate, &channelLayout,
-        codec_ctx->sample_fmt, sampleRate, 0, nullptr);
+    SwrContext* swr_ctx = nullptr;
 
-    if (ret < 0) {
+    if (swr_alloc_set_opts2(&swr_ctx, &layout, AV_SAMPLE_FMT_S16, sampleRate,
+                            &channelLayout, codec_ctx->sample_fmt, sampleRate,
+                            0, nullptr) < 0) {
         swr_free(&swr_ctx);
         avcodec_free_context(&codec_ctx);
         avformat_close_input(&format_ctx);
@@ -78,7 +80,15 @@ auto extractSamples(const path& filename)
 
     AVPacket* packet = av_packet_alloc();
     AVFrame* frame = av_frame_alloc();
-    vector<f32> samples;
+
+    const u32 duration = format_ctx->duration / AV_TIME_BASE;
+
+    samples.resize((sampleRate * channels * duration));
+    samples.clear();
+
+    vector<i16> temp_buffer;
+    temp_buffer.resize((BUFFER_CHUNK * channels));
+    u8* outBuffers[1] = {reinterpret_cast<u8*>(temp_buffer.data())};
 
     while (av_read_frame(format_ctx, packet) >= 0) {
         if (packet->stream_index == audio_stream_idx) {
@@ -86,20 +96,14 @@ auto extractSamples(const path& filename)
                 while (avcodec_receive_frame(codec_ctx, frame) == 0) {
                     const u16 samplesNumber = frame->nb_samples;
 
-                    vector<f32> temp_buffer(
-                        static_cast<u32>(samplesNumber * channels));
-                    u8* outBuffers[1] = {
-                        reinterpret_cast<u8*>(temp_buffer.data())};
-
                     const u16 convertedSamples =
                         swr_convert(swr_ctx, outBuffers, samplesNumber,
                                     frame->data, samplesNumber);
 
                     if (convertedSamples > 0) {
-                        samples.insert(samples.end(), temp_buffer.begin(),
-                                       temp_buffer.begin() +
-                                           (static_cast<u32>(convertedSamples *
-                                                             channels)));
+                        samples.insert(
+                            samples.end(), temp_buffer.begin(),
+                            temp_buffer.begin() + convertedSamples * channels);
                     }
 
                     av_frame_unref(frame);
@@ -110,88 +114,14 @@ auto extractSamples(const path& filename)
         av_packet_unref(packet);
     }
 
-    const auto ctx = *codec_ctx;
-
     av_packet_free(&packet);
     av_frame_free(&frame);
     swr_free(&swr_ctx);
     avcodec_free_context(&codec_ctx);
     avformat_close_input(&format_ctx);
 
-    const u32 duration = getDuration(channels, sampleRate, samples);
+    const auto metadata = AudioMetadata{
+        .channels = channels, .sampleRate = sampleRate, .frames = frames};
 
-    return {ctx, duration, samples};
-}
-
-inline auto makeAudioBuffer(const vector<f32>& audioData) -> QBuffer* {
-    auto* qBuffer = new QBuffer();
-    qBuffer->setData(reinterpret_cast<const char*>(audioData.data()),
-                     static_cast<i32>(audioData.size() * sizeof(f32)));
-    qBuffer->open(QIODevice::ReadOnly);
-    return qBuffer;
-}
-
-inline auto equalizeAudioFile(const path& inputFile,
-                              const array<f32, BANDS>& gains)
-    -> tuple<AVCodecContext, u32, QBuffer*> {
-    auto [context, _duration, audioData] = extractSamples(inputFile);
-    if (audioData.empty()) {
-        return {};
-    }
-
-    const u32 sampleRate = context.sample_rate;
-    const u16 channels = context.ch_layout.nb_channels;
-    const i64 frames = context.frame_num;
-
-    constexpr array<f32, BANDS> centerFrequencies = {
-        31.0,   62.0,   125.0,  250.0,  500.0,
-        1000.0, 2000.0, 4000.0, 8000.0, 16000.0};
-    constexpr f32 QFactor = 1.0;
-
-    vector<array<Filter<f32>, BANDS>> filters(channels);
-
-#pragma omp parallel for collapse(2)
-    for (i32 ch = 0; ch < channels; ch++) {
-        for (u8 band = 0; band < BANDS; band++) {
-            filters[ch][band].coefficients = Coefficients<f32>::makePeakFilter(
-                sampleRate, centerFrequencies[band], QFactor, gains[band]);
-            filters[ch][band].reset();
-        }
-    }
-
-    juce::AudioBuffer<f32> buffer(channels, static_cast<i32>(frames));
-
-#pragma omp parallel for
-    for (i32 ch = 0; ch < channels; ch++) {
-        memcpy(buffer.getWritePointer(ch), &audioData[ch * frames],
-               frames * sizeof(f32));
-    }
-
-#pragma omp parallel for
-    for (i32 ch = 0; ch < channels; ch++) {
-        f32* ptr = buffer.getWritePointer(ch);
-        f32* const* ref = &ptr;
-
-        juce::dsp::AudioBlock<f32> channelBlock(ref, 1, frames);
-        juce::dsp::ProcessContextReplacing<f32> context(channelBlock);
-
-        for (u8 band = 0; band < BANDS; band++) {
-            filters[ch][band].process(context);
-        }
-    }
-
-#pragma omp parallel for
-    for (i32 ch = 0; ch < channels; ch++) {
-        memcpy(&audioData[ch * frames], buffer.getReadPointer(ch),
-               frames * sizeof(f32));
-    }
-
-    const u32 duration = getDuration(channels, sampleRate, audioData);
-    return {context, duration, makeAudioBuffer(audioData)};
-}
-
-inline auto getAudioFile(const path& inputFile)
-    -> tuple<AVCodecContext, u32, QBuffer*> {
-    auto [context, duration, audioData] = extractSamples(inputFile);
-    return {context, duration, makeAudioBuffer(audioData)};
+    return {metadata, duration};
 }

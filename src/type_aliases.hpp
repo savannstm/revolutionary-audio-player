@@ -51,4 +51,7 @@ using hashset = std::unordered_set<K, V>;
 using std::map;
 using std::set;
 
+using walk_dir = fs::recursive_directory_iterator;
+using read_dir = fs::directory_iterator;
+
 #endif  // TYPE_ALIASES_HPP

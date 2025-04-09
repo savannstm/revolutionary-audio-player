@@ -45,10 +45,3 @@ install(TARGETS rap
 )
 
 qt_finalize_executable(rap)
-
-if(WIN32)
-    add_custom_command(TARGET rap POST_BUILD
-        COMMAND windeployqt.exe \"$<TARGET_FILE:rap>\"
-        COMMENT "Deploying Qt DLLs..."
-    )
-endif()

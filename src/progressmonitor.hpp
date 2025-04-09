@@ -4,10 +4,10 @@
 #include <QBuffer>
 #include <QPlainTextEdit>
 #include <QTimer>
-#include <utility>
 
 #include "customslider.hpp"
 #include "functions.hpp"
+#include "mainwindow.hpp"
 #include "type_aliases.hpp"
 
 constexpr u8 interval = 100;
@@ -25,7 +25,7 @@ class AudioMonitor : public QObject {
         timer.start(interval);
     }
 
-    void updateDuration(string dur) { duration = std::move(dur); }
+    void updateDuration(const string& dur) { duration = dur; }
     void updateBuffer(QBuffer* buf) { buffer = buf; }
 
    signals:
@@ -50,7 +50,8 @@ class AudioMonitor : public QObject {
             if (bufferSize > 0) {
                 if (previousPosition != bytePosition) {
                     const i64 playbackSecond =
-                        bytePosition / (static_cast<i64>(4 * 2 * 44100));
+                        bytePosition /
+                        (static_cast<i64>(sampleSize * 2 * 44100));
 
                     if (previousSecond != playbackSecond) {
                         progressTimer->setPlainText(
