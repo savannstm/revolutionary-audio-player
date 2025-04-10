@@ -1,16 +1,21 @@
-#ifndef MAINWINDOW_HPP
-#define MAINWINDOW_HPP
+#pragma once
 
 #include <QAction>
+#include <QAudioSink>
+#include <QBuffer>
 #include <QCloseEvent>
 #include <QMainWindow>
+#include <QPlainTextEdit>
 #include <QPushButton>
 #include <QSlider>
 #include <QStandardItemModel>
 #include <QStyle>
 #include <QSystemTrayIcon>
-#include <QTextEdit>
+#include <QThreadPool>
+#include <QTimer>
+#include <QTreeView>
 
+#include "customslider.hpp"
 #include "type_aliases.hpp"
 
 QT_BEGIN_NAMESPACE
@@ -18,10 +23,6 @@ namespace Ui {
 class MainWindow;
 }  // namespace Ui
 QT_END_NAMESPACE
-
-static constexpr u8 sampleSize = sizeof(i16);
-static constexpr array<cstr, 9> EXTENSIONS = {
-    ".mp3", ".flac", ".opus", ".aac", ".wav", ".ogg", ".m4a", ".mp4", ".mkv"};
 
 enum Direction : u8 { Forward, BackwardRandom, Backward, ForwardRandom };
 
@@ -31,24 +32,41 @@ class MainWindow : public QMainWindow {
    public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
+    QByteArray* audioBytes;
+    QBuffer* audioBuffer;
+    QAudioSink* audioSink;
+    string audioDuration;
+    CustomSlider* progressSlider;
+    QPlainTextEdit* progressTimer;
+    QPushButton* playButton;
+    QTreeView* trackTree;
+    QHeaderView* trackTreeHeader;
+    QStandardItemModel* trackModel;
+    u32 audioBytesNum;
+    static auto toMinutes(u64 secs) -> string;
 
    protected:
     void closeEvent(QCloseEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
-    static inline void fillTable(const path& filePath);
-    static inline void fillTable(const vector<path>& paths);
-    static inline void fillTable(const walk_dir& read_dir);
-    static inline void jumpToTrack(Direction direction);
-    static inline void updatePosition(u32 pos);
+    inline void fillTable(const path& filePath) const;
+    inline void fillTable(const vector<path>& paths) const;
+    inline void fillTable(const walk_dir& read_dir) const;
+    inline void jumpToTrack(Direction direction);
+    inline void updatePosition(u32 pos) const;
+    void checkPosition();
 
    signals:
     void filesDropped(vector<path> filePaths);
+    void playbackFinished();
 
    private:
     Ui::MainWindow* ui;
     QSystemTrayIcon* trayIcon;
     QMenu* trayIconMenu;
+    QTimer timer;
+    u32 lastPos;
+    u32 previousPosition;
+    u32 previousSecond;
+    QThreadPool* threadPool;
 };
-
-#endif  // MAINWINDOW_HPP

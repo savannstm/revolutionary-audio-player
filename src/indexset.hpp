@@ -1,3 +1,5 @@
+#pragma once
+
 #include <ranges>
 
 #include "type_aliases.hpp"

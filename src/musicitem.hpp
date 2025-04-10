@@ -1,8 +1,8 @@
-// local
-#include "type_aliases.hpp"
+#pragma once
 
-// qt
 #include <QStandardItem>
+
+#include "type_aliases.hpp"
 
 class MusicItem : public QStandardItem {
    public:

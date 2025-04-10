@@ -2,11 +2,11 @@
 #include "mainwindow.hpp"
 
 #include "aboutwindow.hpp"
+#include "audio.hpp"
+#include "constants.hpp"
 #include "customslider.hpp"
-#include "equalizer.hpp"
 #include "indexset.hpp"
 #include "musicitem.hpp"
-#include "progressmonitor.hpp"
 #include "type_aliases.hpp"
 #include "ui_mainwindow.h"
 
@@ -15,18 +15,9 @@
 #include <random>
 
 // qt
-#include <QAction>
-#include <QApplication>
-#include <QAudioSink>
 #include <QFileDialog>
-#include <QIcon>
-#include <QMainWindow>
-#include <QMenu>
 #include <QMimeData>
-#include <QPushButton>
 #include <QSettings>
-#include <QStandardItemModel>
-#include <QTreeView>
 
 // audio
 #include <taglib/fileref.h>
@@ -40,33 +31,22 @@ static IndexSet<u32> playHistory;
 
 static auto pauseIcon = QIcon::fromTheme("media-playback-pause");
 static auto startIcon = QIcon::fromTheme("media-playback-start");
-static u32 byteOffset;
-static u16 duration;
-
-static QAudioFormat audioFormat;
-static vector<i16> samples;
-static QBuffer *audioBuffer = new QBuffer();
-static QAudioSink *audioSink;
-static CustomSlider *progressSlider;
-static QPlainTextEdit *progressTimer;
-static AudioMonitor *monitor;
-static QPushButton *playButton;
-static QTreeView *trackTree;
-static QHeaderView *trackTreeHeader;
-static QStandardItemModel *trackModel;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindow),
-      trayIcon(new QSystemTrayIcon(this)) {
+      audioSink(new QAudioSink()),
+      audioBytes(new QByteArray()),
+      audioBuffer(new QBuffer(this)),
+      progressSlider(new CustomSlider(this)),
+      progressTimer(new QPlainTextEdit(this)),
+      playButton(new QPushButton(this)),
+      trayIcon(new QSystemTrayIcon(this)),
+      threadPool(new QThreadPool(this)) {
     ui->setupUi(this);
     this->setAcceptDrops(true);
 
-    audioFormat.setSampleFormat(QAudioFormat::SampleFormat::Int16);
-
-    constexpr u8 bandsNumber = 10;
-
-    audioSink = new QAudioSink();
+    timer.start(TIMER_UPDATE_INTERVAL_MS);
 
     progressSlider = ui->progressSlider;
     progressTimer = ui->progressTimer;
@@ -86,13 +66,16 @@ MainWindow::MainWindow(QWidget *parent)
     static const auto *openFolderAction = ui->actionOpenFolder;
     static const auto *aboutAction = ui->actionAbout;
 
+    // TODO
     // Taskbar actions
-    /*static auto *forwardAction = ui->actionForward;
+    /*
+    static auto *forwardAction = ui->actionForward;
     static auto *backwardAction = ui->actionBackward;
     static auto *repeatAction = ui->actionRepeat;
     static auto *pauseAction = ui->actionPause;
     static auto *resumeAction = ui->actionResume;
-    static auto *stopAction = ui->actionStop;*/
+    static auto *stopAction = ui->actionStop;
+    */
 
     // Playback controls
     static auto repeat = false;
@@ -102,14 +85,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Eq
     static auto eqEnabled = false;
-    static array<f32, bandsNumber> eqGains = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+    static array<f32, EQ_BANDS_N> eqGains = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
     // Track tree
     trackTree = ui->tracksTable;
     trackTreeHeader = trackTree->header();
-
-    monitor =
-        new AudioMonitor(audioBuffer, progressTimer, progressSlider, this);
 
     trackModel = new QStandardItemModel(this);
     trackTreeHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -124,8 +104,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     trayIcon->setContextMenu(trayIconMenu);
 
-    static auto *settings = new QSettings("revolutionary-audio-player",
-                                          "revolutionary-audio-player");
+    static auto *settings =
+        new QSettings("com.savannstm.rap", "com.savannstm.rap");
 
     static auto lastDir =
         settings->value("lastOpenedDir", QDir::homePath()).toString();
@@ -177,42 +157,10 @@ MainWindow::MainWindow(QWidget *parent)
                     if (item != nullptr) {
                         const auto path = item->getPath();
 
-                        audioBuffer->close();
-
-                        const auto [metadata, dur] =
-                            extractSamples(path, samples);
-
-                        audioBuffer->setData(
-                            reinterpret_cast<const char *>(samples.data()),
-                            static_cast<i32>(samples.size() * sampleSize));
-                        audioBuffer->open(QIODevice::ReadOnly);
-
-                        duration = dur;
-
-                        const auto [channels, sampleRate, frames] = metadata;
-
-                        byteOffset = sampleRate * channels * sampleSize;
-
-                        audioFormat.setSampleRate(sampleRate);
-                        audioFormat.setChannelCount(channels);
-
                         playButton->setIcon(pauseIcon);
 
-                        const auto durationTime =
-                            formatSecondsToMinutes(duration);
-
-                        progressSlider->setRange(0, duration);
-                        progressTimer->setPlainText(
-                            format("0:00/{}", durationTime).c_str());
-
-                        audioSink->stop();
-
-                        audioSink = new QAudioSink(audioFormat, this);
-
-                        monitor->updateDuration(durationTime);
-                        monitor->updateBuffer(audioBuffer);
-
-                        audioSink->start(audioBuffer);
+                        threadPool->start(
+                            [path, this] { playTrack(path, this); });
                     }
 
                     currentIndex = index;
@@ -286,7 +234,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(progressSlider, &CustomSlider::mousePressed, this,
             [&](const u32 pos) { updatePosition(pos); });
 
-    connect(monitor, &AudioMonitor::playbackFinished, this, [&] {
+    connect(this, &MainWindow::playbackFinished, this, [&] {
         if (repeat) {
             audioBuffer->seek(0);
         } else {
@@ -301,6 +249,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(this, &MainWindow::filesDropped, this,
             [&](const vector<path> &files) { fillTable(files); });
+
+    connect(&timer, &QTimer::timeout, this, &MainWindow::checkPosition);
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event) {
@@ -330,7 +280,7 @@ void MainWindow::dropEvent(QDropEvent *event) {
     }
 }
 
-inline void MainWindow::fillTable(const vector<path> &paths) {
+inline void MainWindow::fillTable(const vector<path> &paths) const {
     const u16 startRow = trackModel->rowCount();
 
     for (const auto &[idx, filePath] : views::enumerate(paths)) {
@@ -376,7 +326,7 @@ inline void MainWindow::fillTable(const vector<path> &paths) {
     trackModel->sort(2);
 }
 
-inline void MainWindow::fillTable(const walk_dir &read_dir) {
+inline void MainWindow::fillTable(const walk_dir &read_dir) const {
     vector<path> files;
 
     for (const auto &entry : read_dir) {
@@ -396,15 +346,15 @@ inline void MainWindow::fillTable(const walk_dir &read_dir) {
     fillTable(files);
 }
 
-inline void MainWindow::fillTable(const path &filePath) {
+inline void MainWindow::fillTable(const path &filePath) const {
     fillTable({filePath});
 }
 
-inline void MainWindow::updatePosition(const u32 pos) {
-    audioBuffer->seek(static_cast<u32>(pos * byteOffset));
+inline void MainWindow::updatePosition(const u32 pos) const {
+    audioBuffer->seek(static_cast<u32>(pos * audioBytesNum));
 
-    const string timer = format("{}/{}", formatSecondsToMinutes(pos / 1000),
-                                formatSecondsToMinutes(duration));
+    const string timer =
+        format("{}/{}", MainWindow::toMinutes(pos / 1000), audioDuration);
 
     progressTimer->setPlainText(timer.c_str());
 }
@@ -412,8 +362,8 @@ inline void MainWindow::updatePosition(const u32 pos) {
 inline void MainWindow::jumpToTrack(Direction direction) {
     const auto idx = trackTree->currentIndex();
 
-    u32 nextIdx;
-    const u32 row = idx.row();
+    u16 nextIdx;
+    const u16 row = idx.row();
 
     switch (direction) {
         case Direction::Forward:
@@ -456,7 +406,7 @@ inline void MainWindow::jumpToTrack(Direction direction) {
         }
     }
 
-    const auto index = trackTree->model()->index(static_cast<i32>(nextIdx), 0);
+    const auto index = trackTree->model()->index(nextIdx, 0);
     trackTree->setCurrentIndex(index);
 
     const auto data = trackModel->data(index, Qt::DisplayRole).toString();
@@ -465,38 +415,47 @@ inline void MainWindow::jumpToTrack(Direction direction) {
 
     const auto path = item->getPath();
 
-    audioBuffer->close();
-
-    const auto [metadata, dur] = extractSamples(path, samples);
-
-    audioBuffer->setData(reinterpret_cast<const char *>(samples.data()),
-                         static_cast<i32>(samples.size() * sampleSize));
-    audioBuffer->open(QIODevice::ReadOnly);
-
-    duration = dur;
-
-    const auto [channels, sampleRate, frames] = metadata;
-
-    byteOffset = sampleRate * channels * sampleSize;
-
-    audioFormat.setSampleRate(sampleRate);
-    audioFormat.setChannelCount(channels);
-
     playButton->setIcon(pauseIcon);
+    threadPool->start([path, this] { playTrack(path, this); });
+}
 
-    const auto formatted = formatSecondsToMinutes(dur);
+void MainWindow::checkPosition() {
+    const u32 bytePosition = audioBuffer->pos();
+    const u32 bufferSize = audioBuffer->size();
 
-    progressSlider->setRange(0, duration);
-    progressTimer->setPlainText(std::format("0:00/{}", formatted).c_str());
+    if (bufferSize > 0) {
+        if (previousPosition != bytePosition) {
+            const u16 playbackSecond = bytePosition / audioBytesNum;
 
-    audioSink->stop();
+            if (previousSecond != playbackSecond) {
+                const string formatted =
+                    format("{}/{}", MainWindow::toMinutes(playbackSecond),
+                           audioDuration);
+                progressTimer->setPlainText(formatted.c_str());
 
-    audioSink = new QAudioSink(audioFormat);
+                progressSlider->setSliderPosition(playbackSecond);
+                previousSecond = playbackSecond;
+            }
 
-    monitor->updateDuration(formatted);
-    monitor->updateBuffer(audioBuffer);
+            previousPosition = bytePosition;
+        }
 
-    audioSink->start(audioBuffer);
+        if (audioBuffer->atEnd()) {
+            emit playbackFinished();
+        }
+    }
+}
+
+auto MainWindow::toMinutes(const u64 secs) -> string {
+    const u64 minutes = secs / 60;
+    const u64 seconds = secs % 60;
+
+    const string secondsString = to_string(seconds);
+    const string secondsPadded =
+        seconds < 10 ? "0" + secondsString : secondsString;
+
+    const string formatted = format("{}:{}", minutes, secondsPadded);
+    return formatted;
 }
 
 MainWindow::~MainWindow() { delete ui; }

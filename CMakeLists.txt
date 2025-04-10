@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent)
 find_package(TagLib REQUIRED)
 find_package(ZLIB)
 find_package(juce REQUIRED)
@@ -26,11 +26,20 @@ qt_add_executable(rap
 )
 
 target_include_directories(rap PRIVATE src)
+
+# minimalistic builds
 target_include_directories(rap PRIVATE $ENV{FFMPEG_INCLUDE_DIRS})
 target_link_directories(rap PRIVATE $ENV{FFMPEG_LIBRARY_DIRS})
+
+# full featured
+# target_include_directories(rap PRIVATE ${FFMPEG_INCLUDE_DIRS})
+# target_link_directories(rap PRIVATE ${FFMPEG_LIBRARY_DIRS})
+# target_link_libraries(rap PRIVATE ${FFMPEG_LIBRARIES})
+
 target_link_libraries(rap PRIVATE
     Qt6::Widgets
     Qt6::Multimedia
+    Qt6::Concurrent
     TagLib::TagLib
     juce::juce_dsp
     avcodec

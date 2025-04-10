@@ -1,5 +1,4 @@
-#ifndef CUSTOM_SLIDER_HPP
-#define CUSTOM_SLIDER_HPP
+#pragma once
 
 #include <QMouseEvent>
 #include <QSlider>
@@ -19,8 +18,8 @@ class CustomSlider : public QSlider {
    protected:
     void mouseMoveEvent(QMouseEvent* event) override {
         if ((event->buttons() & Qt::MouseButton::LeftButton) != 0) {
-            const auto pos = event->pos();
-            const double ratio = static_cast<double>(pos.x()) / this->width();
+            const auto pos = event->position();
+            const f64 ratio = pos.x() / this->width();
             i32 value =
                 static_cast<i32>(this->minimum() +
                                  (ratio * (this->maximum() - this->minimum())));
@@ -33,8 +32,9 @@ class CustomSlider : public QSlider {
 
     void mousePressEvent(QMouseEvent* event) override {
         if (event->button() == Qt::LeftButton) {
-            const auto pos = event->pos();
-            const double ratio = static_cast<double>(pos.x()) / this->width();
+            const auto pos = event->position();
+            const f64 ratio = pos.x() / this->width();
+
             i32 value =
                 static_cast<i32>(this->minimum() +
                                  (ratio * (this->maximum() - this->minimum())));
@@ -45,4 +45,3 @@ class CustomSlider : public QSlider {
         }
     }
 };
-#endif

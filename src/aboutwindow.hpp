@@ -1,5 +1,4 @@
-#ifndef ABOUTWINDOW_HPP
-#define ABOUTWINDOW_HPP
+#pragma once
 
 #include <QDialog>
 #include <QMainWindow>
@@ -22,4 +21,3 @@ class AboutWindow : public QMainWindow {
    private:
     Ui::AboutWindow* ui;
 };
-#endif  // ABOUTWINDOW_HPP
