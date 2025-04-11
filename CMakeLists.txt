@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(rap VERSION 0.1 LANGUAGES C CXX)
+project(rap VERSION 0.1.0 LANGUAGES C CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY target/bin)
 
@@ -18,7 +18,7 @@ find_package(TagLib REQUIRED)
 find_package(ZLIB)
 find_package(juce REQUIRED)
 
-file(GLOB PROJECT_SOURCES src/*.cpp src/*.hpp src/*.h)
+file(GLOB PROJECT_SOURCES src/*.cpp src/*.hpp src/*.h src/*.c)
 
 qt_add_executable(rap
     MANUAL_FINALIZATION

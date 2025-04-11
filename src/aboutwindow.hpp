@@ -11,7 +11,7 @@ class AboutWindow;
 }  // namespace Ui
 QT_END_NAMESPACE
 
-class AboutWindow : public QMainWindow {
+class AboutWindow : public QDialog {
     Q_OBJECT
 
    public:

@@ -16,32 +16,6 @@ class CustomSlider : public QSlider {
     void mousePressed(u32 value);
 
    protected:
-    void mouseMoveEvent(QMouseEvent* event) override {
-        if ((event->buttons() & Qt::MouseButton::LeftButton) != 0) {
-            const auto pos = event->position();
-            const f64 ratio = pos.x() / this->width();
-            i32 value =
-                static_cast<i32>(this->minimum() +
-                                 (ratio * (this->maximum() - this->minimum())));
-            value = qBound(this->minimum(), value, this->maximum());
-            this->setValue(value);
-
-            emit mouseMoved(value);
-        }
-    }
-
-    void mousePressEvent(QMouseEvent* event) override {
-        if (event->button() == Qt::LeftButton) {
-            const auto pos = event->position();
-            const f64 ratio = pos.x() / this->width();
-
-            i32 value =
-                static_cast<i32>(this->minimum() +
-                                 (ratio * (this->maximum() - this->minimum())));
-            value = qBound(this->minimum(), value, this->maximum());
-            this->setValue(value);
-
-            emit mousePressed(value);
-        }
-    }
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
 };

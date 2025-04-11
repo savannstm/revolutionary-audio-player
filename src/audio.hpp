@@ -79,7 +79,7 @@ inline void playTrack(const path& filename, MainWindow* window) {
     AVPacket* packet = av_packet_alloc();
     AVFrame* frame = av_frame_alloc();
 
-    const u32 secondsDuration = format_ctx->duration / AV_TIME_BASE;
+    const u16 secondsDuration = format_ctx->duration / AV_TIME_BASE;
 
     auto* newAudioBytes = new QByteArray();
     newAudioBytes->resize(
@@ -125,18 +125,18 @@ inline void playTrack(const path& filename, MainWindow* window) {
                             window->audioSink->stop();
                         }
 
+                        window->audioDuration =
+                            MainWindow::toMinutes(secondsDuration);
+                        window->audioBytesNum = static_cast<u32>(
+                            SAMPLE_SIZE * channels * sampleRate);
+                        window->progressSlider->setRange(0, secondsDuration);
+
                         window->audioBytes = newAudioBytes;
                         window->audioBuffer = newAudioBuffer;
                         window->audioBuffer->open(QIODevice::ReadOnly);
 
                         window->audioSink = new QAudioSink(format, window);
                         window->audioSink->start(window->audioBuffer);
-
-                        window->audioDuration =
-                            MainWindow::toMinutes(secondsDuration);
-                        window->audioBytesNum = static_cast<u32>(
-                            SAMPLE_SIZE * channels * sampleRate);
-                        window->progressSlider->setRange(0, secondsDuration);
                     });
                 }
             }
