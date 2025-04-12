@@ -1,16 +1,17 @@
 #pragma once
 
-#include <QStandardItem>
+#include "aliases.hpp"
 
-#include "type_aliases.hpp"
+#include <QStandardItem>
 
 class MusicItem : public QStandardItem {
    public:
     using QStandardItem::QStandardItem;
 
-    void setPath(const path &path) { _path = path; }
-    [[nodiscard]] auto getPath() const -> path { return _path; }
+    constexpr void setPath(const path& newPath) { path = newPath; }
+
+    [[nodiscard]] constexpr auto getPath() const -> path { return path; }
 
    private:
-    path _path;
+    path path;
 };

@@ -1,49 +1,32 @@
-// local
 #include "mainwindow.hpp"
 
 #include "aboutwindow.hpp"
-#include "audio.hpp"
+#include "aliases.hpp"
 #include "constants.hpp"
 #include "customslider.hpp"
 #include "musicitem.hpp"
-#include "type_aliases.hpp"
 #include "ui_mainwindow.h"
 
-// std
-#include <filesystem>
-
-// qt
-#include <QFileDialog>
-#include <QMimeData>
-#include <QSettings>
-#include <random>
-
-// audio
 #include <taglib/fileref.h>
 #include <taglib/tstring.h>
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent),
-      ui(new Ui::MainWindow),
-      audioSink(new QAudioSink()),
-      audioBytes(new QByteArray()),
-      audioBuffer(new QBuffer(this)),
-      progressSlider(new CustomSlider(this)),
-      progressTimer(new QPlainTextEdit(this)),
-      playButton(new QPushButton(this)),
-      trayIcon(new QSystemTrayIcon(this)),
-      threadPool(new QThreadPool(this)),
-      rng(std::random_device()),
-      gen(std::mt19937(rng())),
-      playHistory(new IndexSet<u32>()) {
+#include <QFileDialog>
+#include <QMimeData>
+#include <QSettings>
+#include <filesystem>
+#include <memory>
+
+MainWindow::MainWindow(QWidget* parent) :
+    QMainWindow(parent),
+    ui(new Ui::MainWindow) {
     ui->setupUi(this);
     this->setAcceptDrops(true);
 
-    timer.start(TIMER_UPDATE_INTERVAL_MS);
-
     progressSlider = ui->progressSlider;
     volumeSlider = ui->volumeSlider;
-    progressTimer = ui->progressTimer;
+    progressLabel = ui->progressLabel;
+
+    audioStreamer = make_unique<AudioStreamer>(this);
 
     // Buttons
     playButton = ui->playButton;
@@ -75,13 +58,15 @@ MainWindow::MainWindow(QWidget *parent)
     forwardDirection = Direction::Forward;
     backwardDirection = Direction::Backward;
 
-    volumeLevel = ui->volumeLevel;
+    volumeLabel = ui->volumeLabel;
 
-    connect(forwardAction, &QAction::triggered, this,
-            [&] { jumpToTrack(forwardDirection); });
+    connect(forwardAction, &QAction::triggered, this, [&] {
+        jumpToTrack(forwardDirection);
+    });
 
-    connect(backwardAction, &QAction::triggered, this,
-            [&] { jumpToTrack(backwardDirection); });
+    connect(backwardAction, &QAction::triggered, this, [&] {
+        jumpToTrack(backwardDirection);
+    });
 
     connect(repeatAction, &QAction::triggered, this, [&] {
         repeatButton->toggle();
@@ -109,13 +94,13 @@ MainWindow::MainWindow(QWidget *parent)
         } else {
             backwardDirection = Direction::Backward;
             forwardDirection = Direction::Forward;
-            playHistory->clear();
+            playHistory.clear();
         }
     });
 
     // Eq
     static auto eqEnabled = false;
-    static array<f32, EQ_BANDS_N> eqGains = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+    static array<f32, EQ_BANDS_N> eqGains = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
     // Track tree
     trackTree = ui->tracksTable;
@@ -124,21 +109,28 @@ MainWindow::MainWindow(QWidget *parent)
     trackModel = new QStandardItemModel(this);
     trackTreeHeader->setSectionResizeMode(QHeaderView::ResizeMode::Interactive);
     trackTreeHeader->setSectionsClickable(true);
-    trackModel->setHorizontalHeaderLabels({"Title", "Author", "No."});
+    trackModel->setHorizontalHeaderLabels({ "Title", "Author", "No." });
     trackTree->setModel(trackModel);
 
     trayIcon->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::AudioVolumeHigh));
     trayIcon->show();
 
-    static auto *trayIconMenu = new QMenu(this);
+    static auto* trayIconMenu = new QMenu(this);
 
-    trayIconMenu->addActions({resumeAction, pauseAction, stopAction,
-                              backwardAction, forwardAction, repeatAction,
-                              randomAction, exitAction});
+    trayIconMenu->addActions(
+        { resumeAction,
+          pauseAction,
+          stopAction,
+          backwardAction,
+          forwardAction,
+          repeatAction,
+          randomAction,
+          exitAction }
+    );
 
     trayIcon->setContextMenu(trayIconMenu);
 
-    static auto *settings =
+    static auto* settings =
         new QSettings("com.savannstm.rap", "com.savannstm.rap");
 
     static auto lastDir =
@@ -152,26 +144,29 @@ MainWindow::MainWindow(QWidget *parent)
             case QSystemTrayIcon::ActivationReason::Trigger:
                 this->show();
                 this->raise();
-                this->setWindowState(this->windowState() &
-                                     ~Qt::WindowMinimized);
+                this->setWindowState(
+                    this->windowState() & ~Qt::WindowMinimized
+                );
             default:
                 break;
         }
     });
 
-    connect(repeatButton, &QPushButton::clicked, this,
-            [&] { repeat = !repeat; });
-    connect(randomButton, &QPushButton::clicked, this,
-            [&] { randomAction->trigger(); });
+    connect(repeatButton, &QPushButton::clicked, this, [&] {
+        repeat = !repeat;
+    });
+    connect(randomButton, &QPushButton::clicked, this, [&] {
+        randomAction->trigger();
+    });
 
-    connect(trackTree, &QTreeView::pressed, this, [&](const auto &index) {
+    connect(trackTree, &QTreeView::pressed, this, [&](const auto& index) {
         switch (QApplication::mouseButtons()) {
             case Qt::RightButton: {
-                auto *menu = new QMenu(this);
+                auto* menu = new QMenu(this);
 
-                QAction *removeAction = menu->addAction("Remove Track");
-                QAction *clearAction = menu->addAction("Clear All Tracks");
-                QAction *propertiesAction = menu->addAction("Track Properties");
+                QAction* removeAction = menu->addAction("Remove Track");
+                QAction* clearAction = menu->addAction("Clear All Tracks");
+                QAction* propertiesAction = menu->addAction("Track Properties");
 
                 connect(removeAction, &QAction::triggered, menu, [&] {
                     if (index.isValid()) {
@@ -184,8 +179,9 @@ MainWindow::MainWindow(QWidget *parent)
                 });
 
                 connect(propertiesAction, &QAction::triggered, menu, [&] {
-                    const auto *item = static_cast<MusicItem *>(
-                        trackModel->itemFromIndex(index));
+                    const auto* item =
+                        static_cast<MusicItem*>(trackModel->itemFromIndex(index)
+                        );
 
                     if (item) {
                         // showTrackProperties(item);
@@ -198,17 +194,13 @@ MainWindow::MainWindow(QWidget *parent)
             }
             case Qt::LeftButton: {
                 if (index != currentIndex) {
-                    const auto data =
-                        trackModel->data(index, Qt::DisplayRole).toString();
-                    const auto *item = static_cast<MusicItem *>(
-                        trackModel->itemFromIndex(index));
+                    const auto* item =
+                        static_cast<MusicItem*>(trackModel->itemFromIndex(index)
+                        );
 
                     if (item != nullptr) {
                         const auto path = item->getPath();
-
-                        playButton->setIcon(pauseIcon);
-
-                        threadPool->start([=, this] { playTrack(path, this); });
+                        playTrack(path);
                     }
 
                     currentIndex = index;
@@ -220,19 +212,26 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
-    connect(trackTreeHeader, &QHeaderView::sectionClicked, this,
-            [&](const u16 index) {
-                qDebug() << "clicked";
-                const auto order = trackTreeHeader->sortIndicatorOrder() ==
-                                           Qt::SortOrder::AscendingOrder
-                                       ? Qt::SortOrder::DescendingOrder
-                                       : Qt::SortOrder::AscendingOrder;
-                trackModel->sort(index, order);
-            });
+    connect(
+        trackTreeHeader,
+        &QHeaderView::sectionClicked,
+        this,
+        [&](const u16 index) {
+        const auto order = trackTreeHeader->sortIndicatorOrder() ==
+                                   Qt::SortOrder::AscendingOrder
+                               ? Qt::SortOrder::DescendingOrder
+                               : Qt::SortOrder::AscendingOrder;
+        trackModel->sort(index, order);
+    }
+    );
 
     connect(openFolderAction, &QAction::triggered, this, [&] {
         const auto directory = QFileDialog::getExistingDirectory(
-            this, "Select Directory", lastDir, QFileDialog::ShowDirsOnly);
+            this,
+            "Select Directory",
+            lastDir,
+            QFileDialog::ShowDirsOnly
+        );
 
         if (directory == QDir::rootPath() || directory == QDir::homePath() ||
             directory.isEmpty()) {
@@ -245,14 +244,16 @@ MainWindow::MainWindow(QWidget *parent)
         const auto directoryString = directory.toStdString();
 
         const auto entries = walk_dir(
-            directoryString, fs::directory_options::skip_permission_denied);
+            directoryString,
+            fs::directory_options::skip_permission_denied
+        );
 
         fillTable(entries);
     });
 
     connect(openFileAction, &QAction::triggered, this, [&] {
         const auto file = QFileDialog::getOpenFileName(this, "Select File");
-        fillTable(vector<path>({file.toStdString()}));
+        fillTable(vector<path>({ file.toStdString() }));
     });
 
     connect(playButton, &QPushButton::clicked, this, [&] {
@@ -265,68 +266,78 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
-    connect(stopButton, &QPushButton::clicked, this,
-            [&] { stopAction->trigger(); });
+    connect(stopButton, &QPushButton::clicked, this, [&] {
+        stopAction->trigger();
+    });
 
-    connect(ui->forwardButton, &QPushButton::clicked, this,
-            [&] { forwardAction->trigger(); });
+    connect(ui->forwardButton, &QPushButton::clicked, this, [&] {
+        forwardAction->trigger();
+    });
 
-    connect(ui->backwardButton, &QPushButton::clicked, this,
-            [&] { backwardAction->trigger(); });
-
-    connect(progressSlider, &CustomSlider::mouseMoved, this,
-            &MainWindow::updatePlaybackPosition);
-
-    connect(progressSlider, &CustomSlider::mousePressed, this,
-            &MainWindow::updatePlaybackPosition);
-
-    connect(this, &MainWindow::playbackFinished, this, [&] {
-        if (repeat) {
-            audioBuffer->seek(0);
-        } else {
-            jumpToTrack(forwardDirection);
-        }
+    connect(ui->backwardButton, &QPushButton::clicked, this, [&] {
+        backwardAction->trigger();
     });
 
     connect(aboutAction, &QAction::triggered, this, [&] {
-        auto *aboutWindow = new AboutWindow(this);
+        auto* aboutWindow = new AboutWindow(this);
         aboutWindow->show();
     });
 
-    connect(this, &MainWindow::filesDropped, this,
-            [&](const vector<path> &files) { fillTable(files); });
+    connect(
+        this,
+        &MainWindow::filesDropped,
+        this,
+        [&](const vector<path>& files) { fillTable(files); }
+    );
 
-    connect(&timer, &QTimer::timeout, this, &MainWindow::updatePositionDisplay);
+    connect(
+        progressSlider,
+        &CustomSlider::sliderReleased,
+        this,
+        &MainWindow::updatePlaybackPosition
+    );
 
-    connect(volumeSlider, &CustomSlider::mouseMoved, this, [&](const u8 pos) {
-        audioVolume = static_cast<f64>(pos) / 100;
-        volumeLevel->setPlainText(std::format("{}%", pos).c_str());
-        audioSink->setVolume(audioVolume);
+    connect(progressSlider, &CustomSlider::sliderMoved, this, [&] {
+        const string progress = format(
+            "{}/{}",
+            MainWindow::toMinutes(progressSlider->sliderPosition()),
+            audioDuration
+        );
+
+        progressLabel->setText(progress.c_str());
     });
 
-    connect(volumeSlider, &CustomSlider::mousePressed, this, [&](const u8 pos) {
-        audioVolume = static_cast<f64>(pos) / 100;
-        volumeLevel->setPlainText(std::format("{}%", pos).c_str());
+    connect(volumeSlider, &CustomSlider::sliderMoved, this, [&] {
+        const u32 pos = volumeSlider->sliderPosition();
+        audioVolume = static_cast<f64>(pos) / MAX_VOLUME;
         audioSink->setVolume(audioVolume);
+        volumeLabel->setText(format("{}%", pos).c_str());
+    });
+
+    connect(volumeSlider, &CustomSlider::sliderReleased, this, [&] {
+        const u32 pos = volumeSlider->sliderPosition();
+        audioVolume = static_cast<f64>(pos) / MAX_VOLUME;
+        audioSink->setVolume(audioVolume);
+        volumeLabel->setText(format("{}%", pos).c_str());
     });
 }
 
-void MainWindow::dragEnterEvent(QDragEnterEvent *event) {
+void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
     if (event->mimeData()->hasUrls()) {
         event->acceptProposedAction();
     }
 }
 
-void MainWindow::closeEvent(QCloseEvent *event) {
+void MainWindow::closeEvent(QCloseEvent* event) {
     this->hide();
     event->ignore();
 }
 
-void MainWindow::dropEvent(QDropEvent *event) {
+void MainWindow::dropEvent(QDropEvent* event) {
     if (event->mimeData()->hasUrls()) {
         vector<path> filePaths;
 
-        for (const QUrl &url : event->mimeData()->urls()) {
+        for (const QUrl& url : event->mimeData()->urls()) {
             const QString filePath = url.toLocalFile();
 
             if (!filePath.isEmpty()) {
@@ -338,17 +349,17 @@ void MainWindow::dropEvent(QDropEvent *event) {
     }
 }
 
-inline void MainWindow::fillTable(const vector<path> &paths) const {
+inline void MainWindow::fillTable(const vector<path>& paths) const {
     const u16 startRow = trackModel->rowCount();
 
-    for (const auto &[idx, filePath] : views::enumerate(paths)) {
+    for (const auto& [idx, filePath] : views::enumerate(paths)) {
         const auto file = TagLib::FileRef(filePath.c_str());
-        const auto *tag = file.tag();
+        const auto* tag = file.tag();
         const u16 row = startRow + idx;
 
         for (u16 col = 0; col < trackModel->columnCount(); col++) {
             // TODO: Check if the same item is already in the table
-            auto *item = new MusicItem();
+            auto* item = new MusicItem();
             item->setEditable(false);
             item->setPath(filePath);
 
@@ -357,14 +368,17 @@ inline void MainWindow::fillTable(const vector<path> &paths) const {
                     QString text = QString::fromStdString(
                         (tag != nullptr) && !tag->title().isEmpty()
                             ? tag->title().toCString(true)
-                            : filePath.filename().string());
+                            : filePath.filename().string()
+                    );
                     item->setText(text);
                     break;
                 }
                 case 1: {
                     if ((tag != nullptr) && !tag->artist().isEmpty()) {
-                        item->setText(QString::fromStdString(
-                            tag->artist().toCString(true)));
+                        item->setText(
+                            QString::fromStdString(tag->artist().toCString(true)
+                            )
+                        );
                     }
                     break;
                 }
@@ -386,17 +400,17 @@ inline void MainWindow::fillTable(const vector<path> &paths) const {
     trackModel->sort(2);
 }
 
-inline void MainWindow::fillTable(const walk_dir &read_dir) const {
+inline void MainWindow::fillTable(const walk_dir& read_dir) const {
     vector<path> files;
 
-    for (const auto &entry : read_dir) {
+    for (const auto& entry : read_dir) {
         if (!entry.is_regular_file()) {
             continue;
         }
 
-        const auto &filePath = entry.path();
+        const auto& filePath = entry.path();
 
-        for (const auto *ext : EXTENSIONS) {
+        for (const auto* ext : EXTENSIONS) {
             if (filePath.string().ends_with(ext)) {
                 files.emplace_back(filePath);
             }
@@ -406,17 +420,18 @@ inline void MainWindow::fillTable(const walk_dir &read_dir) const {
     fillTable(files);
 }
 
-inline void MainWindow::fillTable(const path &filePath) const {
-    fillTable({filePath});
+inline void MainWindow::fillTable(const path& filePath) const {
+    fillTable({ filePath });
 }
 
-inline void MainWindow::updatePlaybackPosition(const u32 pos) const {
-    audioBuffer->seek(static_cast<u32>(pos * audioBytesNum));
+inline void MainWindow::updatePlaybackPosition() {
+    const u32 pos = progressSlider->sliderPosition();
+    audioStreamer->seek(pos);
 
-    const string timer =
+    const string progress =
         format("{}/{}", MainWindow::toMinutes(pos / 1000), audioDuration);
 
-    progressTimer->setPlainText(timer.c_str());
+    progressLabel->setText(progress.c_str());
 }
 
 inline void MainWindow::jumpToTrack(Direction direction) {
@@ -433,41 +448,40 @@ inline void MainWindow::jumpToTrack(Direction direction) {
     switch (direction) {
         case Direction::Forward:
             if (row == totalTracks - 1) {
-                stopPlayback();
-                return;
+                nextIdx = 0;
+            } else {
+                nextIdx = row + 1;
             }
-
-            nextIdx = row + 1;
             break;
         case Direction::ForwardRandom: {
-            playHistory->insert(row);
+            playHistory.insert(row);
 
             auto dist = std::uniform_int_distribution<u16>(0, totalTracks - 1);
 
-            if (playHistory->size() == totalTracks) {
-                playHistory->clear();
+            if (playHistory.size() == totalTracks) {
+                playHistory.clear();
             }
 
             do {
                 nextIdx = dist(gen);
-            } while (playHistory->contains(nextIdx));
+            } while (playHistory.contains(nextIdx));
             break;
         }
         case Direction::Backward:
         backward:
             if (row == 0) {
-                return;
+                nextIdx = totalTracks - 1;
+            } else {
+                nextIdx = row - 1;
             }
-
-            nextIdx = row - 1;
             break;
         case Direction::BackwardRandom: {
-            if (playHistory->empty()) {
+            if (playHistory.empty()) {
                 goto backward;
             }
 
-            const u16 lastPlayed = playHistory->last();
-            playHistory->remove(lastPlayed);
+            const u16 lastPlayed = playHistory.last();
+            playHistory.remove(lastPlayed);
             nextIdx = lastPlayed;
             break;
         }
@@ -476,44 +490,14 @@ inline void MainWindow::jumpToTrack(Direction direction) {
     const auto index = trackTree->model()->index(nextIdx, 0);
     trackTree->setCurrentIndex(index);
 
-    const auto data = trackModel->data(index, Qt::DisplayRole).toString();
-    const auto *item =
-        static_cast<MusicItem *>(trackModel->itemFromIndex(index));
+    const auto* item =
+        static_cast<MusicItem*>(trackModel->itemFromIndex(index));
 
     const auto path = item->getPath();
-
-    playButton->setIcon(pauseIcon);
-    threadPool->start([=, this] { playTrack(path, this); });
+    playTrack(path);
 }
 
-void MainWindow::updatePositionDisplay() {
-    const u32 bytePosition = audioBuffer->pos();
-    const u32 bufferSize = audioBuffer->size();
-
-    if (bufferSize > 0) {
-        if (previousPosition != bytePosition) {
-            const u16 playbackSecond = bytePosition / audioBytesNum;
-
-            if (previousSecond != playbackSecond) {
-                const string formatted =
-                    format("{}/{}", MainWindow::toMinutes(playbackSecond),
-                           audioDuration);
-                progressTimer->setPlainText(formatted.c_str());
-
-                progressSlider->setSliderPosition(playbackSecond);
-                previousSecond = playbackSecond;
-            }
-
-            previousPosition = bytePosition;
-        }
-
-        if (audioBuffer->atEnd()) {
-            emit playbackFinished();
-        }
-    }
-}
-
-auto MainWindow::toMinutes(const u16 secs) -> string {
+auto MainWindow::toMinutes(u16 secs) -> string {
     const u8 minutes = secs / 60;
     const u8 seconds = secs % 60;
 
@@ -526,12 +510,63 @@ auto MainWindow::toMinutes(const u16 secs) -> string {
 }
 
 void MainWindow::stopPlayback() {
+    audioStreamer->reset();
     audioSink->stop();
-    audioBytes->clear();
     audioDuration = "0:00";
     progressSlider->setRange(0, 0);
-    progressTimer->setPlainText("0:00/0:00");
+    progressLabel->setText("0:00/0:00");
     playButton->setIcon(startIcon);
 }
 
-MainWindow::~MainWindow() { delete ui; }
+void MainWindow::playTrack(const path& path) {
+    playButton->setIcon(pauseIcon);
+
+    audioSink->stop();
+
+    audioStreamer->start(path);
+    audioSink = make_unique<QAudioSink>(audioStreamer->format());
+    audioSink->setVolume(audioVolume);
+
+    const u16 duration = audioStreamer->duration();
+    audioDuration = toMinutes(duration);
+
+    progressSlider->setRange(0, duration);
+    progressLabel->setText(std::format("0:00/{}", audioDuration).c_str());
+
+    audioSink->start(audioStreamer.get());
+}
+
+void MainWindow::updateProgress() {
+    const u32 readBytes = audioStreamer->bytesRead();
+    const u32 bufferSize = audioStreamer->size();
+
+    if (bufferSize > 0) {
+        if (!progressSlider->isSliderDown()) {
+            const u16 playbackSecond = static_cast<u16>(std::floor(
+                (static_cast<f64>(readBytes) / bufferSize) *
+                audioStreamer->duration()
+            ));
+
+            const string formatted = format(
+                "{}/{}",
+                MainWindow::toMinutes(playbackSecond),
+                audioDuration
+            );
+
+            progressLabel->setText(formatted.c_str());
+            progressSlider->setSliderPosition(playbackSecond);
+        }
+
+        if (audioStreamer->atEnd()) {
+            if (repeat) {
+                audioStreamer->seek(0);
+            } else {
+                jumpToTrack(forwardDirection);
+            }
+        }
+    }
+}
+
+MainWindow::~MainWindow() {
+    delete ui;
+}

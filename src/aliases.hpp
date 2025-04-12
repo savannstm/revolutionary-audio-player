@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <ranges>
 #include <set>
 #include <stdexcept>
@@ -25,30 +26,36 @@ using i32 = std::int32_t;
 using i64 = std::int64_t;
 using f32 = float;
 using f64 = double;
-using str = char *;
-using cstr = const char *;
+using str = char*;
+using cstr = const char*;
 
 namespace fs = std::filesystem;
-namespace views = std::ranges::views;
+namespace views = std::views;
 namespace ranges = std::ranges;
 
 using fs::path;
 using std::array;
 using std::cerr;
 using std::cout;
+using std::format;
+using std::make_unique;
+using std::map;
 using std::println;
+using std::set;
 using std::string;
 using std::to_string;
 using std::tuple;
 using std::vector;
+
 using panic = std::runtime_error;
+
+using walk_dir = fs::recursive_directory_iterator;
+using read_dir = fs::directory_iterator;
+
+template <typename T>
+using ref = std::unique_ptr<T, std::default_delete<T>>;
+
 template <typename K, typename V>
 using hashmap = std::unordered_map<K, V>;
 template <typename K, typename V>
 using hashset = std::unordered_set<K, V>;
-
-using std::map;
-using std::set;
-
-using walk_dir = fs::recursive_directory_iterator;
-using read_dir = fs::directory_iterator;

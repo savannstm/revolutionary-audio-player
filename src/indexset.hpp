@@ -1,8 +1,8 @@
 #pragma once
 
-#include <ranges>
+#include "aliases.hpp"
 
-#include "type_aliases.hpp"
+#include <ranges>
 
 template <typename T>
 class IndexSet {
@@ -46,7 +46,8 @@ class IndexSet {
     [[nodiscard]] auto at(const usize index) const -> const T& {
         if (index >= elements.size()) {
             throw panic(
-                format("Index {} out of range {}", index, elements.size()));
+                format("Index {} out of range {}", index, elements.size())
+            );
         }
 
         return elements[index];
@@ -89,6 +90,7 @@ class IndexSet {
     }
 
     auto begin() const noexcept { return elements.begin(); }
+
     auto end() const noexcept { return elements.end(); }
 
     auto view() const noexcept { return views::all(elements); }

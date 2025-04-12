@@ -65,7 +65,7 @@
       <number>0</number>
      </property>
      <property name="sizeConstraint">
-      <enum>QLayout::SizeConstraint::SetNoConstraint</enum>
+      <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
      </property>
      <property name="leftMargin">
       <number>0</number>
@@ -252,49 +252,15 @@
       </widget>
      </item>
      <item>
-      <widget class="QPlainTextEdit" name="volumeLevel">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>32</width>
-         <height>32</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>40</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="autoFillBackground">
-        <bool>false</bool>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">background-color: transparent;
-border: none;</string>
-       </property>
-       <property name="verticalScrollBarPolicy">
-        <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
-       </property>
-       <property name="horizontalScrollBarPolicy">
-        <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
-       </property>
-       <property name="sizeAdjustPolicy">
-        <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents</enum>
-       </property>
-       <property name="readOnly">
-        <bool>false</bool>
-       </property>
-       <property name="plainText">
+      <widget class="QLabel" name="volumeLabel">
+       <property name="text">
         <string>100%</string>
        </property>
-       <property name="textInteractionFlags">
-        <set>Qt::TextInteractionFlag::TextEditorInteraction</set>
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignCenter</set>
+       </property>
+       <property name="margin">
+        <number>8</number>
        </property>
       </widget>
      </item>
@@ -327,50 +293,21 @@ border: none;</string>
       </widget>
      </item>
      <item>
-      <widget class="QPlainTextEdit" name="progressTimer">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
+      <widget class="QLabel" name="progressLabel">
+       <property name="text">
+        <string>0:00/0:00</string>
        </property>
-       <property name="minimumSize">
-        <size>
-         <width>32</width>
-         <height>32</height>
-        </size>
+       <property name="textFormat">
+        <enum>Qt::TextFormat::PlainText</enum>
        </property>
-       <property name="maximumSize">
-        <size>
-         <width>96</width>
-         <height>16777215</height>
-        </size>
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignCenter</set>
        </property>
-       <property name="autoFillBackground">
+       <property name="wordWrap">
         <bool>false</bool>
        </property>
-       <property name="styleSheet">
-        <string notr="true">background-color: transparent;
-border: none;</string>
-       </property>
-       <property name="verticalScrollBarPolicy">
-        <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
-       </property>
-       <property name="horizontalScrollBarPolicy">
-        <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
-       </property>
-       <property name="sizeAdjustPolicy">
-        <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents</enum>
-       </property>
-       <property name="readOnly">
-        <bool>true</bool>
-       </property>
-       <property name="plainText">
-        <string>0:00/0:00
-</string>
-       </property>
-       <property name="textInteractionFlags">
-        <set>Qt::TextInteractionFlag::NoTextInteraction</set>
+       <property name="margin">
+        <number>8</number>
        </property>
       </widget>
      </item>
@@ -382,9 +319,9 @@ border: none;</string>
     <zorder>randomButton</zorder>
     <zorder>progressSlider</zorder>
     <zorder>playButton</zorder>
-    <zorder>progressTimer</zorder>
     <zorder>volumeSlider</zorder>
-    <zorder>volumeLevel</zorder>
+    <zorder>progressLabel</zorder>
+    <zorder>volumeLabel</zorder>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

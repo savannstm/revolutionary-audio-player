@@ -1,5 +1,7 @@
 #include "customslider.hpp"
 
+#include "aliases.hpp"
+
 #include <QStyle>
 #include <QStyleOptionSlider>
 
@@ -9,20 +11,32 @@ void CustomSlider::mouseMoveEvent(QMouseEvent* event) {
         this->initStyleOption(&opt);
 
         const QRect groove = this->style()->subControlRect(
-            QStyle::CC_Slider, &opt, QStyle::SC_SliderGroove, this);
+            QStyle::CC_Slider,
+            &opt,
+            QStyle::SC_SliderGroove,
+            this
+        );
         const QRect handle = this->style()->subControlRect(
-            QStyle::CC_Slider, &opt, QStyle::SC_SliderHandle, this);
+            QStyle::CC_Slider,
+            &opt,
+            QStyle::SC_SliderHandle,
+            this
+        );
 
         const u16 sliderMin = groove.x();
         const u16 sliderMax = groove.right() - (handle.width() / 2) + 1;
 
         const u16 mouseX = event->pos().x();
         const u16 value = QStyle::sliderValueFromPosition(
-            this->minimum(), this->maximum(), mouseX - sliderMin,
-            sliderMax - sliderMin, opt.upsideDown);
+            this->minimum(),
+            this->maximum(),
+            mouseX - sliderMin,
+            sliderMax - sliderMin,
+            opt.upsideDown
+        );
 
         this->setValue(value);
-        emit mouseMoved(value);
+        QSlider::mouseMoveEvent(event);
     }
 }
 
@@ -32,19 +46,31 @@ void CustomSlider::mousePressEvent(QMouseEvent* event) {
         this->initStyleOption(&opt);
 
         const QRect groove = this->style()->subControlRect(
-            QStyle::CC_Slider, &opt, QStyle::SC_SliderGroove, this);
+            QStyle::CC_Slider,
+            &opt,
+            QStyle::SC_SliderGroove,
+            this
+        );
         const QRect handle = this->style()->subControlRect(
-            QStyle::CC_Slider, &opt, QStyle::SC_SliderHandle, this);
+            QStyle::CC_Slider,
+            &opt,
+            QStyle::SC_SliderHandle,
+            this
+        );
 
         const u16 sliderMin = groove.x();
         const u16 sliderMax = groove.right() - (handle.width() / 2) + 1;
 
         const u16 mouseX = event->pos().x();
         const u16 value = QStyle::sliderValueFromPosition(
-            this->minimum(), this->maximum(), mouseX - sliderMin,
-            sliderMax - sliderMin, opt.upsideDown);
+            this->minimum(),
+            this->maximum(),
+            mouseX - sliderMin,
+            sliderMax - sliderMin,
+            opt.upsideDown
+        );
 
         this->setValue(value);
-        emit mousePressed(value);
+        QSlider::mousePressEvent(event);
     }
 }

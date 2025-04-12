@@ -1,14 +1,16 @@
 #pragma once
 
+#include "ui_aboutwindow.h"
+
 #include <QDialog>
 #include <QMainWindow>
 
-#include "ui_aboutwindow.h"
-
 QT_BEGIN_NAMESPACE
+
 namespace Ui {
-class AboutWindow;
+    class AboutWindow;
 }  // namespace Ui
+
 QT_END_NAMESPACE
 
 class AboutWindow : public QDialog {
