@@ -24,6 +24,7 @@ qt_add_executable(rap
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}
 )
+set_target_properties(rap PROPERTIES WIN32_EXECUTABLE TRUE)
 
 target_include_directories(rap PRIVATE src)
 
