@@ -4,11 +4,11 @@
 #include "constants.hpp"
 #include "mainwindow.hpp"
 
-#include "libavformat/avformat.h"
+#include "libavutil/frame.h"
+#include "libavutil/rational.h"
 
-#include <QDebug>
-#include <memory>
-#include <qaudioformat.h>
+#include <algorithm>
+#include <cstdint>
 
 auto AudioStreamer::start(const path& path) -> bool {
     reset();
@@ -26,33 +26,24 @@ auto AudioStreamer::start(const path& path) -> bool {
     );
 
     if (err < 0) {
-        throw panic(
-            std::format(
-                "Failed to open input file: {}",
-                av_make_error_string(
-                    errBuf.data(),
-                    AV_ERROR_MAX_STRING_SIZE,
-                    err
-                )
-            )
+        qWarning() << std::format(
+            "Failed to open input file: {}",
+            av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err)
         );
+        return false;
     }
 
     formatContext.reset(formatContextPtr);
+    formatContextPtr = formatContext.get();
 
-    err = avformat_find_stream_info(formatContext.get(), nullptr);
+    err = avformat_find_stream_info(formatContextPtr, nullptr);
 
     if (err < 0) {
-        throw panic(
-            std::format(
-                "Failed to find stream info: {}",
-                av_make_error_string(
-                    errBuf.data(),
-                    AV_ERROR_MAX_STRING_SIZE,
-                    err
-                )
-            )
+        qWarning() << std::format(
+            "Failed to find stream info: {}",
+            av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err)
         );
+        return false;
     }
 
     const AVCodec* codec;
@@ -68,16 +59,11 @@ auto AudioStreamer::start(const path& path) -> bool {
     err = audioStreamIndex;
 
     if (err < 0) {
-        throw panic(
-            std::format(
-                "No audio stream found: {}",
-                av_make_error_string(
-                    errBuf.data(),
-                    AV_ERROR_MAX_STRING_SIZE,
-                    err
-                )
-            )
+        qWarning() << std::format(
+            "No audio stream found: {}",
+            av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err)
         );
+        return false;
     }
 
     const auto* audioStream = formatContextPtr->streams[audioStreamIndex];
@@ -91,31 +77,23 @@ auto AudioStreamer::start(const path& path) -> bool {
     err = avcodec_open2(codecContextPtr, codec, nullptr);
 
     if (err < 0) {
-        throw panic(
-            std::format(
-                "Failed to open codec: {}",
-                av_make_error_string(
-                    errBuf.data(),
-                    AV_ERROR_MAX_STRING_SIZE,
-                    err
-                )
-            )
+        qWarning() << std::format(
+            "Failed to open codec: {}",
+            av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err)
         );
+        return false;
     }
 
-    channelLayout = codecContext->ch_layout;
-    channels = channelLayout.nb_channels;
-    sampleRate = codecContext->sample_rate;
-    frames = codecContext->frame_num;
-
-    AVChannelLayout outLayout;
-    av_channel_layout_default(&outLayout, channels);
+    const AVChannelLayout channelLayout = codecContext->ch_layout;
+    const u8 channelNumber = channelLayout.nb_channels;
+    const u16 sampleRate = codecContext->sample_rate;
+    const u32 frames = codecContext->frame_num;
 
     auto* swrContextPtr = swrContext.get();
 
     err = swr_alloc_set_opts2(
         &swrContextPtr,
-        &outLayout,
+        &channelLayout,
         AV_SAMPLE_FMT_S16,
         sampleRate,
         &channelLayout,
@@ -126,51 +104,49 @@ auto AudioStreamer::start(const path& path) -> bool {
     );
 
     if (err < 0) {
-        throw panic(
-            std::format(
-                "Error allocating SwrContext: {}",
-                av_make_error_string(
-                    errBuf.data(),
-                    AV_ERROR_MAX_STRING_SIZE,
-                    err
-                )
-            )
+        qWarning() << std::format(
+            "Error allocating SwrContext: {}",
+            av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err)
         );
+        return false;
     }
 
     swrContext.reset(swrContextPtr);
-    swr_init(swrContext.get());
+    swrContextPtr = swrContext.get();
+
+    swr_init(swrContextPtr);
 
     packet = make_packet();
     frame = make_frame();
 
     secondsDuration = formatContextPtr->duration / AV_TIME_BASE;
-
-    availableBytes =
-        static_cast<i32>(sampleRate * channels * SAMPLE_SIZE * secondsDuration);
+    bytesPerSecond = static_cast<i64>(sampleRate * channelNumber * SAMPLE_SIZE);
 
     audioFormat.setSampleRate(sampleRate);
-    audioFormat.setChannelCount(channels);
-    av_channel_layout_uninit(&outLayout);
+    audioFormat.setChannelCount(channelNumber);
 
     return open(QIODevice::ReadOnly);
 }
 
-auto AudioStreamer::readData(char* data, i64 maxSize) -> i64 {
-    i64 bytes_read = 0;
+auto AudioStreamer::readData(char* data, const i64 maxSize) -> i64 {
+    i64 bytesRead = 0;
 
-    while (bytes_read < maxSize) {
-        if (position < buffer.size()) {
+    while (bytesRead < maxSize) {
+        if (bufferPosition < buffer.size()) {
             const u32 chunkSize =
-                std::min(maxSize - bytes_read, buffer.size() - position);
+                std::min(maxSize - bytesRead, buffer.size() - bufferPosition);
 
-            memcpy(data + bytes_read, buffer.constData() + position, chunkSize);
-            position += chunkSize;
-            bytes_read += chunkSize;
+            memcpy(
+                data + bytesRead,
+                buffer.constData() + bufferPosition,
+                chunkSize
+            );
+            bufferPosition += chunkSize;
+            bytesRead += chunkSize;
 
-            if (position >= buffer.size()) {
+            if (bufferPosition >= buffer.size()) {
                 buffer.clear();
-                position = 0;
+                bufferPosition = 0;
 
                 auto* window = static_cast<MainWindow*>(parent());
                 QMetaObject::invokeMethod(window, &MainWindow::updateProgress);
@@ -180,6 +156,8 @@ auto AudioStreamer::readData(char* data, i64 maxSize) -> i64 {
         }
 
         if (av_read_frame(formatContext.get(), packet.get()) < 0) {
+            auto* window = static_cast<MainWindow*>(parent());
+            QMetaObject::invokeMethod(window, &MainWindow::eof);
             break;
         }
 
@@ -192,6 +170,8 @@ auto AudioStreamer::readData(char* data, i64 maxSize) -> i64 {
         av_packet_unref(packet.get());
 
         if (err < 0) {
+            auto* window = static_cast<MainWindow*>(parent());
+            QMetaObject::invokeMethod(window, &MainWindow::eof);
             break;
         }
 
@@ -199,6 +179,11 @@ auto AudioStreamer::readData(char* data, i64 maxSize) -> i64 {
             err = avcodec_receive_frame(codecContext.get(), frame.get());
 
             if (err == AVERROR(EAGAIN) || err == AVERROR_EOF) {
+                if (err == AVERROR_EOF) {
+                    auto* window = static_cast<MainWindow*>(parent());
+                    QMetaObject::invokeMethod(window, &MainWindow::eof);
+                }
+
                 av_frame_unref(frame.get());
                 break;
             }
@@ -208,16 +193,23 @@ auto AudioStreamer::readData(char* data, i64 maxSize) -> i64 {
                 return -1;
             }
 
-            const u16 bufferSize = frame->nb_samples * channels * SAMPLE_SIZE;
+            const u16 bufferSize = frame->nb_samples *
+                                   codecContext->ch_layout.nb_channels *
+                                   SAMPLE_SIZE;
 
             QByteArray newBuffer = QByteArray();
             newBuffer.resize(bufferSize);
-            numBytesRead += bufferSize;
+            byteOffset += bufferSize;
+
+            playbackSecond = static_cast<u16>(
+                static_cast<f64>(frame->pts) *
+                av_q2d(formatContext->streams[audioStreamIndex]->time_base)
+            );
 
             if (codecContext->sample_fmt != AV_SAMPLE_FMT_S16) {
                 FramePtr newFrame = make_frame();
-                newFrame->ch_layout = channelLayout;
-                newFrame->sample_rate = sampleRate;
+                newFrame->ch_layout = codecContext->ch_layout;
+                newFrame->sample_rate = codecContext->sample_rate;
                 newFrame->format = AV_SAMPLE_FMT_S16;
 
                 swr_convert_frame(
@@ -234,22 +226,22 @@ auto AudioStreamer::readData(char* data, i64 maxSize) -> i64 {
             }
 
             buffer = newBuffer;
-            position = 0;
+            bufferPosition = 0;
 
             av_frame_unref(frame.get());
             break;
         }
     }
 
-    return bytes_read > 0 ? bytes_read : -1;
+    return bytesRead > 0 ? bytesRead : -1;
 }
 
+// Not for write
 auto AudioStreamer::writeData(const char* /* data */, i64 /* size */) -> i64 {
     return -1;
 }
 
 auto AudioStreamer::duration() const -> u16 {
-    // Duration of streamed audio in seconds.
     return secondsDuration;
 }
 
@@ -258,52 +250,53 @@ auto AudioStreamer::format() const -> QAudioFormat {
 }
 
 auto AudioStreamer::pos() const -> i64 {
-    // Position within a current buffer, not within all the available bytes.
-    return position;
+    return byteOffset - (buffer.size() - bufferPosition);
 }
 
-auto AudioStreamer::size() const -> i64 {
-    return availableBytes;
+// Buffer supports seeking.
+auto AudioStreamer::isSequential() const -> bool {
+    return false;
 }
 
-auto AudioStreamer::bytesRead() const -> i64 {
-    // Number of the all read bytes from all buffers.
-    return numBytesRead - position;
+auto AudioStreamer::second() const -> u16 {
+    return playbackSecond;
 }
 
+// Number of available bytes cannot be properly determined before decoding,
+// especially if source is variable-bitrate.
+// Just let it assume there's a lot of bytes.
 auto AudioStreamer::bytesAvailable() const -> i64 {
-    // Bytes left available.
-    return availableBytes - position;
+    return INT64_MAX;
 }
 
 auto AudioStreamer::reset() -> bool {
-    close();
+    QIODevice::close();
 
     formatContext.reset();
     codecContext.reset();
     swrContext.reset();
     packet.reset();
     frame.reset();
+
     buffer.clear();
 
     audioStreamIndex = 0;
-    position = 0;
+    bufferPosition = 0;
+    bytesPerSecond = 0;
     secondsDuration = 0;
-    availableBytes = 0;
-    channels = 0;
-    sampleRate = 0;
-    frames = 0;
-    numBytesRead = 0;
+    byteOffset = 0;
 
     return true;
 }
 
-auto AudioStreamer::seek(i64 sec) -> bool {
-    i64 timestamp = av_rescale(
-        sec,
+auto AudioStreamer::seekSecond(const u16 second) -> bool {
+    const i64 timestamp = av_rescale(
+        second,
         formatContext->streams[audioStreamIndex]->time_base.den,
         formatContext->streams[audioStreamIndex]->time_base.num
     );
+
+    avcodec_flush_buffers(codecContext.get());
 
     avformat_seek_file(
         formatContext.get(),
@@ -315,9 +308,8 @@ auto AudioStreamer::seek(i64 sec) -> bool {
     );
 
     buffer.clear();
-    position = 0;
-    numBytesRead = sec * codecContext->sample_rate *
-                   codecContext->ch_layout.nb_channels * SAMPLE_SIZE;
+    bufferPosition = 0;
+    byteOffset = second * bytesPerSecond;
 
     return true;
 }

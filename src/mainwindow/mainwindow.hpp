@@ -2,16 +2,20 @@
 
 #include "aliases.hpp"
 #include "audiostreamer.hpp"
+#include "constants.hpp"
 #include "customslider.hpp"
 #include "indexset.hpp"
 
 #include <QAction>
 #include <QAudioSink>
 #include <QCloseEvent>
+#include <QDir>
 #include <QLabel>
 #include <QMainWindow>
+#include <QMenu>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QSettings>
 #include <QStandardItemModel>
 #include <QSystemTrayIcon>
 #include <QThreadPool>
@@ -42,6 +46,7 @@ class MainWindow : public QMainWindow {
     ~MainWindow() override;
     static inline auto toMinutes(u16 secs) -> string;
     void updateProgress();
+    void eof();
 
    protected:
     void closeEvent(QCloseEvent* event) override;
@@ -49,19 +54,26 @@ class MainWindow : public QMainWindow {
     void dropEvent(QDropEvent* event) override;
 
    signals:
-    void filesDropped(vector<path> filePaths);
+    void filesDropped(const vector<path>& filePaths);
 
    private:
     // UI
     Ui::MainWindow* ui;
     QSystemTrayIcon* trayIcon = new QSystemTrayIcon(this);
-    QMenu* trayIconMenu;
+    QMenu* trayIconMenu = new QMenu(this);
     QPushButton* playButton;
     QTreeView* trackTree;
     QHeaderView* trackTreeHeader;
-    QStandardItemModel* trackModel;
+    QStandardItemModel* trackModel = new QStandardItemModel(this);
     QIcon pauseIcon = QIcon::fromTheme("media-playback-pause");
     QIcon startIcon = QIcon::fromTheme("media-playback-start");
+    QSettings* settings =
+        new QSettings("com.savannstm.rap", "com.savannstm.rap");
+
+    QString lastDir =
+        settings->value("lastOpenedDir", QDir::homePath()).toString();
+
+    QModelIndex currentIndex;
 
     CustomSlider* volumeSlider;
     QPushButton* stopButton;
@@ -100,8 +112,8 @@ class MainWindow : public QMainWindow {
     f64 audioVolume = 1.0;
     QLabel* volumeLabel;
 
-    ref<AudioStreamer> audioStreamer;
-    ref<QAudioSink> audioSink = make_unique<QAudioSink>();
+    AudioStreamer audioStreamer = AudioStreamer(this);
+    QAudioSink* audioSink = new QAudioSink();
     u32 audioBytesNum = 0;
 
     // Timer
@@ -109,6 +121,10 @@ class MainWindow : public QMainWindow {
 
     // Thread pool
     QThreadPool threadPool;
+
+    // Eq
+    bool eqEnabled = false;
+    array<f32, EQ_BANDS_N> eqGains = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
     inline void fillTable(const path& filePath) const;
     inline void fillTable(const vector<path>& paths) const;

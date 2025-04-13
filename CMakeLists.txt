@@ -18,15 +18,23 @@ find_package(TagLib REQUIRED)
 find_package(ZLIB)
 find_package(juce REQUIRED)
 
-file(GLOB PROJECT_SOURCES src/*.cpp src/*.hpp src/*.h src/*.c)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
+    src/*.hpp
+    src/*.cpp
+    src/*.h
+    src/*.c
+    src/*.ui
+    src/*.ts
+)
 
 qt_add_executable(rap
     MANUAL_FINALIZATION
-    ${PROJECT_SOURCES}
+    ${SOURCES}
 )
+
 set_target_properties(rap PROPERTIES WIN32_EXECUTABLE TRUE)
 
-target_include_directories(rap PRIVATE src)
+target_include_directories(rap PRIVATE src/aboutwindow src/audiostreamer src/customslider src/extensions src/mainwindow src/settingswindow)
 
 # minimalistic builds
 target_include_directories(rap PRIVATE $ENV{FFMPEG_INCLUDE_DIRS})

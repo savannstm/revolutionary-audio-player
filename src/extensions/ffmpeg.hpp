@@ -18,6 +18,7 @@ namespace FFmpeg {
 
     struct CodecContextDeleter {
         void operator()(AVCodecContext* ctx) const {
+            avcodec_flush_buffers(ctx);
             avcodec_free_context(&ctx);
         }
     };
@@ -35,11 +36,17 @@ namespace FFmpeg {
     };
 
     struct PacketDeleter {
-        void operator()(AVPacket* pkt) const { av_packet_free(&pkt); }
+        void operator()(AVPacket* pkt) const {
+            av_packet_unref(pkt);
+            av_packet_free(&pkt);
+        }
     };
 
     struct FrameDeleter {
-        void operator()(AVFrame* frame) const { av_frame_free(&frame); }
+        void operator()(AVFrame* frame) const {
+            av_frame_unref(frame);
+            av_frame_free(&frame);
+        }
     };
 
     using FormatContextPtr =

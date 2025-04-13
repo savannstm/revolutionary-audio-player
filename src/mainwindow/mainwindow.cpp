@@ -8,25 +8,21 @@
 #include "ui_mainwindow.h"
 
 #include <taglib/fileref.h>
-#include <taglib/tstring.h>
 
 #include <QFileDialog>
 #include <QMimeData>
-#include <QSettings>
 #include <filesystem>
-#include <memory>
 
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow) {
-    ui->setupUi(this);
     this->setAcceptDrops(true);
+
+    ui->setupUi(this);
 
     progressSlider = ui->progressSlider;
     volumeSlider = ui->volumeSlider;
     progressLabel = ui->progressLabel;
-
-    audioStreamer = make_unique<AudioStreamer>(this);
 
     // Buttons
     playButton = ui->playButton;
@@ -52,13 +48,33 @@ MainWindow::MainWindow(QWidget* parent) :
     stopAction = ui->actionStop;
     randomAction = ui->actionRandom;
 
-    // Playback controls
-    repeat = false;
-    random = false;
-    forwardDirection = Direction::Forward;
-    backwardDirection = Direction::Backward;
-
     volumeLabel = ui->volumeLabel;
+
+    // Track tree
+    // TODO: Drag tracks to arrange them as user wants
+    trackTree = ui->tracksTable;
+    trackTreeHeader = trackTree->header();
+
+    trackTreeHeader->setSectionResizeMode(QHeaderView::ResizeMode::Interactive);
+    trackTreeHeader->setSectionsClickable(true);
+    trackModel->setHorizontalHeaderLabels({ "Title", "Author", "No." });
+    trackTree->setModel(trackModel);
+
+    trayIcon->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::AudioVolumeHigh));
+    trayIcon->show();
+
+    trayIconMenu->addActions(
+        { resumeAction,
+          pauseAction,
+          stopAction,
+          backwardAction,
+          forwardAction,
+          repeatAction,
+          randomAction,
+          exitAction }
+    );
+
+    trayIcon->setContextMenu(trayIconMenu);
 
     connect(forwardAction, &QAction::triggered, this, [&] {
         jumpToTrack(forwardDirection);
@@ -67,6 +83,9 @@ MainWindow::MainWindow(QWidget* parent) :
     connect(backwardAction, &QAction::triggered, this, [&] {
         jumpToTrack(backwardDirection);
     });
+
+    repeatButton->addAction(repeatAction);
+    randomButton->addAction(randomAction);
 
     connect(repeatAction, &QAction::triggered, this, [&] {
         repeatButton->toggle();
@@ -98,46 +117,6 @@ MainWindow::MainWindow(QWidget* parent) :
         }
     });
 
-    // Eq
-    static auto eqEnabled = false;
-    static array<f32, EQ_BANDS_N> eqGains = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
-
-    // Track tree
-    trackTree = ui->tracksTable;
-    trackTreeHeader = trackTree->header();
-
-    trackModel = new QStandardItemModel(this);
-    trackTreeHeader->setSectionResizeMode(QHeaderView::ResizeMode::Interactive);
-    trackTreeHeader->setSectionsClickable(true);
-    trackModel->setHorizontalHeaderLabels({ "Title", "Author", "No." });
-    trackTree->setModel(trackModel);
-
-    trayIcon->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::AudioVolumeHigh));
-    trayIcon->show();
-
-    static auto* trayIconMenu = new QMenu(this);
-
-    trayIconMenu->addActions(
-        { resumeAction,
-          pauseAction,
-          stopAction,
-          backwardAction,
-          forwardAction,
-          repeatAction,
-          randomAction,
-          exitAction }
-    );
-
-    trayIcon->setContextMenu(trayIconMenu);
-
-    static auto* settings =
-        new QSettings("com.savannstm.rap", "com.savannstm.rap");
-
-    static auto lastDir =
-        settings->value("lastOpenedDir", QDir::homePath()).toString();
-
-    static QModelIndex currentIndex;
-
     connect(exitAction, &QAction::triggered, this, &QApplication::quit);
     connect(trayIcon, &QSystemTrayIcon::activated, [&](const auto reason) {
         switch (reason) {
@@ -150,13 +129,6 @@ MainWindow::MainWindow(QWidget* parent) :
             default:
                 break;
         }
-    });
-
-    connect(repeatButton, &QPushButton::clicked, this, [&] {
-        repeat = !repeat;
-    });
-    connect(randomButton, &QPushButton::clicked, this, [&] {
-        randomAction->trigger();
     });
 
     connect(trackTree, &QTreeView::pressed, this, [&](const auto& index) {
@@ -184,6 +156,7 @@ MainWindow::MainWindow(QWidget* parent) :
                         );
 
                     if (item) {
+                        // TODO
                         // showTrackProperties(item);
                     }
                 });
@@ -198,10 +171,8 @@ MainWindow::MainWindow(QWidget* parent) :
                         static_cast<MusicItem*>(trackModel->itemFromIndex(index)
                         );
 
-                    if (item != nullptr) {
-                        const auto path = item->getPath();
-                        playTrack(path);
-                    }
+                    const auto path = item->getPath();
+                    playTrack(path);
 
                     currentIndex = index;
                 }
@@ -297,7 +268,7 @@ MainWindow::MainWindow(QWidget* parent) :
         &MainWindow::updatePlaybackPosition
     );
 
-    connect(progressSlider, &CustomSlider::sliderMoved, this, [&] {
+    connect(progressSlider, &CustomSlider::valueChanged, this, [&] {
         const string progress = format(
             "{}/{}",
             MainWindow::toMinutes(progressSlider->sliderPosition()),
@@ -307,18 +278,18 @@ MainWindow::MainWindow(QWidget* parent) :
         progressLabel->setText(progress.c_str());
     });
 
-    connect(volumeSlider, &CustomSlider::sliderMoved, this, [&] {
-        const u32 pos = volumeSlider->sliderPosition();
-        audioVolume = static_cast<f64>(pos) / MAX_VOLUME;
+    connect(volumeSlider, &CustomSlider::valueChanged, this, [&] {
+        const u8 percent = volumeSlider->sliderPosition();
+        audioVolume = static_cast<f64>(percent) / MAX_VOLUME;
         audioSink->setVolume(audioVolume);
-        volumeLabel->setText(format("{}%", pos).c_str());
+        volumeLabel->setText(format("{}%", percent).c_str());
     });
 
     connect(volumeSlider, &CustomSlider::sliderReleased, this, [&] {
-        const u32 pos = volumeSlider->sliderPosition();
-        audioVolume = static_cast<f64>(pos) / MAX_VOLUME;
+        const u8 percent = volumeSlider->sliderPosition();
+        audioVolume = static_cast<f64>(percent) / MAX_VOLUME;
         audioSink->setVolume(audioVolume);
-        volumeLabel->setText(format("{}%", pos).c_str());
+        volumeLabel->setText(format("{}%", percent).c_str());
     });
 }
 
@@ -363,6 +334,7 @@ inline void MainWindow::fillTable(const vector<path>& paths) const {
             item->setEditable(false);
             item->setPath(filePath);
 
+            // TODO: Set by string or enum or whatever, not by order
             switch (col) {
                 case 0: {
                     QString text = QString::fromStdString(
@@ -425,16 +397,16 @@ inline void MainWindow::fillTable(const path& filePath) const {
 }
 
 inline void MainWindow::updatePlaybackPosition() {
-    const u32 pos = progressSlider->sliderPosition();
-    audioStreamer->seek(pos);
+    const u16 second = progressSlider->sliderPosition();
+    audioStreamer.seekSecond(second);
 
     const string progress =
-        format("{}/{}", MainWindow::toMinutes(pos / 1000), audioDuration);
+        format("{}/{}", MainWindow::toMinutes(second / 1000), audioDuration);
 
     progressLabel->setText(progress.c_str());
 }
 
-inline void MainWindow::jumpToTrack(Direction direction) {
+inline void MainWindow::jumpToTrack(const Direction direction) {
     const u16 totalTracks = trackModel->rowCount();
     if (totalTracks == 0) {
         return;
@@ -448,6 +420,8 @@ inline void MainWindow::jumpToTrack(Direction direction) {
     switch (direction) {
         case Direction::Forward:
             if (row == totalTracks - 1) {
+                // TODO: Allow going back to start only if repeating playlist
+                // or by a button
                 nextIdx = 0;
             } else {
                 nextIdx = row + 1;
@@ -497,7 +471,7 @@ inline void MainWindow::jumpToTrack(Direction direction) {
     playTrack(path);
 }
 
-auto MainWindow::toMinutes(u16 secs) -> string {
+auto MainWindow::toMinutes(const u16 secs) -> string {
     const u8 minutes = secs / 60;
     const u8 seconds = secs % 60;
 
@@ -510,7 +484,7 @@ auto MainWindow::toMinutes(u16 secs) -> string {
 }
 
 void MainWindow::stopPlayback() {
-    audioStreamer->reset();
+    audioStreamer.reset();
     audioSink->stop();
     audioDuration = "0:00";
     progressSlider->setRange(0, 0);
@@ -522,48 +496,43 @@ void MainWindow::playTrack(const path& path) {
     playButton->setIcon(pauseIcon);
 
     audioSink->stop();
+    audioSink->deleteLater();
+    audioSink = nullptr;
 
-    audioStreamer->start(path);
-    audioSink = make_unique<QAudioSink>(audioStreamer->format());
+    audioStreamer.start(path);
+
+    audioSink = new QAudioSink(audioStreamer.format());
     audioSink->setVolume(audioVolume);
 
-    const u16 duration = audioStreamer->duration();
+    const u16 duration = audioStreamer.duration();
     audioDuration = toMinutes(duration);
 
     progressSlider->setRange(0, duration);
     progressLabel->setText(std::format("0:00/{}", audioDuration).c_str());
 
-    audioSink->start(audioStreamer.get());
+    audioSink->start(&audioStreamer);
 }
 
 void MainWindow::updateProgress() {
-    const u32 readBytes = audioStreamer->bytesRead();
-    const u32 bufferSize = audioStreamer->size();
+    if (!progressSlider->isSliderDown()) {
+        const u16 playbackSecond = audioStreamer.second();
 
-    if (bufferSize > 0) {
-        if (!progressSlider->isSliderDown()) {
-            const u16 playbackSecond = static_cast<u16>(std::floor(
-                (static_cast<f64>(readBytes) / bufferSize) *
-                audioStreamer->duration()
-            ));
+        const string formatted = format(
+            "{}/{}",
+            MainWindow::toMinutes(playbackSecond),
+            audioDuration
+        );
 
-            const string formatted = format(
-                "{}/{}",
-                MainWindow::toMinutes(playbackSecond),
-                audioDuration
-            );
+        progressLabel->setText(formatted.c_str());
+        progressSlider->setSliderPosition(playbackSecond);
+    }
+}
 
-            progressLabel->setText(formatted.c_str());
-            progressSlider->setSliderPosition(playbackSecond);
-        }
-
-        if (audioStreamer->atEnd()) {
-            if (repeat) {
-                audioStreamer->seek(0);
-            } else {
-                jumpToTrack(forwardDirection);
-            }
-        }
+void MainWindow::eof() {
+    if (repeat) {
+        audioStreamer.seekSecond(0);
+    } else {
+        jumpToTrack(forwardDirection);
     }
 }
 
