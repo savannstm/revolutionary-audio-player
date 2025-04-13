@@ -30,7 +30,6 @@ Cpp11BracedListStyle: false
 DeriveLineEnding: true
 FixNamespaceComments: false
 IndentCaseLabels: true
-IndentWidth: 4
 LambdaBodyIndentation: OuterScope
 NamespaceIndentation: All
 PackConstructorInitializers: CurrentLine
