@@ -4,14 +4,21 @@
 #include "aliases.hpp"
 #include "constants.hpp"
 #include "customslider.hpp"
+#include "enums.hpp"
+#include "extractmetadata.hpp"
+#include "musicheader.hpp"
 #include "musicitem.hpp"
+#include "optionmenu.hpp"
+#include "randint.hpp"
+#include "tominutes.hpp"
 #include "ui_mainwindow.h"
 
-#include <taglib/fileref.h>
-
 #include <QFileDialog>
+#include <QLineEdit>
+#include <QMessageBox>
 #include <QMimeData>
-#include <filesystem>
+#include <QShortcut>
+#include <QtConcurrent>
 
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent),
@@ -52,12 +59,16 @@ MainWindow::MainWindow(QWidget* parent) :
 
     // Track tree
     // TODO: Drag tracks to arrange them as user wants
-    trackTree = ui->tracksTable;
-    trackTreeHeader = trackTree->header();
+    trackTree = ui->trackTree;
+    trackTreeHeader = new MusicHeader(Qt::Orientation::Horizontal, trackTree);
+    trackTreeHeader->setStretchLastSection(true);
+    trackTreeHeader->setDragEnabled(true);
+    trackTreeHeader->setDragDropMode(QAbstractItemView::DragDrop);
+    trackTree->setHeader(trackTreeHeader);
 
     trackTreeHeader->setSectionResizeMode(QHeaderView::ResizeMode::Interactive);
     trackTreeHeader->setSectionsClickable(true);
-    trackModel->setHorizontalHeaderLabels({ "Title", "Author", "No." });
+    trackModel->setHorizontalHeaderLabels(headerLabels);
     trackTree->setModel(trackModel);
 
     trayIcon->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::AudioVolumeHigh));
@@ -76,20 +87,43 @@ MainWindow::MainWindow(QWidget* parent) :
 
     trayIcon->setContextMenu(trayIconMenu);
 
+    searchTrackInput->hide();
+    searchTrackInput->setPlaceholderText("Track Name");
+    searchTrackInput->setMinimumWidth(64);
+    searchTrackInput->setFixedHeight(24);
+
+    repeatButton->setAction(repeatAction);
+    randomButton->setAction(randomAction);
+
     connect(forwardAction, &QAction::triggered, this, [&] {
-        jumpToTrack(forwardDirection);
+        jumpToTrack(forwardDirection, true);
     });
 
     connect(backwardAction, &QAction::triggered, this, [&] {
-        jumpToTrack(backwardDirection);
+        jumpToTrack(backwardDirection, true);
     });
 
-    repeatButton->addAction(repeatAction);
-    randomButton->addAction(randomAction);
-
     connect(repeatAction, &QAction::triggered, this, [&] {
-        repeatButton->toggle();
-        repeat = !repeat;
+        switch (repeat) {
+            case RepeatMode::Off:
+                repeat = RepeatMode::Track;
+                break;
+            case RepeatMode::Track:
+                repeatButton->toggle();
+                repeatButton->setIcon(
+                    QIcon::fromTheme(QIcon::ThemeIcon::AudioInputMicrophone)
+                );
+                repeat = RepeatMode::Playlist;
+                break;
+            case RepeatMode::Playlist:
+                repeatButton->setIcon(
+                    QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaylistRepeat)
+                );
+                repeat = RepeatMode::Off;
+                break;
+            case RepeatMode::REPEAT_MODES_N:
+                break;
+        }
     });
 
     connect(pauseAction, &QAction::triggered, this, [&] {
@@ -105,7 +139,6 @@ MainWindow::MainWindow(QWidget* parent) :
     connect(stopAction, &QAction::triggered, this, [&] { stopPlayback(); });
     connect(randomAction, &QAction::triggered, this, [&] {
         random = !random;
-        randomButton->toggle();
 
         if (random) {
             backwardDirection = Direction::BackwardRandom;
@@ -138,7 +171,8 @@ MainWindow::MainWindow(QWidget* parent) :
 
                 QAction* removeAction = menu->addAction("Remove Track");
                 QAction* clearAction = menu->addAction("Clear All Tracks");
-                QAction* propertiesAction = menu->addAction("Track Properties");
+                QAction* propertiesAction =
+                    menu->addAction("Track TRACK_PROPERTIES");
 
                 connect(removeAction, &QAction::triggered, menu, [&] {
                     if (index.isValid()) {
@@ -171,7 +205,9 @@ MainWindow::MainWindow(QWidget* parent) :
                         static_cast<MusicItem*>(trackModel->itemFromIndex(index)
                         );
 
-                    const auto path = item->getPath();
+                    const string& path = trackModel->getRowPath(index.row());
+                    // TODO: Display cover
+
                     playTrack(path);
 
                     currentIndex = index;
@@ -184,15 +220,114 @@ MainWindow::MainWindow(QWidget* parent) :
     });
 
     connect(
-        trackTreeHeader,
-        &QHeaderView::sectionClicked,
         this,
-        [&](const u16 index) {
-        const auto order = trackTreeHeader->sortIndicatorOrder() ==
-                                   Qt::SortOrder::AscendingOrder
-                               ? Qt::SortOrder::DescendingOrder
-                               : Qt::SortOrder::AscendingOrder;
-        trackModel->sort(index, order);
+        &MainWindow::trackDataReady,
+        this,
+        [&](const array<string, PROPERTY_COUNT>& metadata, const string& path) {
+        const u16 row = trackModel->rowCount();
+        trackModel->setRowMetadata(row, metadata);
+
+        for (u16 column = 0; column < trackModel->columnCount(); column++) {
+            auto* item = new MusicItem();
+
+            if (column == 0) {
+                item->setPath(path);
+            }
+
+            const string& data =
+                trackModel->headerData(column, Qt::Orientation::Horizontal)
+                    .toString()
+                    .toStdString();
+
+            const TrackProperty property =
+                TRACK_PROPERTIES.find(frozen::string(data))->second;
+            item->setText(metadata[property].c_str());
+
+            trackModel->setItem(row, column, item);
+        }
+    }
+    );
+
+    connect(this, &MainWindow::trackDataProcessed, this, [&] {
+        trackTree->doItemsLayout();
+        trackTree->updateGeometry();
+    });
+
+    connect(
+        trackTreeHeader,
+        &MusicHeader::headerPressed,
+        this,
+        [&](const u8 index, const Qt::MouseButton button) {
+        if (button == Qt::LeftButton) {
+            trackModel->sort(
+                index,
+                static_cast<Qt::SortOrder>(
+                    trackTreeHeader->sortIndicatorOrder() ^ Qt::DescendingOrder
+                )
+            );
+        } else if (button == Qt::RightButton) {
+            auto* menu = new OptionMenu(this);
+
+            for (const auto& [label, property] : TRACK_PROPERTIES) {
+                auto* action = new QAction(label.data(), menu);
+                action->setCheckable(true);
+
+                if (headerLabels.contains(label)) {
+                    action->setChecked(true);
+                }
+
+                connect(action, &QAction::triggered, this, [&] {
+                    const i8 index =
+                        static_cast<i8>(headerLabels.indexOf(label));
+
+                    if (index != -1) {
+                        headerLabels.removeAt(index);
+
+                        for (u8 column = 0; column < trackModel->columnCount();
+                             column++) {
+                            const auto columnLabel =
+                                trackModel
+                                    ->headerData(
+                                        column,
+                                        Qt::Orientation::Horizontal
+                                    )
+                                    .toString();
+
+                            if (label == columnLabel) {
+                                trackModel->removeColumn(column);
+                            }
+                        }
+                    } else {
+                        // TODO: Stretch to fit
+
+                        headerLabels.emplace_back(label.data());
+                        const u8 column = headerLabels.size();
+
+                        for (u16 row = 0; row < trackModel->rowCount(); row++) {
+                            auto* item = new MusicItem();
+
+                            const auto metadata =
+                                trackModel->getRowMetadata(row);
+
+                            item->setText(metadata[property].c_str());
+
+                            trackModel->setItem(row, column - 1, item);
+                        }
+
+                        trackTree->resizeColumnToContents(true);
+                        trackTree->setCurrentIndex(trackTree->currentIndex());
+                    }
+
+                    trackModel->setHorizontalHeaderLabels(headerLabels);
+                });
+
+                menu->addAction(action);
+                action->deleteLater();
+            }
+
+            menu->exec(QCursor::pos());
+            menu->deleteLater();
+        }
     }
     );
 
@@ -206,7 +341,11 @@ MainWindow::MainWindow(QWidget* parent) :
 
         if (directory == QDir::rootPath() || directory == QDir::homePath() ||
             directory.isEmpty()) {
-            // TODO: Message
+            QMessageBox::warning(
+                this,
+                "Crazy path!",
+                "Cannot search by root or home path, to save your PC. Move music to specific directory or navigate to an existing directory with music."
+            );
             return;
         }
 
@@ -214,17 +353,15 @@ MainWindow::MainWindow(QWidget* parent) :
 
         const auto directoryString = directory.toStdString();
 
-        const auto entries = walk_dir(
-            directoryString,
-            fs::directory_options::skip_permission_denied
-        );
+        const auto entries =
+            walk_dir(directoryString, dir_options::skip_permission_denied);
 
         fillTable(entries);
     });
 
     connect(openFileAction, &QAction::triggered, this, [&] {
         const auto file = QFileDialog::getOpenFileName(this, "Select File");
-        fillTable(vector<path>({ file.toStdString() }));
+        fillTable(vector<string>({ file.toStdString() }));
     });
 
     connect(playButton, &QPushButton::clicked, this, [&] {
@@ -258,7 +395,7 @@ MainWindow::MainWindow(QWidget* parent) :
         this,
         &MainWindow::filesDropped,
         this,
-        [&](const vector<path>& files) { fillTable(files); }
+        [&](const vector<string>& files) { fillTable(files); }
     );
 
     connect(
@@ -271,7 +408,7 @@ MainWindow::MainWindow(QWidget* parent) :
     connect(progressSlider, &CustomSlider::valueChanged, this, [&] {
         const string progress = format(
             "{}/{}",
-            MainWindow::toMinutes(progressSlider->sliderPosition()),
+            toMinutes(progressSlider->sliderPosition()),
             audioDuration
         );
 
@@ -291,6 +428,73 @@ MainWindow::MainWindow(QWidget* parent) :
         audioSink->setVolume(audioVolume);
         volumeLabel->setText(format("{}%", percent).c_str());
     });
+
+    connect(searchTrackInput, &QLineEdit::returnPressed, searchTrackInput, [&] {
+        qDebug() << searchTrackInput->text();
+    });
+
+    // TODO: Move to class properties
+    static vector<QModelIndex> searchMatches;
+    static usize searchMatchesPosition = 0;
+    searchMatches.reserve(32);
+
+    // TODO: Listen for Escape key press in searchInput
+
+    connect(searchTrackInput, &QLineEdit::returnPressed, this, [&] {
+        // TODO: Search by track name if no prefix, if there's a prefix, search
+        // by it. Prefixes follow metadata property names: `artist:`, `no:`,
+        // `bitrate:` etc.
+
+        if (searchMatches.empty()) {
+            for (u32 row = 0; row < trackModel->rowCount(); row++) {
+                const auto& metadata = trackModel->getRowMetadata(row);
+                const string& title = metadata[TrackProperty::Title];
+
+                static auto* coverLabel = new QLabel(this);
+
+                const string inputString =
+                    searchTrackInput->text().toStdString();
+                const string inputStringLowercase =
+                    searchTrackInput->text().toLower().toStdString();
+
+                // TODO: Handle multiple matches
+                if (title.contains(inputString.c_str()) ||
+                    title.contains(inputStringLowercase.c_str())) {
+                    searchMatches.emplace_back(trackModel->index(row, 0));
+                }
+            }
+
+            if (searchMatches.size() == 0) {
+                return;
+            }
+
+            const QModelIndex& firstMatch =
+                searchMatches[searchMatchesPosition];
+            trackTree->scrollTo(firstMatch, QTreeView::PositionAtCenter);
+            trackTree->setCurrentIndex(firstMatch);
+        } else {
+            searchMatchesPosition++;
+
+            if (searchMatchesPosition >= searchMatches.size()) {
+                searchMatchesPosition = 0;
+            }
+
+            const QModelIndex& match = searchMatches[searchMatchesPosition];
+            trackTree->scrollTo(match, QTreeView::PositionAtCenter);
+            trackTree->setCurrentIndex(match);
+        }
+    });
+
+    connect(searchShortcut, &QShortcut::activated, this, [&] {
+        searchTrackInput->move(
+            trackTree->width() - searchTrackInput->width(),
+            trackTree->y()
+        );
+
+        searchTrackInput->raise();
+        searchTrackInput->show();
+        searchTrackInput->setFocus();
+    });
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
@@ -306,12 +510,13 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 
 void MainWindow::dropEvent(QDropEvent* event) {
     if (event->mimeData()->hasUrls()) {
-        vector<path> filePaths;
+        constexpr u8 MINIMUM_COUNT = 128;
+        vector<string> filePaths;
+        filePaths.reserve(MINIMUM_COUNT);
 
         for (const QUrl& url : event->mimeData()->urls()) {
-            const QString filePath = url.toLocalFile();
-
-            if (!filePath.isEmpty()) {
+            if (!url.isEmpty()) {
+                const QString filePath = url.toLocalFile();
                 filePaths.emplace_back(filePath.toStdString());
             }
         }
@@ -320,79 +525,43 @@ void MainWindow::dropEvent(QDropEvent* event) {
     }
 }
 
-inline void MainWindow::fillTable(const vector<path>& paths) const {
-    const u16 startRow = trackModel->rowCount();
-
-    for (const auto& [idx, filePath] : views::enumerate(paths)) {
-        const auto file = TagLib::FileRef(filePath.c_str());
-        const auto* tag = file.tag();
-        const u16 row = startRow + idx;
-
-        for (u16 col = 0; col < trackModel->columnCount(); col++) {
-            // TODO: Check if the same item is already in the table
-            auto* item = new MusicItem();
-            item->setEditable(false);
-            item->setPath(filePath);
-
-            // TODO: Set by string or enum or whatever, not by order
-            switch (col) {
-                case 0: {
-                    QString text = QString::fromStdString(
-                        (tag != nullptr) && !tag->title().isEmpty()
-                            ? tag->title().toCString(true)
-                            : filePath.filename().string()
-                    );
-                    item->setText(text);
-                    break;
-                }
-                case 1: {
-                    if ((tag != nullptr) && !tag->artist().isEmpty()) {
-                        item->setText(
-                            QString::fromStdString(tag->artist().toCString(true)
-                            )
-                        );
-                    }
-                    break;
-                }
-                case 2: {
-                    if (tag != nullptr) {
-                        item->setData(tag->track(), Qt::EditRole);
-                    }
-                    break;
-                }
-                default:
-                    break;
-            }
-
-            trackModel->setItem(row, col, item);
+inline void MainWindow::fillTable(const vector<string>& filePaths) {
+    for (const string& filePath : filePaths) {
+        if (trackModel->contains(filePath)) {
+            continue;
         }
+
+        emit trackDataReady(extractMetadata(filePath), filePath);
     }
 
-    trackTreeHeader->resizeSections(QHeaderView::ResizeToContents);
-    trackModel->sort(2);
+    emit trackDataProcessed();
 }
 
-inline void MainWindow::fillTable(const walk_dir& read_dir) const {
-    vector<path> files;
+inline void MainWindow::fillTable(const walk_dir& read_dir) {
+    constexpr u8 MINIMUM_COUNT = 128;
+    vector<string> files;
+    files.reserve(MINIMUM_COUNT);
 
-    for (const auto& entry : read_dir) {
+    for (const dir_entry& entry : read_dir) {
         if (!entry.is_regular_file()) {
             continue;
         }
 
-        const auto& filePath = entry.path();
+        const path& filePath = entry.path();
 
-        for (const auto* ext : EXTENSIONS) {
-            if (filePath.string().ends_with(ext)) {
-                files.emplace_back(filePath);
+        for (const char* extension : EXTENSIONS) {
+            const string pathString = filePath.string();
+
+            if (pathString.ends_with(extension)) {
+                files.emplace_back(pathString);
             }
         }
     }
 
-    fillTable(files);
+    QtConcurrent::run([this, files] { fillTable(files); });
 }
 
-inline void MainWindow::fillTable(const path& filePath) const {
+inline void MainWindow::fillTable(const string& filePath) {
     fillTable({ filePath });
 }
 
@@ -400,19 +569,24 @@ inline void MainWindow::updatePlaybackPosition() {
     const u16 second = progressSlider->sliderPosition();
     audioStreamer.seekSecond(second);
 
+    if (audioSink->state() != QtAudio::ActiveState) {
+        audioSink->start();
+    }
+
     const string progress =
-        format("{}/{}", MainWindow::toMinutes(second / 1000), audioDuration);
+        format("{}/{}", toMinutes(second / 1000), audioDuration);
 
     progressLabel->setText(progress.c_str());
 }
 
-inline void MainWindow::jumpToTrack(const Direction direction) {
+inline void
+MainWindow::jumpToTrack(const Direction direction, const bool clicked) {
     const u16 totalTracks = trackModel->rowCount();
     if (totalTracks == 0) {
         return;
     }
 
-    const auto idx = trackTree->currentIndex();
+    const QModelIndex idx = trackTree->currentIndex();
 
     u16 nextIdx;
     const u16 row = idx.row();
@@ -420,9 +594,11 @@ inline void MainWindow::jumpToTrack(const Direction direction) {
     switch (direction) {
         case Direction::Forward:
             if (row == totalTracks - 1) {
-                // TODO: Allow going back to start only if repeating playlist
-                // or by a button
-                nextIdx = 0;
+                if (repeat == RepeatMode::Playlist || clicked) {
+                    nextIdx = 0;
+                } else {
+                    return;
+                }
             } else {
                 nextIdx = row + 1;
             }
@@ -430,14 +606,12 @@ inline void MainWindow::jumpToTrack(const Direction direction) {
         case Direction::ForwardRandom: {
             playHistory.insert(row);
 
-            auto dist = std::uniform_int_distribution<u16>(0, totalTracks - 1);
-
             if (playHistory.size() == totalTracks) {
                 playHistory.clear();
             }
 
             do {
-                nextIdx = dist(gen);
+                nextIdx = randint_range(0, totalTracks - 1, randdevice());
             } while (playHistory.contains(nextIdx));
             break;
         }
@@ -461,26 +635,16 @@ inline void MainWindow::jumpToTrack(const Direction direction) {
         }
     }
 
-    const auto index = trackTree->model()->index(nextIdx, 0);
+    const QModelIndex index = trackTree->model()->index(nextIdx, 0);
     trackTree->setCurrentIndex(index);
 
     const auto* item =
         static_cast<MusicItem*>(trackModel->itemFromIndex(index));
 
-    const auto path = item->getPath();
+    const string& path = trackModel->getRowPath(index.row());
+    // TODO: Display cover
+
     playTrack(path);
-}
-
-auto MainWindow::toMinutes(const u16 secs) -> string {
-    const u8 minutes = secs / 60;
-    const u8 seconds = secs % 60;
-
-    const string secondsString = to_string(seconds);
-    const string secondsPadded =
-        seconds < 10 ? "0" + secondsString : secondsString;
-
-    const string formatted = format("{}:{}", minutes, secondsPadded);
-    return formatted;
 }
 
 void MainWindow::stopPlayback() {
@@ -492,7 +656,7 @@ void MainWindow::stopPlayback() {
     playButton->setIcon(startIcon);
 }
 
-void MainWindow::playTrack(const path& path) {
+void MainWindow::playTrack(const string& path) {
     playButton->setIcon(pauseIcon);
 
     audioSink->stop();
@@ -517,11 +681,8 @@ void MainWindow::updateProgress() {
     if (!progressSlider->isSliderDown()) {
         const u16 playbackSecond = audioStreamer.second();
 
-        const string formatted = format(
-            "{}/{}",
-            MainWindow::toMinutes(playbackSecond),
-            audioDuration
-        );
+        const string formatted =
+            format("{}/{}", toMinutes(playbackSecond), audioDuration);
 
         progressLabel->setText(formatted.c_str());
         progressSlider->setSliderPosition(playbackSecond);
@@ -529,10 +690,10 @@ void MainWindow::updateProgress() {
 }
 
 void MainWindow::eof() {
-    if (repeat) {
+    if (repeat == RepeatMode::Track) {
         audioStreamer.seekSecond(0);
     } else {
-        jumpToTrack(forwardDirection);
+        jumpToTrack(forwardDirection, false);
     }
 }
 

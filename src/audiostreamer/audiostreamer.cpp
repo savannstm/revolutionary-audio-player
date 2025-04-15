@@ -156,6 +156,7 @@ auto AudioStreamer::readData(char* data, const i64 maxSize) -> i64 {
         }
 
         if (av_read_frame(formatContext.get(), packet.get()) < 0) {
+            ended = true;
             auto* window = static_cast<MainWindow*>(parent());
             QMetaObject::invokeMethod(window, &MainWindow::eof);
             break;
@@ -170,6 +171,7 @@ auto AudioStreamer::readData(char* data, const i64 maxSize) -> i64 {
         av_packet_unref(packet.get());
 
         if (err < 0) {
+            ended = true;
             auto* window = static_cast<MainWindow*>(parent());
             QMetaObject::invokeMethod(window, &MainWindow::eof);
             break;
@@ -180,6 +182,7 @@ auto AudioStreamer::readData(char* data, const i64 maxSize) -> i64 {
 
             if (err == AVERROR(EAGAIN) || err == AVERROR_EOF) {
                 if (err == AVERROR_EOF) {
+                    ended = true;
                     auto* window = static_cast<MainWindow*>(parent());
                     QMetaObject::invokeMethod(window, &MainWindow::eof);
                 }
@@ -262,11 +265,15 @@ auto AudioStreamer::second() const -> u16 {
     return playbackSecond;
 }
 
+auto AudioStreamer::atEnd() const -> bool {
+    return ended;
+}
+
 // Number of available bytes cannot be properly determined before decoding,
 // especially if source is variable-bitrate.
 // Just let it assume there's a lot of bytes.
 auto AudioStreamer::bytesAvailable() const -> i64 {
-    return INT64_MAX;
+    return ended ? 0 : INT64_MAX;
 }
 
 auto AudioStreamer::reset() -> bool {
@@ -279,6 +286,8 @@ auto AudioStreamer::reset() -> bool {
     frame.reset();
 
     buffer.clear();
+
+    ended = false;
 
     audioStreamIndex = 0;
     bufferPosition = 0;

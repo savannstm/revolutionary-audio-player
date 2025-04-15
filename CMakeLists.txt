@@ -14,9 +14,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent)
-find_package(TagLib REQUIRED)
-find_package(ZLIB)
-find_package(juce REQUIRED)
+# re-add when implementing equalizer back
+# find_package(juce REQUIRED)
+find_package(frozen CONFIG REQUIRED)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     src/*.hpp
@@ -34,28 +34,36 @@ qt_add_executable(rap
 
 set_target_properties(rap PROPERTIES WIN32_EXECUTABLE TRUE)
 
-target_include_directories(rap PRIVATE src/aboutwindow src/audiostreamer src/customslider src/extensions src/mainwindow src/settingswindow)
+file(GLOB SUBDIRS LIST_DIRECTORIES true src/*)
+target_include_directories(rap PRIVATE ${SUBDIRS})
 
 # minimalistic builds
 target_include_directories(rap PRIVATE $ENV{FFMPEG_INCLUDE_DIRS})
 target_link_directories(rap PRIVATE $ENV{FFMPEG_LIBRARY_DIRS})
 
 # full featured
+# find_package(FFmpeg REQUIRED COMPONENTS ${FFMPEG_LIBRARIES})
 # target_include_directories(rap PRIVATE ${FFMPEG_INCLUDE_DIRS})
 # target_link_directories(rap PRIVATE ${FFMPEG_LIBRARY_DIRS})
 # target_link_libraries(rap PRIVATE ${FFMPEG_LIBRARIES})
+
+find_path(RAPIDHASH_INCLUDE_DIRS "rapidhash.h")
+target_include_directories(rap PRIVATE ${RAPIDHASH_INCLUDE_DIRS})
 
 target_link_libraries(rap PRIVATE
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::Concurrent
-    TagLib::TagLib
-    juce::juce_dsp
+    # re-add when implementing equalizer back
+    # juce::juce_dsp
     avcodec
     avformat
     avutil
     swresample
+    frozen::frozen
+    frozen::frozen-headers
 )
+
 
 include(GNUInstallDirs)
 install(TARGETS rap

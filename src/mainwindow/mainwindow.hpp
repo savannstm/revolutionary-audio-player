@@ -1,25 +1,27 @@
 #pragma once
 
+#include "actionbutton.hpp"
 #include "aliases.hpp"
 #include "audiostreamer.hpp"
 #include "constants.hpp"
 #include "customslider.hpp"
 #include "indexset.hpp"
+#include "musicheader.hpp"
+#include "musicmodel.hpp"
 
 #include <QAction>
 #include <QAudioSink>
 #include <QCloseEvent>
 #include <QDir>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMainWindow>
 #include <QMenu>
-#include <QPlainTextEdit>
 #include <QPushButton>
 #include <QSettings>
-#include <QStandardItemModel>
+#include <QShortcut>
 #include <QSystemTrayIcon>
 #include <QThreadPool>
-#include <QTimer>
 #include <QTreeView>
 #include <random>
 
@@ -31,20 +33,12 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
-enum Direction : u8 {
-    Forward,
-    BackwardRandom,
-    Backward,
-    ForwardRandom
-};
-
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
    public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
-    static inline auto toMinutes(u16 secs) -> string;
     void updateProgress();
     void eof();
 
@@ -54,7 +48,12 @@ class MainWindow : public QMainWindow {
     void dropEvent(QDropEvent* event) override;
 
    signals:
-    void filesDropped(const vector<path>& filePaths);
+    void filesDropped(const vector<string>& filePaths);
+    void trackDataReady(
+        const array<string, PROPERTY_COUNT>& metadata,
+        const string& path
+    );
+    void trackDataProcessed();
 
    private:
     // UI
@@ -63,8 +62,8 @@ class MainWindow : public QMainWindow {
     QMenu* trayIconMenu = new QMenu(this);
     QPushButton* playButton;
     QTreeView* trackTree;
-    QHeaderView* trackTreeHeader;
-    QStandardItemModel* trackModel = new QStandardItemModel(this);
+    MusicHeader* trackTreeHeader;
+    MusicModel* trackModel = new MusicModel(this);
     QIcon pauseIcon = QIcon::fromTheme("media-playback-pause");
     QIcon startIcon = QIcon::fromTheme("media-playback-start");
     QSettings* settings =
@@ -79,8 +78,8 @@ class MainWindow : public QMainWindow {
     QPushButton* stopButton;
     QPushButton* backwardButton;
     QPushButton* forwardButton;
-    QPushButton* repeatButton;
-    QPushButton* randomButton;
+    ActionButton* repeatButton;
+    ActionButton* randomButton;
 
     QMenu* fileMenu;
     QAction* exitAction;
@@ -98,13 +97,13 @@ class MainWindow : public QMainWindow {
     CustomSlider* progressSlider;
     QLabel* progressLabel;
 
+    QStringList headerLabels = { "Title", "Artist", "Track Number" };
+
     // Play history
-    std::random_device rng;
-    std::mt19937 gen;
     IndexSet<u32> playHistory = IndexSet<u32>();
 
     // Controls
-    bool repeat = false;
+    RepeatMode repeat = RepeatMode::Off;
     bool random = false;
     Direction forwardDirection = Direction::Forward;
     Direction backwardDirection = Direction::Backward;
@@ -114,23 +113,27 @@ class MainWindow : public QMainWindow {
 
     AudioStreamer audioStreamer = AudioStreamer(this);
     QAudioSink* audioSink = new QAudioSink();
-    u32 audioBytesNum = 0;
 
     // Timer
     string audioDuration = "0:00";
 
     // Thread pool
-    QThreadPool threadPool;
+    QThreadPool* threadPool;
 
     // Eq
     bool eqEnabled = false;
     array<f32, EQ_BANDS_N> eqGains = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
-    inline void fillTable(const path& filePath) const;
-    inline void fillTable(const vector<path>& paths) const;
-    inline void fillTable(const walk_dir& read_dir) const;
-    inline void jumpToTrack(Direction direction);
+    std::random_device randdevice;
+
+    QLineEdit* searchTrackInput = new QLineEdit(this);
+    QShortcut* searchShortcut = new QShortcut(QKeySequence("Ctrl+F"), this);
+
+    inline void fillTable(const string& filePath);
+    inline void fillTable(const vector<string>& paths);
+    inline void fillTable(const walk_dir& read_dir);
+    inline void jumpToTrack(Direction direction, bool clicked);
     inline void updatePlaybackPosition();
-    inline void playTrack(const path& path);
+    inline void playTrack(const string& path);
     inline void stopPlayback();
 };

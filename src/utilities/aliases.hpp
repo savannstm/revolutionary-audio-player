@@ -1,5 +1,8 @@
 #pragma once
 
+#include <frozen/string.h>
+
+#include <QString>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -10,7 +13,6 @@
 #include <set>
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -34,6 +36,7 @@ namespace views = std::views;
 namespace ranges = std::ranges;
 
 using fs::path;
+using std::abs;
 using std::array;
 using std::cerr;
 using std::cout;
@@ -51,11 +54,15 @@ using panic = std::runtime_error;
 
 using walk_dir = fs::recursive_directory_iterator;
 using read_dir = fs::directory_iterator;
+using dir_entry = fs::directory_entry;
+using dir_options = fs::directory_options;
+
+using views::enumerate;
 
 template <typename T>
 using ref = std::unique_ptr<T, std::default_delete<T>>;
 
 template <typename K, typename V>
 using hashmap = std::unordered_map<K, V>;
-template <typename K, typename V>
-using hashset = std::unordered_set<K, V>;
+template <typename K>
+using hashset = std::unordered_set<K>;

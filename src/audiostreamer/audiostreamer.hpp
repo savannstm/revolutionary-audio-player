@@ -24,6 +24,7 @@ class AudioStreamer : public QIODevice {
     [[nodiscard]] auto isSequential() const -> bool override;
     [[nodiscard]] auto bytesAvailable() const -> i64 override;
     [[nodiscard]] auto second() const -> u16;
+    [[nodiscard]] auto atEnd() const -> bool override;
     auto seekSecond(u16 second) -> bool;
     auto start(const path& path) -> bool;
     auto reset() -> bool override;
@@ -41,6 +42,9 @@ class AudioStreamer : public QIODevice {
 
     QByteArray buffer;
     QAudioFormat audioFormat;
+
+    // TODO: Maybe turn to i64 to return in `bytesAvailable()`?
+    bool ended = false;
 
     i32 audioStreamIndex = 0;
     i64 bufferPosition = 0;

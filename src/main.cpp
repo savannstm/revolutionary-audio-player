@@ -18,8 +18,17 @@ auto main(int argc, char* argv[]) -> int {
         return 1;
     }
 
-    qDebug() << QStyleFactory::keys();
-    if (QStyleFactory::keys().contains("Fusion")) {
+    const auto styles = QStyleFactory::keys();
+
+    /*
+    if (styles.contains("windows11")) {
+        QApplication::setStyle("windows11");
+    }
+    */
+
+    // TODO: For now default to fusion, add other styles to options
+    // to the settings
+    if (styles.contains("Fusion")) {
         QApplication::setStyle("fusion");
     }
 
