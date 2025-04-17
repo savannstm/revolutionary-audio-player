@@ -37,15 +37,8 @@ set_target_properties(rap PROPERTIES WIN32_EXECUTABLE TRUE)
 file(GLOB SUBDIRS LIST_DIRECTORIES true src/*)
 target_include_directories(rap PRIVATE ${SUBDIRS})
 
-# minimalistic builds
 target_include_directories(rap PRIVATE $ENV{FFMPEG_INCLUDE_DIRS})
 target_link_directories(rap PRIVATE $ENV{FFMPEG_LIBRARY_DIRS})
-
-# full featured
-# find_package(FFmpeg REQUIRED COMPONENTS ${FFMPEG_LIBRARIES})
-# target_include_directories(rap PRIVATE ${FFMPEG_INCLUDE_DIRS})
-# target_link_directories(rap PRIVATE ${FFMPEG_LIBRARY_DIRS})
-# target_link_libraries(rap PRIVATE ${FFMPEG_LIBRARIES})
 
 find_path(RAPIDHASH_INCLUDE_DIRS "rapidhash.h")
 target_include_directories(rap PRIVATE ${RAPIDHASH_INCLUDE_DIRS})
