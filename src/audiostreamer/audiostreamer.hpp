@@ -20,9 +20,9 @@ class AudioStreamer : public QIODevice {
 
     [[nodiscard]] auto duration() const -> u16;
     [[nodiscard]] auto format() const -> QAudioFormat;
-    [[nodiscard]] auto pos() const -> i64 override;
+    [[nodiscard]] auto pos() const -> qi64 override;
     [[nodiscard]] auto isSequential() const -> bool override;
-    [[nodiscard]] auto bytesAvailable() const -> i64 override;
+    [[nodiscard]] auto bytesAvailable() const -> qi64 override;
     [[nodiscard]] auto second() const -> u16;
     [[nodiscard]] auto atEnd() const -> bool override;
     auto seekSecond(u16 second) -> bool;
@@ -30,8 +30,8 @@ class AudioStreamer : public QIODevice {
     auto reset() -> bool override;
 
    protected:
-    auto readData(char* data, i64 maxSize) -> i64 override;
-    auto writeData(const char* /* data */, i64 /* size */) -> i64 override;
+    auto readData(char* data, qi64 maxSize) -> qi64 override;
+    auto writeData(const char* /* data */, qi64 /* size */) -> qi64 override;
 
    private:
     FormatContextPtr formatContext;

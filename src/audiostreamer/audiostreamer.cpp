@@ -128,7 +128,7 @@ auto AudioStreamer::start(const path& path) -> bool {
     return open(QIODevice::ReadOnly);
 }
 
-auto AudioStreamer::readData(char* data, const i64 maxSize) -> i64 {
+auto AudioStreamer::readData(char* data, const qi64 maxSize) -> qi64 {
     i64 bytesRead = 0;
 
     while (bytesRead < maxSize) {
@@ -240,7 +240,7 @@ auto AudioStreamer::readData(char* data, const i64 maxSize) -> i64 {
 }
 
 // Not for write
-auto AudioStreamer::writeData(const char* /* data */, i64 /* size */) -> i64 {
+auto AudioStreamer::writeData(const char* /* data */, qi64 /* size */) -> qi64 {
     return -1;
 }
 
@@ -252,7 +252,7 @@ auto AudioStreamer::format() const -> QAudioFormat {
     return audioFormat;
 }
 
-auto AudioStreamer::pos() const -> i64 {
+auto AudioStreamer::pos() const -> qi64 {
     return byteOffset - (buffer.size() - bufferPosition);
 }
 
@@ -272,7 +272,7 @@ auto AudioStreamer::atEnd() const -> bool {
 // Number of available bytes cannot be properly determined before decoding,
 // especially if source is variable-bitrate.
 // Just let it assume there's a lot of bytes.
-auto AudioStreamer::bytesAvailable() const -> i64 {
+auto AudioStreamer::bytesAvailable() const -> qi64 {
     return ended ? 0 : INT64_MAX;
 }
 
