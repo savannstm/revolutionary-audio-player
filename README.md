@@ -22,9 +22,11 @@ You need a C++23 compatible compiler: `clang`, `gcc`, `msvc`.
 
 The project uses CMake as build system.
 
-You'll need `FFmpeg`, `JUCE`, `Qt6`, and `taglib` to build the project.
+You'll need `Qt6`, `JUCE`, `FFmpeg`, and `rapidhash` to build the project.
 
-For MinGW compatibility, you'll have to use 7.0.12 version of JUCE framework, as `8.0.0` deprecated MinGW support.
+Path to the `rapidhash` headers can be passed as `-DRAPIDHASH_INCLUDE_DIRS`.
+
+For MinGW compatibility, you'll have to use `7.0.12` version of JUCE framework, as `8.0.0` deprecated MinGW support.
 
 `build.ps1` PowerShell script and `build.sh` Bash script are used to build the project to `build` directory.
 
