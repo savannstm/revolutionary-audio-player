@@ -10,7 +10,7 @@ class OptionMenu : public QMenu {
     Q_OBJECT
 
    public:
-    explicit OptionMenu(QWidget* parent = nullptr);
+    using QMenu::QMenu;
 
    protected:
     void mouseReleaseEvent(QMouseEvent* event) override;

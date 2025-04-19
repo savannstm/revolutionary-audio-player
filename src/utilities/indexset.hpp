@@ -1,17 +1,17 @@
 #pragma once
 
 #include "aliases.hpp"
+#include "rapidhasher.hpp"
 
 #include <ranges>
 
-template <typename T>
 class IndexSet {
    private:
-    vector<T> elements;
-    hashmap<T, usize> map;
+    vector<u32> elements;
+    rapidhashmap<u32, usize> map;
 
    public:
-    auto insert(const T& element) -> bool {
+    auto insert(const u32 element) -> bool {
         if (map.contains(element)) {
             return false;
         }
@@ -21,7 +21,7 @@ class IndexSet {
         return true;
     }
 
-    auto remove(const T& element) -> bool {
+    auto remove(const u32 element) -> bool {
         if (!map.contains(element)) {
             return false;
         }
@@ -30,7 +30,7 @@ class IndexSet {
         const usize lastIndex = elements.size() - 1;
 
         if (indexToRemove != lastIndex) {
-            elements[indexToRemove] = std::move(elements[lastIndex]);
+            elements[indexToRemove] = elements[lastIndex];
             map[elements[indexToRemove]] = indexToRemove;
         }
 
@@ -39,11 +39,11 @@ class IndexSet {
         return true;
     }
 
-    [[nodiscard]] auto contains(const T& element) const -> bool {
+    [[nodiscard]] auto contains(const u32 element) const -> bool {
         return map.contains(element);
     }
 
-    [[nodiscard]] auto at(const usize index) const -> const T& {
+    [[nodiscard]] auto at(const usize index) const -> u32 {
         if (index >= elements.size()) {
             throw panic(
                 format("Index {} out of range {}", index, elements.size())
@@ -53,7 +53,7 @@ class IndexSet {
         return elements[index];
     }
 
-    [[nodiscard]] auto indexOf(const T& element) const -> usize {
+    [[nodiscard]] auto indexOf(const u32 element) -> usize {
         if (!map.contains(element)) {
             throw panic("Element not found");
         }
@@ -69,18 +69,16 @@ class IndexSet {
         return elements.empty();
     }
 
-    [[nodiscard]] auto last() const noexcept -> const T& {
-        return elements.back();
-    }
+    [[nodiscard]] auto last() const noexcept -> u32 { return elements.back(); }
 
-    auto pop() noexcept -> const T& {
-        const T element = std::move(this->last());
+    auto pop() noexcept -> u32 {
+        const u32 element = this->last();
         elements.pop_back();
 
         return element;
     }
 
-    [[nodiscard]] auto first() const noexcept -> const T& {
+    [[nodiscard]] auto first() const noexcept -> u32 {
         return elements.front();
     }
 
@@ -89,9 +87,9 @@ class IndexSet {
         map.clear();
     }
 
-    auto begin() const noexcept { return elements.begin(); }
+    [[nodiscard]] auto begin() const noexcept { return elements.begin(); }
 
-    auto end() const noexcept { return elements.end(); }
+    [[nodiscard]] auto end() const noexcept { return elements.end(); }
 
-    auto view() const noexcept { return views::all(elements); }
+    [[nodiscard]] auto view() const noexcept { return views::all(elements); }
 };

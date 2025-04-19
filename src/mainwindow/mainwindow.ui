@@ -410,7 +410,7 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QTreeView" name="trackTree">
+       <widget class="TrackTree" name="trackTree">
         <property name="sizeAdjustPolicy">
          <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContentsOnFirstShow</enum>
         </property>
@@ -564,6 +564,11 @@
    <class>ActionButton</class>
    <extends>QPushButton</extends>
    <header>actionbutton.hpp</header>
+  </customwidget>
+    <customwidget>
+   <class>TrackTree</class>
+   <extends>QTreeView</extends>
+   <header>tracktree.hpp</header>
   </customwidget>
  </customwidgets>
  <resources/>

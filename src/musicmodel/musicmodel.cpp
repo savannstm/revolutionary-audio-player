@@ -2,6 +2,7 @@
 #include "musicmodel.hpp"
 
 #include "constants.hpp"
+#include "rapidhasher.hpp"
 
 #include <Qt>
 
@@ -17,15 +18,16 @@ void MusicModel::setItem(const u16 row, const u16 col, MusicItem* item) {
     tracks.emplace(item->getPath());
 }
 
-void MusicModel::setRowMetadata(
-    const u16 row,
-    const array<string, PROPERTY_COUNT>& metadata
-) {
+void MusicModel::clearRowMetadata() {
+    rowMetadata.clear();
+    tracks.clear();
+}
+
+void MusicModel::setRowMetadata(const u16 row, const metadata_array& metadata) {
     rowMetadata[row] = metadata;
 }
 
-auto MusicModel::getRowMetadata(const u16 row) const
-    -> const array<string, PROPERTY_COUNT>& {
+auto MusicModel::getRowMetadata(const u16 row) const -> const metadata_array& {
     return rowMetadata.find(row)->second;
 }
 
@@ -34,7 +36,7 @@ auto MusicModel::getRowPath(const u16 row) const -> const string& {
 }
 
 void MusicModel::sort(const i32 column, const Qt::SortOrder order) {
-    hashmap<string, array<string, PROPERTY_COUNT>> metadataByPath;
+    rapidhashmap<string, metadata_array> metadataByPath;
     metadataByPath.reserve(rowCount());
 
     for (const auto& [row, metadata] : rowMetadata) {
@@ -43,10 +45,10 @@ void MusicModel::sort(const i32 column, const Qt::SortOrder order) {
 
     QStandardItemModel::sort(column, order);
 
-    hashmap<u32, array<string, PROPERTY_COUNT>> newMetadata;
+    rapidhashmap<u32, metadata_array> newMetadata;
     newMetadata.reserve(rowCount());
 
-    for (i32 row = 0; row < rowCount(); row++) {
+    for (u16 row = 0; row < rowCount(); row++) {
         const string& path = static_cast<MusicItem*>(item(row, 0))->getPath();
         newMetadata.emplace(row, std::move(metadataByPath.find(path)->second));
     }
@@ -54,6 +56,6 @@ void MusicModel::sort(const i32 column, const Qt::SortOrder order) {
     rowMetadata = std::move(newMetadata);
 }
 
-auto MusicModel::contains(const path& path) const -> bool {
+auto MusicModel::contains(const string& path) const -> bool {
     return tracks.contains(path);
 }

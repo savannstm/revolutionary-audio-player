@@ -1,18 +1,17 @@
 #pragma once
 
-#include <frozen/string.h>
-
-#include <QString>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
 #include <map>
 #include <memory>
+#include <qtypes.h>
 #include <ranges>
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -31,6 +30,10 @@ using f64 = double;
 using str = char*;
 using cstr = const char*;
 
+using qi64 = qint64;
+using qi32 = qint32;
+using qu64 = quint64;
+
 namespace fs = std::filesystem;
 namespace views = std::views;
 namespace ranges = std::ranges;
@@ -39,10 +42,13 @@ using fs::path;
 using std::abs;
 using std::array;
 using std::cerr;
+using std::clamp;
 using std::cout;
 using std::format;
 using std::make_unique;
 using std::map;
+using std::max;
+using std::min;
 using std::println;
 using std::set;
 using std::string;

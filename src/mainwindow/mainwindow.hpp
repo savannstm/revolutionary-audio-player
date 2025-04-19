@@ -8,6 +8,8 @@
 #include "indexset.hpp"
 #include "musicheader.hpp"
 #include "musicmodel.hpp"
+#include "searchinput.hpp"
+#include "tracktree.hpp"
 
 #include <QAction>
 #include <QAudioSink>
@@ -33,14 +35,52 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
+// TODO: Add equalizer menu
+// TODO: Add tracks caching
+
+constexpr u16 TRACK_PROPERTIES_ARRAY_SIZE = UINT8_MAX + 1;
+
+constexpr auto
+propertyHash(const u8 charA, const u8 charB, const u8 charC, const u8 charD)
+    -> u8 {
+    return static_cast<u8>(charA + charB + charC + charD);
+}
+
+constexpr auto initTrackProperties()
+    -> array<TrackProperty, TRACK_PROPERTIES_ARRAY_SIZE> {
+    array<TrackProperty, TRACK_PROPERTIES_ARRAY_SIZE> arr{};
+
+    arr[propertyHash('T', 'i', 'l', 'e')] = Title;
+    arr[propertyHash('A', 'r', 's', 't')] = Artist;
+    arr[propertyHash('A', 'l', 'u', 'm')] = Album;
+    arr[propertyHash('T', 'r', 'e', 'r')] = TrackNumber;
+    arr[propertyHash('A', 'l', 's', 't')] = AlbumArtist;
+    arr[propertyHash('G', 'e', 'r', 'e')] = Genre;
+    arr[propertyHash('Y', 'e', 'a', 'r')] = Year;
+    arr[propertyHash('D', 'u', 'o', 'n')] = Duration;
+    arr[propertyHash('C', 'o', 'e', 'r')] = Composer;
+    arr[propertyHash('B', 'P', 'P', 'M')] = BPM;
+    arr[propertyHash('L', 'a', 'g', 'e')] = Language;
+    arr[propertyHash('D', 'i', 'e', 'r')] = DiscNumber;
+    arr[propertyHash('C', 'o', 'n', 't')] = Comment;
+    arr[propertyHash('P', 'u', 'e', 'r')] = Publisher;
+    arr[propertyHash('B', 'i', 't', 'e')] = Bitrate;
+    arr[propertyHash('S', 'a', 't', 'e')] = SampleRate;
+    arr[propertyHash('C', 'h', 'l', 's')] = Channels;
+    arr[propertyHash('F', 'o', 'a', 't')] = Format;
+
+    return arr;
+}
+
+constexpr array<TrackProperty, TRACK_PROPERTIES_ARRAY_SIZE> TRACK_PROPERTIES =
+    initTrackProperties();
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
    public:
-    MainWindow(QWidget* parent = nullptr);
+    explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
-    void updateProgress();
-    void eof();
 
    protected:
     void closeEvent(QCloseEvent* event) override;
@@ -49,38 +89,38 @@ class MainWindow : public QMainWindow {
 
    signals:
     void filesDropped(const vector<string>& filePaths);
-    void trackDataReady(
-        const array<string, PROPERTY_COUNT>& metadata,
-        const string& path
-    );
+    void trackDataReady(const metadata_array& metadata, const string& path);
     void trackDataProcessed();
 
    private:
-    // UI
+    // UI - Widgets
     Ui::MainWindow* ui;
     QSystemTrayIcon* trayIcon = new QSystemTrayIcon(this);
     QMenu* trayIconMenu = new QMenu(this);
-    QPushButton* playButton;
-    QTreeView* trackTree;
+    TrackTree* trackTree;
     MusicHeader* trackTreeHeader;
-    MusicModel* trackModel = new MusicModel(this);
-    QIcon pauseIcon = QIcon::fromTheme("media-playback-pause");
-    QIcon startIcon = QIcon::fromTheme("media-playback-start");
-    QSettings* settings =
-        new QSettings("com.savannstm.rap", "com.savannstm.rap");
+    MusicModel* trackTreeModel = new MusicModel(this);
+    QLabel* progressLabel;
+    QLabel* volumeLabel;
+    SearchInput* searchTrackInput = new SearchInput(this);
 
-    QString lastDir =
-        settings->value("lastOpenedDir", QDir::homePath()).toString();
-
-    QModelIndex currentIndex;
-
-    CustomSlider* volumeSlider;
+    // UI - Buttons
+    QPushButton* playButton;
     QPushButton* stopButton;
     QPushButton* backwardButton;
     QPushButton* forwardButton;
     ActionButton* repeatButton;
     ActionButton* randomButton;
 
+    // UI - Sliders
+    CustomSlider* volumeSlider;
+    CustomSlider* progressSlider;
+
+    // UI - Icons
+    QIcon pauseIcon = QIcon::fromTheme("media-playback-pause");
+    QIcon startIcon = QIcon::fromTheme("media-playback-start");
+
+    // Actions & Menus
     QMenu* fileMenu;
     QAction* exitAction;
     QAction* openFileAction;
@@ -94,46 +134,51 @@ class MainWindow : public QMainWindow {
     QAction* stopAction;
     QAction* randomAction;
 
-    CustomSlider* progressSlider;
-    QLabel* progressLabel;
+    // Settings
+    QSettings* settings =
+        new QSettings("com.savannstm.rap", "com.savannstm.rap");
 
+    // UI State
     QStringList headerLabels = { "Title", "Artist", "Track Number" };
+    QString lastDir =
+        settings->value("lastOpenedDir", QDir::homePath()).toString();
 
-    // Play history
-    IndexSet<u32> playHistory = IndexSet<u32>();
+    // Playback / Audio
+    AudioStreamer* audioStreamer = new AudioStreamer();
+    QAudioSink* audioSink;
+    f32 volumeGain = 1.0;
+    string audioDuration = "0:00";
 
-    // Controls
+    // Control Logic
     RepeatMode repeat = RepeatMode::Off;
     bool random = false;
     Direction forwardDirection = Direction::Forward;
     Direction backwardDirection = Direction::Backward;
+    IndexSet playHistory = IndexSet();
 
-    f64 audioVolume = 1.0;
-    QLabel* volumeLabel;
+    // Threads
+    QThreadPool* threadPool = new QThreadPool(this);
 
-    AudioStreamer audioStreamer = AudioStreamer(this);
-    QAudioSink* audioSink = new QAudioSink();
-
-    // Timer
-    string audioDuration = "0:00";
-
-    // Thread pool
-    QThreadPool* threadPool;
-
-    // Eq
+    // Equalizer
     bool eqEnabled = false;
-    array<f32, EQ_BANDS_N> eqGains = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+    array<u8, EQ_BANDS_N> eqGains = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
+    // Search
+    vector<QModelIndex> searchMatches;
+    usize searchMatchesPosition = 0;
+    QShortcut* searchShortcut = new QShortcut(QKeySequence("Ctrl+F"), this);
+    string previousSearchPrompt;
+
+    // Miscellaneous
     std::random_device randdevice;
 
-    QLineEdit* searchTrackInput = new QLineEdit(this);
-    QShortcut* searchShortcut = new QShortcut(QKeySequence("Ctrl+F"), this);
-
+    // Inline utility functions
     inline void fillTable(const string& filePath);
     inline void fillTable(const vector<string>& paths);
     inline void fillTable(const walk_dir& read_dir);
     inline void jumpToTrack(Direction direction, bool clicked);
     inline void updatePlaybackPosition();
-    inline void playTrack(const string& path);
+    inline void playTrack(const QModelIndex& index);
     inline void stopPlayback();
+    static inline auto getTrackProperty(cstr str, usize len) -> TrackProperty;
 };

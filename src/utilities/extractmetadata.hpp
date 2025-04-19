@@ -9,9 +9,7 @@ extern "C" {
 #include "constants.hpp"
 #include "tominutes.hpp"
 
-#include <QDebug>
 #include <algorithm>
-#include <fstream>
 
 constexpr array<u16, 18> STANDARD_BITRATES = { 32,  40,  48,  56,  64,  80,
                                                96,  112, 128, 160, 192, 224,
@@ -35,8 +33,8 @@ auto roundBitrate(const u32 bitrate) -> string {
     return format("{}k", closest);
 }
 
-auto extractMetadata(const string& path) -> array<string, PROPERTY_COUNT> {
-    array<string, PROPERTY_COUNT> metadata;
+auto extractMetadata(const string& path) -> metadata_array {
+    metadata_array metadata;
     AVFormatContext* formatContext = nullptr;
 
     if (avformat_open_input(&formatContext, path.c_str(), nullptr, nullptr) <
@@ -50,7 +48,7 @@ auto extractMetadata(const string& path) -> array<string, PROPERTY_COUNT> {
     }
 
     AVDictionary* tags = formatContext->metadata;
-    auto getTag = [&](const char* key) -> string {
+    auto getTag = [&](cstr key) -> string {
         const AVDictionaryEntry* tag = av_dict_get(tags, key, nullptr, 0);
         return tag ? tag->value : "";
     };
@@ -94,8 +92,11 @@ auto extractMetadata(const string& path) -> array<string, PROPERTY_COUNT> {
 
         if (!foundCover &&
             (stream->disposition & AV_DISPOSITION_ATTACHED_PIC) != 0) {
-            cover.resize(stream->attached_pic.size);
-            cover = reinterpret_cast<const char*>(stream->attached_pic.data);
+            // TODO: Fetch cover on demand, don't decode it here
+            cover = string(
+                reinterpret_cast<cstr>(stream->attached_pic.data),
+                stream->attached_pic.size
+            );
             foundCover = true;
         }
 
@@ -110,7 +111,7 @@ auto extractMetadata(const string& path) -> array<string, PROPERTY_COUNT> {
                 return std::toupper(chr);
             });
 
-            metadata[FileFormat] = formatName;
+            metadata[Format] = formatName;
             foundAudio = true;
         }
 

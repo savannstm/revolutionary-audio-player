@@ -20,10 +20,10 @@ enum TrackProperty : u8 {
     Bitrate,
     SampleRate,
     Channels,
-    FileFormat,
+    Format,
     Path,
     Cover,
-    Count
+    TRACK_PROPERTY_COUNT
 };
 
 enum Direction : u8 {
@@ -37,5 +37,5 @@ enum RepeatMode : u8 {
     Off,
     Track,
     Playlist,
-    REPEAT_MODES_N,
+    REPEAT_MODES_COUNT,
 };

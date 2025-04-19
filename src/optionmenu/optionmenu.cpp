@@ -2,8 +2,6 @@
 
 #include <QMouseEvent>
 
-OptionMenu::OptionMenu(QWidget* parent) : QMenu(parent) {}
-
 void OptionMenu::mouseReleaseEvent(QMouseEvent* event) {
     QAction* action = activeAction();
 

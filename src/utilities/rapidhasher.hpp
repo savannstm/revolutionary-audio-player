@@ -6,22 +6,13 @@
 struct RapidHasher {
     template <typename T>
     constexpr auto operator()(const T& value) const -> u64 {
-        return hash_impl(value);
-    }
-
-   private:
-    template <typename T>
-        requires std::is_trivially_copyable_v<T>
-    auto hash_impl(const T& value) -> u64 {
-        return rapidhash(&value, sizeof(T));
-    }
-
-    static auto hash_impl(const string& string) -> u64 {
-        return rapidhash(string.data(), string.size());
-    }
-
-    static auto hash_impl(const QString& path) -> u64 {
-        return rapidhash(path.data(), path.size());
+        if constexpr (std::is_same_v<T, string>) {
+            return rapidhash(value.data(), value.size());
+        } else if constexpr (std::is_trivially_copyable_v<T>) {
+            return rapidhash(&value, sizeof(T));
+        } else {
+            static_assert(sizeof(T) == 0, "Unsupported type for RapidHasher");
+        }
     }
 };
 
