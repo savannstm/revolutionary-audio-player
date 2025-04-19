@@ -2,13 +2,11 @@
 
 #include "aliases.hpp"
 #include "constants.hpp"
-#include "mainwindow.hpp"
 
 #include "libavutil/frame.h"
 #include "libavutil/rational.h"
 
-#include <algorithm>
-#include <cstdint>
+#include <QDebug>
 
 auto AudioStreamer::start(const path& path) -> bool {
     reset();
@@ -94,7 +92,7 @@ auto AudioStreamer::start(const path& path) -> bool {
     err = swr_alloc_set_opts2(
         &swrContextPtr,
         &channelLayout,
-        AV_SAMPLE_FMT_S16,
+        AV_SAMPLE_FMT_FLT,
         sampleRate,
         &channelLayout,
         codecContext->sample_fmt,
@@ -120,45 +118,73 @@ auto AudioStreamer::start(const path& path) -> bool {
     frame = make_frame();
 
     secondsDuration = formatContextPtr->duration / AV_TIME_BASE;
-    bytesPerSecond = static_cast<i64>(sampleRate * channelNumber * SAMPLE_SIZE);
 
     audioFormat.setSampleRate(sampleRate);
     audioFormat.setChannelCount(channelNumber);
 
+    prepareBuffer();
+
+    const u8 channels = codecContext->ch_layout.nb_channels;
+    filters.resize(channels);
+
+    for (u8 channel = 0; channel < channels; channel++) {
+        for (u8 band = 0; band < EQ_BANDS_N; band++) {
+            filters[channel][band].coefficients =
+                juce::dsp::IIR::Coefficients<f32>::makePeakFilter(
+                    sampleRate,
+                    FREQUENCES[band],
+                    QFactor,
+                    eqGains[band]
+                );
+            filters[channel][band].reset();
+        }
+    }
+
     return open(QIODevice::ReadOnly);
 }
 
-auto AudioStreamer::readData(char* data, const qi64 maxSize) -> qi64 {
-    i64 bytesRead = 0;
+inline void AudioStreamer::equalizeBuffer(QByteArray& buf) {
+    const u8 channels = codecContext->ch_layout.nb_channels;
+    const u16 sampleRate = codecContext->sample_rate;
+    const u32 samplesNumber = buf.size() / SAMPLE_SIZE;
 
-    while (bytesRead < maxSize) {
-        if (bufferPosition < buffer.size()) {
-            const u32 chunkSize =
-                std::min(maxSize - bytesRead, buffer.size() - bufferPosition);
+    juce::AudioBuffer<f32> juceBuffer(channels, samplesNumber);
+    const f32* f32samples = reinterpret_cast<const f32*>(buf.constData());
 
-            memcpy(
-                data + bytesRead,
-                buffer.constData() + bufferPosition,
-                chunkSize
-            );
-            bufferPosition += chunkSize;
-            bytesRead += chunkSize;
+    for (u8 channel = 0; channel < channels; channel++) {
+        f32* floatChannelData = juceBuffer.getWritePointer(channel);
 
-            if (bufferPosition >= buffer.size()) {
-                buffer.clear();
-                bufferPosition = 0;
-
-                auto* window = static_cast<MainWindow*>(parent());
-                QMetaObject::invokeMethod(window, &MainWindow::updateProgress);
-            }
-
-            continue;
+        for (i32 i = 0; i < samplesNumber; i++) {
+            floatChannelData[i] = f32samples[(i * channels) + channel];
         }
+    }
 
+    for (u8 channel = 0; channel < channels; channel++) {
+        f32* writePtr = juceBuffer.getWritePointer(channel);
+        juce::dsp::AudioBlock<f32> channelBlock(&writePtr, 1, samplesNumber);
+        juce::dsp::ProcessContextReplacing<f32> context(channelBlock);
+
+        for (u8 band = 0; band < EQ_BANDS_N; band++) {
+            filters[channel][band].process(context);
+        }
+    }
+
+    f32* out = reinterpret_cast<f32*>(buf.data());
+
+    for (u8 channel = 0; channel < channels; channel++) {
+        const f32* floatChannelData = juceBuffer.getReadPointer(channel);
+
+        for (i32 i = 0; i < samplesNumber; i++) {
+            out[(i * channels) + channel] = floatChannelData[i];
+        }
+    }
+}
+
+void AudioStreamer::prepareBuffer() {
+    while (true) {
         if (av_read_frame(formatContext.get(), packet.get()) < 0) {
-            ended = true;
-            auto* window = static_cast<MainWindow*>(parent());
-            QMetaObject::invokeMethod(window, &MainWindow::eof);
+            nextBufferSize = 0;
+            emit endOfFile();
             break;
         }
 
@@ -171,76 +197,96 @@ auto AudioStreamer::readData(char* data, const qi64 maxSize) -> qi64 {
         av_packet_unref(packet.get());
 
         if (err < 0) {
-            ended = true;
-            auto* window = static_cast<MainWindow*>(parent());
-            QMetaObject::invokeMethod(window, &MainWindow::eof);
+            nextBufferSize = 0;
+            emit endOfFile();
             break;
         }
 
-        while (err >= 0) {
-            err = avcodec_receive_frame(codecContext.get(), frame.get());
+        err = avcodec_receive_frame(codecContext.get(), frame.get());
 
-            if (err == AVERROR(EAGAIN) || err == AVERROR_EOF) {
-                if (err == AVERROR_EOF) {
-                    ended = true;
-                    auto* window = static_cast<MainWindow*>(parent());
-                    QMetaObject::invokeMethod(window, &MainWindow::eof);
-                }
-
-                av_frame_unref(frame.get());
-                break;
+        if (err == AVERROR(EAGAIN) || err == AVERROR_EOF || err < 0) {
+            if (err == AVERROR_EOF) {
+                nextBufferSize = 0;
+                emit endOfFile();
             }
-
-            if (err < 0) {
-                av_frame_unref(frame.get());
-                return -1;
-            }
-
-            const u16 bufferSize = frame->nb_samples *
-                                   codecContext->ch_layout.nb_channels *
-                                   SAMPLE_SIZE;
-
-            QByteArray newBuffer = QByteArray();
-            newBuffer.resize(bufferSize);
-            byteOffset += bufferSize;
-
-            playbackSecond = static_cast<u16>(
-                static_cast<f64>(frame->pts) *
-                av_q2d(formatContext->streams[audioStreamIndex]->time_base)
-            );
-
-            if (codecContext->sample_fmt != AV_SAMPLE_FMT_S16) {
-                FramePtr newFrame = make_frame();
-                newFrame->ch_layout = codecContext->ch_layout;
-                newFrame->sample_rate = codecContext->sample_rate;
-                newFrame->format = AV_SAMPLE_FMT_S16;
-
-                swr_convert_frame(
-                    swrContext.get(),
-                    newFrame.get(),
-                    frame.get()
-                );
-
-                memcpy(newBuffer.data(), newFrame->data[0], bufferSize);
-
-                av_frame_unref(newFrame.get());
-            } else {
-                memcpy(newBuffer.data(), frame->data[0], bufferSize);
-            }
-
-            buffer = newBuffer;
-            bufferPosition = 0;
 
             av_frame_unref(frame.get());
             break;
         }
+
+        const i64 timestamp = (frame->pts != AV_NOPTS_VALUE)
+                                  ? frame->pts
+                                  : frame->best_effort_timestamp;
+
+        playbackSecond = static_cast<u16>(
+            static_cast<f64>(timestamp) *
+            av_q2d(formatContext->streams[audioStreamIndex]->time_base)
+        );
+
+        if (codecContext->sample_fmt != AV_SAMPLE_FMT_FLT) {
+            FramePtr newFrame = make_frame();
+            newFrame->ch_layout = codecContext->ch_layout;
+            newFrame->sample_rate = codecContext->sample_rate;
+            newFrame->format = AV_SAMPLE_FMT_FLT;
+
+            swr_convert_frame(swrContext.get(), newFrame.get(), frame.get());
+
+            frame.reset(newFrame.release());
+        }
+
+        u16 bufferSize;
+
+        bufferSize = av_samples_get_buffer_size(
+            nullptr,
+            codecContext->ch_layout.nb_channels,
+            frame->nb_samples,
+            AV_SAMPLE_FMT_FLT,
+            1
+        );
+
+        if (bufferSize <= 0) {
+            nextBufferSize = 0;
+        } else {
+            buffer.resize(bufferSize);
+            memcpy(buffer.data(), frame->data[0], bufferSize);
+            nextBufferSize = bufferSize;
+        }
+
+        if (eqEnabled &&
+            !ranges::all_of(eqGains, [](const u8 gain) { return gain == 1; })) {
+            equalizeBuffer(buffer);
+        }
+
+        av_frame_unref(frame.get());
+        break;
+    }
+}
+
+auto AudioStreamer::readData(str data, const qi64 maxSize) -> qi64 {
+    const u32 bufferSize = buffer.size();
+
+    memcpy(data, buffer.constData(), bufferSize);
+
+    emit progressUpdate(second());
+    prepareBuffer();
+
+    if (nextBufferSize == 0) {
+        return -1;
     }
 
-    return bytesRead > 0 ? bytesRead : -1;
+    return bufferSize;
+}
+
+auto AudioStreamer::bytesAvailable() const -> qi64 {
+    return nextBufferSize;
+}
+
+auto AudioStreamer::atEnd() const -> bool {
+    return nextBufferSize == 0;
 }
 
 // Not for write
-auto AudioStreamer::writeData(const char* /* data */, qi64 /* size */) -> qi64 {
+auto AudioStreamer::writeData(cstr /* data */, qi64 /* size */) -> qi64 {
     return -1;
 }
 
@@ -252,10 +298,6 @@ auto AudioStreamer::format() const -> QAudioFormat {
     return audioFormat;
 }
 
-auto AudioStreamer::pos() const -> qi64 {
-    return byteOffset - (buffer.size() - bufferPosition);
-}
-
 // Buffer supports seeking.
 auto AudioStreamer::isSequential() const -> bool {
     return false;
@@ -263,17 +305,6 @@ auto AudioStreamer::isSequential() const -> bool {
 
 auto AudioStreamer::second() const -> u16 {
     return playbackSecond;
-}
-
-auto AudioStreamer::atEnd() const -> bool {
-    return ended;
-}
-
-// Number of available bytes cannot be properly determined before decoding,
-// especially if source is variable-bitrate.
-// Just let it assume there's a lot of bytes.
-auto AudioStreamer::bytesAvailable() const -> qi64 {
-    return ended ? 0 : INT64_MAX;
 }
 
 auto AudioStreamer::reset() -> bool {
@@ -287,13 +318,9 @@ auto AudioStreamer::reset() -> bool {
 
     buffer.clear();
 
-    ended = false;
-
+    nextBufferSize = 0;
     audioStreamIndex = 0;
-    bufferPosition = 0;
-    bytesPerSecond = 0;
     secondsDuration = 0;
-    byteOffset = 0;
 
     return true;
 }
@@ -317,8 +344,12 @@ auto AudioStreamer::seekSecond(const u16 second) -> bool {
     );
 
     buffer.clear();
-    bufferPosition = 0;
-    byteOffset = second * bytesPerSecond;
+    prepareBuffer();
 
     return true;
+}
+
+void AudioStreamer::updateEq(bool enable, const gains_array& gains) {
+    eqEnabled = enable;
+    eqGains = gains;
 }
