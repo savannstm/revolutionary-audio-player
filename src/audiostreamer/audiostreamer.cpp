@@ -3,10 +3,13 @@
 #include "aliases.hpp"
 #include "constants.hpp"
 
-#include "libavutil/frame.h"
-#include "libavutil/rational.h"
+#include <libavutil/avutil.h>
 
 #include <QDebug>
+
+AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
+    audioFormat.setSampleFormat(QAudioFormat::Float);
+}
 
 auto AudioStreamer::start(const path& path) -> bool {
     reset();
@@ -14,7 +17,7 @@ auto AudioStreamer::start(const path& path) -> bool {
     i32 err;
     array<char, AV_ERROR_MAX_STRING_SIZE> errBuf;
 
-    auto* formatContextPtr = formatContext.get();
+    AVFormatContext* formatContextPtr = formatContext.get();
 
     err = avformat_open_input(
         &formatContextPtr,
@@ -24,7 +27,7 @@ auto AudioStreamer::start(const path& path) -> bool {
     );
 
     if (err < 0) {
-        qWarning() << std::format(
+        qWarning() << format(
             "Failed to open input file: {}",
             av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err)
         );
@@ -37,7 +40,7 @@ auto AudioStreamer::start(const path& path) -> bool {
     err = avformat_find_stream_info(formatContextPtr, nullptr);
 
     if (err < 0) {
-        qWarning() << std::format(
+        qWarning() << format(
             "Failed to find stream info: {}",
             av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err)
         );
@@ -57,17 +60,13 @@ auto AudioStreamer::start(const path& path) -> bool {
     err = audioStreamIndex;
 
     if (err < 0) {
-        qWarning() << std::format(
-            "No audio stream found: {}",
-            av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err)
-        );
+        qWarning(
+        ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
         return false;
     }
 
-    const auto* audioStream = formatContextPtr->streams[audioStreamIndex];
+    const AVStream* audioStream = formatContextPtr->streams[audioStreamIndex];
     codecContext = make_codec_context(codec);
-    codecContext->thread_count = 0;
-    codecContext->thread_type = FF_THREAD_FRAME;
 
     AVCodecContext* codecContextPtr = codecContext.get();
     avcodec_parameters_to_context(codecContextPtr, audioStream->codecpar);
@@ -75,19 +74,16 @@ auto AudioStreamer::start(const path& path) -> bool {
     err = avcodec_open2(codecContextPtr, codec, nullptr);
 
     if (err < 0) {
-        qWarning() << std::format(
-            "Failed to open codec: {}",
-            av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err)
-        );
+        qWarning(
+        ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
         return false;
     }
 
     const AVChannelLayout channelLayout = codecContext->ch_layout;
     const u8 channelNumber = channelLayout.nb_channels;
     const u16 sampleRate = codecContext->sample_rate;
-    const u32 frames = codecContext->frame_num;
 
-    auto* swrContextPtr = swrContext.get();
+    SwrContext* swrContextPtr = swrContext.get();
 
     err = swr_alloc_set_opts2(
         &swrContextPtr,
@@ -102,10 +98,8 @@ auto AudioStreamer::start(const path& path) -> bool {
     );
 
     if (err < 0) {
-        qWarning() << std::format(
-            "Error allocating SwrContext: {}",
-            av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err)
-        );
+        qWarning(
+        ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
         return false;
     }
 
@@ -122,23 +116,8 @@ auto AudioStreamer::start(const path& path) -> bool {
     audioFormat.setSampleRate(sampleRate);
     audioFormat.setChannelCount(channelNumber);
 
+    initFilters();
     prepareBuffer();
-
-    const u8 channels = codecContext->ch_layout.nb_channels;
-    filters.resize(channels);
-
-    for (u8 channel = 0; channel < channels; channel++) {
-        for (u8 band = 0; band < EQ_BANDS_N; band++) {
-            filters[channel][band].coefficients =
-                juce::dsp::IIR::Coefficients<f32>::makePeakFilter(
-                    sampleRate,
-                    FREQUENCES[band],
-                    QFactor,
-                    eqGains[band]
-                );
-            filters[channel][band].reset();
-        }
-    }
 
     return open(QIODevice::ReadOnly);
 }
@@ -146,7 +125,8 @@ auto AudioStreamer::start(const path& path) -> bool {
 inline void AudioStreamer::equalizeBuffer(QByteArray& buf) {
     const u8 channels = codecContext->ch_layout.nb_channels;
     const u16 sampleRate = codecContext->sample_rate;
-    const u32 samplesNumber = buf.size() / SAMPLE_SIZE;
+    const i32 samplesNumber =
+        static_cast<i32>(buf.size() / static_cast<i32>(SAMPLE_SIZE * channels));
 
     juce::AudioBuffer<f32> juceBuffer(channels, samplesNumber);
     const f32* f32samples = reinterpret_cast<const f32*>(buf.constData());
@@ -180,11 +160,10 @@ inline void AudioStreamer::equalizeBuffer(QByteArray& buf) {
     }
 }
 
-void AudioStreamer::prepareBuffer() {
+inline void AudioStreamer::prepareBuffer() {
     while (true) {
         if (av_read_frame(formatContext.get(), packet.get()) < 0) {
             nextBufferSize = 0;
-            emit endOfFile();
             break;
         }
 
@@ -198,7 +177,6 @@ void AudioStreamer::prepareBuffer() {
 
         if (err < 0) {
             nextBufferSize = 0;
-            emit endOfFile();
             break;
         }
 
@@ -207,7 +185,6 @@ void AudioStreamer::prepareBuffer() {
         if (err == AVERROR(EAGAIN) || err == AVERROR_EOF || err < 0) {
             if (err == AVERROR_EOF) {
                 nextBufferSize = 0;
-                emit endOfFile();
             }
 
             av_frame_unref(frame.get());
@@ -253,7 +230,7 @@ void AudioStreamer::prepareBuffer() {
         }
 
         if (eqEnabled &&
-            !ranges::all_of(eqGains, [](const u8 gain) { return gain == 1; })) {
+            !ranges::all_of(dbGains, [](const i8 gain) { return gain == 0; })) {
             equalizeBuffer(buffer);
         }
 
@@ -268,9 +245,12 @@ auto AudioStreamer::readData(str data, const qi64 maxSize) -> qi64 {
     memcpy(data, buffer.constData(), bufferSize);
 
     emit progressUpdate(second());
+
+    initFilters();
     prepareBuffer();
 
     if (nextBufferSize == 0) {
+        emit endOfFile();
         return -1;
     }
 
@@ -294,16 +274,11 @@ auto AudioStreamer::duration() const -> u16 {
     return secondsDuration;
 }
 
-auto AudioStreamer::format() const -> QAudioFormat {
+auto AudioStreamer::getFormat() const -> QAudioFormat {
     return audioFormat;
 }
 
-// Buffer supports seeking.
-auto AudioStreamer::isSequential() const -> bool {
-    return false;
-}
-
-auto AudioStreamer::second() const -> u16 {
+inline auto AudioStreamer::second() const -> u16 {
     return playbackSecond;
 }
 
@@ -343,13 +318,47 @@ auto AudioStreamer::seekSecond(const u16 second) -> bool {
         AVSEEK_FLAG_ANY
     );
 
-    buffer.clear();
+    initFilters();
     prepareBuffer();
 
     return true;
 }
 
-void AudioStreamer::updateEq(bool enable, const gains_array& gains) {
-    eqEnabled = enable;
-    eqGains = gains;
+auto AudioStreamer::isEqEnabled() const -> bool {
+    return eqEnabled;
+}
+
+void AudioStreamer::setEqEnabled(const bool enabled) {
+    eqEnabled = enabled;
+}
+
+void AudioStreamer::setGain(const i8 gain, const u8 band) {
+    qDebug() << "setting gain";
+    dbGains[band] = gain;
+    changedBands[band] = true;
+}
+
+auto AudioStreamer::getGain(const u8 band) -> i8 {
+    return dbGains[band];
+}
+
+inline void AudioStreamer::initFilters() {
+    for (auto [band, changed] : views::enumerate(changedBands)) {
+        if (changed) {
+            auto coeffs = juce::dsp::IIR::Coefficients<f32>::makePeakFilter(
+                codecContext->sample_rate,
+                FREQUENCIES[band],
+                QFactor,
+                juce::Decibels::decibelsToGain(static_cast<f32>(dbGains[band]))
+            );
+
+            for (auto& filter :
+                 views::take(filters, codecContext->ch_layout.nb_channels)) {
+                filter[band].coefficients = coeffs;
+                filter[band].reset();
+            }
+
+            changed = false;
+        }
+    }
 }

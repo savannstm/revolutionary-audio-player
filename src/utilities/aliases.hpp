@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -56,6 +57,9 @@ using std::to_string;
 using std::tuple;
 using std::vector;
 
+using std::tolower;
+using std::toupper;
+
 using panic = std::runtime_error;
 
 using walk_dir = fs::recursive_directory_iterator;
@@ -67,6 +71,8 @@ using views::enumerate;
 
 template <typename T>
 using ref = std::unique_ptr<T, std::default_delete<T>>;
+
+using std::unique_ptr;
 
 template <typename K, typename V>
 using hashmap = std::unordered_map<K, V>;

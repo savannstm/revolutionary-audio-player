@@ -1,8 +1,8 @@
-#include "searchinput.hpp"
+#include "custominput.hpp"
 
 #include <QKeyEvent>
 
-void SearchInput::keyPressEvent(QKeyEvent* event) {
+void CustomInput::keyPressEvent(QKeyEvent* event) {
     switch (event->key()) {
         case Qt::Key::Key_Escape:
             emit inputRejected();

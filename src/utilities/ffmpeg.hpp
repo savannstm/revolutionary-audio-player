@@ -7,7 +7,7 @@ extern "C" {
 #include <libswresample/swresample.h>
 }
 
-#include <memory>
+#include "aliases.hpp"
 
 namespace FFmpeg {
     struct FormatContextDeleter {
@@ -49,13 +49,11 @@ namespace FFmpeg {
         }
     };
 
-    using FormatContextPtr =
-        std::unique_ptr<AVFormatContext, FormatContextDeleter>;
-    using CodecContextPtr =
-        std::unique_ptr<AVCodecContext, CodecContextDeleter>;
-    using SwrContextPtr = std::unique_ptr<SwrContext, SwrContextDeleter>;
-    using PacketPtr = std::unique_ptr<AVPacket, PacketDeleter>;
-    using FramePtr = std::unique_ptr<AVFrame, FrameDeleter>;
+    using FormatContextPtr = unique_ptr<AVFormatContext, FormatContextDeleter>;
+    using CodecContextPtr = unique_ptr<AVCodecContext, CodecContextDeleter>;
+    using SwrContextPtr = unique_ptr<SwrContext, SwrContextDeleter>;
+    using PacketPtr = unique_ptr<AVPacket, PacketDeleter>;
+    using FramePtr = unique_ptr<AVFrame, FrameDeleter>;
 
     inline auto make_packet() -> PacketPtr {
         return PacketPtr(av_packet_alloc());

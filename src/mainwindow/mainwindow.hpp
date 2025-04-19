@@ -2,17 +2,16 @@
 
 #include "actionbutton.hpp"
 #include "aliases.hpp"
-#include "audiostreamer.hpp"
+#include "audioworker.hpp"
 #include "constants.hpp"
+#include "custominput.hpp"
 #include "customslider.hpp"
 #include "indexset.hpp"
 #include "musicheader.hpp"
 #include "musicmodel.hpp"
-#include "searchinput.hpp"
 #include "tracktree.hpp"
 
 #include <QAction>
-#include <QAudioSink>
 #include <QCloseEvent>
 #include <QDir>
 #include <QLabel>
@@ -24,7 +23,6 @@
 #include <QShortcut>
 #include <QSystemTrayIcon>
 #include <QThreadPool>
-#include <QTreeView>
 #include <random>
 
 QT_BEGIN_NAMESPACE
@@ -35,7 +33,7 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
-// TODO: Add equalizer menu
+// TODO: Add equalizer caching
 // TODO: Add tracks caching
 
 constexpr u16 TRACK_PROPERTIES_ARRAY_SIZE = UINT8_MAX + 1;
@@ -48,7 +46,7 @@ propertyHash(const u8 charA, const u8 charB, const u8 charC, const u8 charD)
 
 constexpr auto initTrackProperties()
     -> array<TrackProperty, TRACK_PROPERTIES_ARRAY_SIZE> {
-    array<TrackProperty, TRACK_PROPERTIES_ARRAY_SIZE> arr{};
+    array<TrackProperty, TRACK_PROPERTIES_ARRAY_SIZE> arr = {};
 
     arr[propertyHash('T', 'i', 'l', 'e')] = Title;
     arr[propertyHash('A', 'r', 's', 't')] = Artist;
@@ -102,7 +100,7 @@ class MainWindow : public QMainWindow {
     MusicModel* trackTreeModel = new MusicModel(this);
     QLabel* progressLabel;
     QLabel* volumeLabel;
-    SearchInput* searchTrackInput = new SearchInput(this);
+    CustomInput* searchTrackInput = new CustomInput(this);
 
     // UI - Buttons
     QPushButton* playButton;
@@ -111,6 +109,7 @@ class MainWindow : public QMainWindow {
     QPushButton* forwardButton;
     ActionButton* repeatButton;
     ActionButton* randomButton;
+    QPushButton* eqButton;
 
     // UI - Sliders
     CustomSlider* volumeSlider;
@@ -143,10 +142,7 @@ class MainWindow : public QMainWindow {
     QString lastDir =
         settings->value("lastOpenedDir", QDir::homePath()).toString();
 
-    // Playback / Audio
-    AudioStreamer* audioStreamer = new AudioStreamer();
-    QAudioSink* audioSink;
-    f32 volumeGain = 1.0;
+    // Audio
     string audioDuration = "0:00";
 
     // Control Logic
@@ -154,14 +150,11 @@ class MainWindow : public QMainWindow {
     bool random = false;
     Direction forwardDirection = Direction::Forward;
     Direction backwardDirection = Direction::Backward;
-    IndexSet playHistory = IndexSet();
+    IndexSet playHistory;
 
     // Threads
-    QThreadPool* threadPool = new QThreadPool(this);
-
-    // Equalizer
-    bool eqEnabled = false;
-    array<u8, EQ_BANDS_N> eqGains = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+    QThreadPool* threadPool = new QThreadPool();
+    AudioWorker* audioWorker = new AudioWorker();
 
     // Search
     vector<QModelIndex> searchMatches;

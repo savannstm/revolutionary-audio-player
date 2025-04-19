@@ -6,7 +6,8 @@
 
 class MusicItem : public QStandardItem {
    public:
-    explicit MusicItem() { setEditable(false); }
+    explicit MusicItem();
+    explicit MusicItem(const QString& text);
 
     void setPath(const string& path);
     [[nodiscard]] auto getPath() const -> const string&;

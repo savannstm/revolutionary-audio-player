@@ -18,29 +18,6 @@ auto main(int argc, char* argv[]) -> int {
         return 1;
     }
 
-    const auto styles = QStyleFactory::keys();
-
-    /*
-    if (styles.contains("windows11")) {
-        QApplication::setStyle("windows11");
-    }
-    */
-
-    // TODO: For now default to fusion, add other styles to options
-    // to the settings
-    if (styles.contains("Fusion")) {
-        QApplication::setStyle("fusion");
-    }
-
-    auto* palette = new QPalette();
-    palette->setColor(
-        QPalette::ColorGroup::All,
-        QPalette::ColorRole::Dark,
-        "dark"
-    );
-
-    QApplication::setPalette(*palette);
-
     MainWindow window;
     window.showMaximized();
 

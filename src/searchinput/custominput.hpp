@@ -2,7 +2,7 @@
 
 #include <QLineEdit>
 
-class SearchInput : public QLineEdit {
+class CustomInput : public QLineEdit {
    public:
     using QLineEdit::QLineEdit;
 

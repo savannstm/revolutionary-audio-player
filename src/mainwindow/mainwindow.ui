@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>557</width>
-    <height>127</height>
+    <width>587</width>
+    <height>133</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -68,7 +68,7 @@
         <height>128</height>
        </size>
       </property>
-      <layout class="QHBoxLayout" name="controlLayout" stretch="0,0,0,0,0,0,0,0,0,0">
+      <layout class="QHBoxLayout" name="controlLayout" stretch="0,0,0,0,0,0,0,0,0,0,0">
        <property name="spacing">
         <number>0</number>
        </property>
@@ -268,6 +268,31 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="eqButton">
+         <property name="minimumSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>32</width>
+           <height>32</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset theme="QIcon::ThemeIcon::CallStart"/>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="CustomSlider" name="volumeSlider">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
@@ -396,6 +421,7 @@
       <zorder>volumeSlider</zorder>
       <zorder>progressLabel</zorder>
       <zorder>volumeLabel</zorder>
+      <zorder>eqButton</zorder>
      </widget>
     </item>
     <item>
@@ -428,8 +454,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>557</width>
-     <height>21</height>
+     <width>587</width>
+     <height>33</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -565,7 +591,7 @@
    <extends>QPushButton</extends>
    <header>actionbutton.hpp</header>
   </customwidget>
-    <customwidget>
+  <customwidget>
    <class>TrackTree</class>
    <extends>QTreeView</extends>
    <header>tracktree.hpp</header>

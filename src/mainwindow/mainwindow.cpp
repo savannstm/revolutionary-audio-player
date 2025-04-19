@@ -2,10 +2,12 @@
 
 #include "aboutwindow.hpp"
 #include "aliases.hpp"
+#include "audioworker.hpp"
 #include "constants.hpp"
 #include "coverwindow.hpp"
 #include "customslider.hpp"
 #include "enums.hpp"
+#include "equalizermenu.hpp"
 #include "extractmetadata.hpp"
 #include "metadatawindow.hpp"
 #include "musicheader.hpp"
@@ -19,7 +21,10 @@
 #include <QMessageBox>
 #include <QMimeData>
 #include <QShortcut>
-#include <QtConcurrent>
+
+constexpr u8 MINIMUM_MATCHES_NUMBER = 32;
+constexpr u8 SEARCH_INPUT_MIN_WIDTH = 64;
+constexpr u8 SEARCH_INPUT_HEIGHT = 24;
 
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent),
@@ -28,10 +33,7 @@ MainWindow::MainWindow(QWidget* parent) :
 
     ui->setupUi(this);
 
-    audioStreamer->updateEq(false, eqGains);
-    searchMatches.reserve(32);
-
-    audioSink = new QAudioSink();
+    searchMatches.reserve(MINIMUM_MATCHES_NUMBER);
 
     progressSlider = ui->progressSlider;
     volumeSlider = ui->volumeSlider;
@@ -44,6 +46,7 @@ MainWindow::MainWindow(QWidget* parent) :
     forwardButton = ui->forwardButton;
     repeatButton = ui->repeatButton;
     randomButton = ui->randomButton;
+    eqButton = ui->eqButton;
 
     // File menu actions
     fileMenu = ui->menuFile;
@@ -89,13 +92,17 @@ MainWindow::MainWindow(QWidget* parent) :
 
     trayIcon->setContextMenu(trayIconMenu);
 
-    searchTrackInput->hide();
-    searchTrackInput->setPlaceholderText("Track Name");
-    searchTrackInput->setMinimumWidth(64);
-    searchTrackInput->setFixedHeight(24);
-
     repeatButton->setAction(repeatAction);
     randomButton->setAction(randomAction);
+
+    searchTrackInput->hide();
+    searchTrackInput->setPlaceholderText("Track Name");
+    searchTrackInput->setMinimumWidth(MINIMUM_MATCHES_NUMBER);
+    searchTrackInput->setFixedHeight(SEARCH_INPUT_HEIGHT);
+
+    connect(eqButton, &QPushButton::pressed, this, [&] {
+        new EqualizerMenu(eqButton, audioWorker);
+    });
 
     connect(forwardAction, &QAction::triggered, this, [&] {
         jumpToTrack(forwardDirection, true);
@@ -129,16 +136,28 @@ MainWindow::MainWindow(QWidget* parent) :
     });
 
     connect(pauseAction, &QAction::triggered, this, [&] {
-        audioSink->suspend();
+        QMetaObject::invokeMethod(
+            audioWorker,
+            &AudioWorker::suspend,
+            Qt::QueuedConnection
+        );
         playButton->setIcon(startIcon);
     });
 
     connect(resumeAction, &QAction::triggered, this, [&] {
-        audioSink->resume();
+        QMetaObject::invokeMethod(
+            audioWorker,
+            &AudioWorker::resume,
+            Qt::QueuedConnection
+        );
         playButton->setIcon(pauseIcon);
     });
 
-    connect(stopAction, &QAction::triggered, this, [&] { stopPlayback(); });
+    connect(stopAction, &QAction::triggered, this, [&] {
+        stopPlayback();
+        trackTree->clearSelection();
+    });
+
     connect(randomAction, &QAction::triggered, this, [&] {
         random = !random;
 
@@ -186,6 +205,7 @@ MainWindow::MainWindow(QWidget* parent) :
 
                 connect(removeAction, &QAction::triggered, menu, [&] {
                     if (newIndex.isValid()) {
+                        // TODO: Remove from metadata
                         trackTreeModel->removeRow(
                             newIndex.row(),
                             newIndex.parent()
@@ -221,7 +241,7 @@ MainWindow::MainWindow(QWidget* parent) :
                     if (item) {
                         auto* coverWindow = new CoverWindow(
                             trackTreeModel->getRowMetadata(newIndex.row()
-                            )[Cover],
+                            )[TrackProperty::Cover],
                             this
                         );
                         coverWindow->setAttribute(Qt::WA_DeleteOnClose);
@@ -332,12 +352,11 @@ MainWindow::MainWindow(QWidget* parent) :
 
                         for (u16 row = 0; row < trackTreeModel->rowCount();
                              row++) {
-                            auto* item = new MusicItem();
+                            auto* item = new MusicItem(
+                                trackTreeModel->getRowMetadata(row)[property]
+                                    .c_str()
+                            );
 
-                            const metadata_array& metadata =
-                                trackTreeModel->getRowMetadata(row);
-
-                            item->setText(metadata[property].c_str());
                             trackTreeModel->setItem(row, column - 1, item);
                         }
 
@@ -371,8 +390,11 @@ MainWindow::MainWindow(QWidget* parent) :
             QFileDialog::ShowDirsOnly
         );
 
-        if (directory == QDir::rootPath() || directory == QDir::homePath() ||
-            directory.isEmpty()) {
+        if (directory.isEmpty()) {
+            return;
+        }
+
+        if (directory == QDir::rootPath() || directory == QDir::homePath()) {
             QMessageBox::warning(
                 this,
                 "Crazy path!",
@@ -397,12 +419,10 @@ MainWindow::MainWindow(QWidget* parent) :
     });
 
     connect(playButton, &QPushButton::clicked, this, [&] {
-        if (!audioSink->isNull() && audioSink->bufferSize() != 0) {
-            if (audioSink->state() == QtAudio::SuspendedState) {
-                resumeAction->trigger();
-            } else {
-                pauseAction->trigger();
-            }
+        if (audioWorker->playing()) {
+            pauseAction->trigger();
+        } else {
+            resumeAction->trigger();
         }
     });
 
@@ -448,29 +468,34 @@ MainWindow::MainWindow(QWidget* parent) :
         progressLabel->setText(progress.c_str());
     });
 
-    connect(volumeSlider, &CustomSlider::valueChanged, this, [&] {
-        volumeGain = static_cast<f32>(volumeSlider->sliderPosition()) / 100.0F;
-        audioSink->setVolume(volumeGain);
-        volumeLabel->setText(format("{}%", volumeGain).c_str());
-    });
+    connect(
+        volumeSlider,
+        &CustomSlider::valueChanged,
+        this,
+        [&](const u16 value) {
+        volumeLabel->setText(format("{}%", value).c_str());
+        audioWorker->setVolume(static_cast<f32>(value) / 100.0F);
+    }
+    );
 
     connect(volumeSlider, &CustomSlider::sliderReleased, this, [&] {
-        volumeGain = static_cast<f32>(volumeSlider->sliderPosition()) / 100.0F;
-        audioSink->setVolume(volumeGain);
-        volumeLabel->setText(format("{}%", volumeGain).c_str());
+        const u16 value = volumeSlider->sliderPosition();
+        volumeLabel->setText(format("{}%", value).c_str());
+        audioWorker->setVolume(static_cast<f32>(value) / 100.0F);
     });
 
-    connect(searchTrackInput, &SearchInput::inputRejected, this, [&] {
+    connect(searchTrackInput, &CustomInput::inputRejected, this, [&] {
         searchTrackInput->clear();
         searchTrackInput->hide();
     });
 
-    connect(searchTrackInput, &SearchInput::returnPressed, this, [&] {
+    connect(searchTrackInput, &CustomInput::returnPressed, this, [&] {
         // TODO: Display matches number
         const string input = searchTrackInput->text().toStdString();
 
         if (input != previousSearchPrompt) {
             searchMatches.clear();
+            searchMatches.reserve(MINIMUM_MATCHES_NUMBER);
             searchMatchesPosition = 0;
             previousSearchPrompt = input;
         }
@@ -511,7 +536,7 @@ MainWindow::MainWindow(QWidget* parent) :
 
                 const auto fieldValueTransformer =
                     views::transform(fieldValue, [](char chr) {
-                    return std::tolower(chr);
+                    return tolower(chr);
                 });
                 const string fieldValueLower = string(
                     fieldValueTransformer.begin(),
@@ -520,7 +545,7 @@ MainWindow::MainWindow(QWidget* parent) :
 
                 const auto valueTransformer =
                     views::transform(value, [](char chr) {
-                    return std::tolower(chr);
+                    return tolower(chr);
                 });
                 const string valueLower =
                     string(valueTransformer.begin(), valueTransformer.end());
@@ -533,6 +558,7 @@ MainWindow::MainWindow(QWidget* parent) :
 
             if (searchMatches.empty()) {
                 searchMatches.clear();
+                searchMatches.reserve(MINIMUM_MATCHES_NUMBER);
                 searchMatchesPosition = 0;
                 return;
             }
@@ -566,8 +592,8 @@ MainWindow::MainWindow(QWidget* parent) :
     });
 
     connect(
-        audioStreamer,
-        &AudioStreamer::progressUpdate,
+        audioWorker,
+        &AudioWorker::progressUpdated,
         this,
         [&](const u16 second) {
         if (!progressSlider->isSliderDown()) {
@@ -580,12 +606,23 @@ MainWindow::MainWindow(QWidget* parent) :
     }
     );
 
-    connect(audioStreamer, &AudioStreamer::endOfFile, this, [&] {
+    connect(audioWorker, &AudioWorker::endOfFile, this, [&] {
         if (repeat == RepeatMode::Track) {
-            audioStreamer->seekSecond(0);
+            QMetaObject::invokeMethod(
+                audioWorker,
+                &AudioWorker::seekSecond,
+                Qt::QueuedConnection,
+                0
+            );
         } else {
             jumpToTrack(forwardDirection, false);
         }
+    });
+
+    connect(audioWorker, &AudioWorker::duration, this, [&](const u16 seconds) {
+        audioDuration = toMinutes(seconds);
+        progressSlider->setRange(0, seconds);
+        progressLabel->setText(format("0:00/{}", audioDuration).c_str());
     });
 }
 
@@ -663,11 +700,12 @@ inline void MainWindow::fillTable(const string& filePath) {
 
 inline void MainWindow::updatePlaybackPosition() {
     const u16 second = progressSlider->sliderPosition();
-    audioStreamer->seekSecond(second);
-
-    if (audioSink->state() != QtAudio::ActiveState) {
-        audioSink->start();
-    }
+    QMetaObject::invokeMethod(
+        audioWorker,
+        &AudioWorker::seekSecond,
+        Qt::QueuedConnection,
+        second
+    );
 
     const string progress =
         format("{}/{}", toMinutes(second / 1000), audioDuration);
@@ -731,15 +769,14 @@ MainWindow::jumpToTrack(const Direction direction, const bool clicked) {
         }
     }
 
-    const QModelIndex index = trackTree->model()->index(nextIdx, 0);
+    const QModelIndex index = trackTreeModel->index(nextIdx, 0);
     trackTree->setCurrentIndex(index);
 
     playTrack(index);
 }
 
 void MainWindow::stopPlayback() {
-    audioStreamer->reset();
-    audioSink->stop();
+    audioWorker->stop();
     audioDuration = "0:00";
     progressSlider->setRange(0, 0);
     progressLabel->setText("0:00/0:00");
@@ -749,36 +786,22 @@ void MainWindow::stopPlayback() {
 void MainWindow::playTrack(const QModelIndex& index) {
     playButton->setIcon(pauseIcon);
 
-    const string& path = trackTreeModel->getRowPath(index.row());
-
-    audioSink->stop();
-    delete audioSink;
-
-    audioStreamer->start(path);
-
-    audioSink = new QAudioSink(audioStreamer->format());
-
-    audioSink->setVolume(volumeGain);
-
-    audioSink->start(audioStreamer);
-
-    const u16 duration = audioStreamer->duration();
-    audioDuration = toMinutes(duration);
-
-    progressSlider->setRange(0, duration);
-    progressLabel->setText(std::format("0:00/{}", audioDuration).c_str());
+    QMetaObject::invokeMethod(
+        audioWorker,
+        &AudioWorker::start,
+        Qt::QueuedConnection,
+        trackTreeModel->getRowPath(index.row())
+    );
 }
 
 inline auto MainWindow::getTrackProperty(cstr str, const usize len)
     -> TrackProperty {
-    const u8 charA = static_cast<u8>(std::toupper(str[0]));
+    const u8 charA = static_cast<u8>(toupper(str[0]));
     const u8 charB = static_cast<u8>(str[1]);
     const u8 charC = static_cast<u8>(str[len - 2]);
     const u8 charD = static_cast<u8>(str[len - 1]);
 
     const u8 hash = propertyHash(charA, charB, charC, charD);
-
-    QStringList list;
 
     return TRACK_PROPERTIES[hash];
 }

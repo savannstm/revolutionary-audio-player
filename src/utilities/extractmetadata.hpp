@@ -53,7 +53,7 @@ auto extractMetadata(const string& path) -> metadata_array {
         return tag ? tag->value : "";
     };
 
-    metadata[Path] = path;
+    metadata[TrackProperty::Path] = path;
 
     const string titleTag = getTag("title");
     fs::path realPath;
@@ -62,23 +62,24 @@ auto extractMetadata(const string& path) -> metadata_array {
         realPath = path;
     }
 
-    metadata[Title] =
+    metadata[TrackProperty::Title] =
         titleTag.empty() ? realPath.filename().string() : titleTag;
-    metadata[Artist] = getTag("artist");
-    metadata[Album] = getTag("album");
-    metadata[TrackNumber] = getTag("track");
-    metadata[AlbumArtist] = getTag("album_artist");
-    metadata[Genre] = getTag("genre");
-    metadata[Year] = getTag("date");
-    metadata[Composer] = getTag("composer");
-    metadata[BPM] = getTag("TBPM");
-    metadata[Language] = getTag("language");
-    metadata[DiscNumber] = getTag("disc");
-    metadata[Comment] = getTag("comment");
-    metadata[Publisher] = getTag("publisher");
+    metadata[TrackProperty::Artist] = getTag("artist");
+    metadata[TrackProperty::Album] = getTag("album");
+    metadata[TrackProperty::TrackNumber] = getTag("track");
+    metadata[TrackProperty::AlbumArtist] = getTag("album_artist");
+    metadata[TrackProperty::Genre] = getTag("genre");
+    metadata[TrackProperty::Year] = getTag("date");
+    metadata[TrackProperty::Composer] = getTag("composer");
+    metadata[TrackProperty::BPM] = getTag("TBPM");
+    metadata[TrackProperty::Language] = getTag("language");
+    metadata[TrackProperty::DiscNumber] = getTag("disc");
+    metadata[TrackProperty::Comment] = getTag("comment");
+    metadata[TrackProperty::Publisher] = getTag("publisher");
 
-    metadata[Duration] = toMinutes(formatContext->duration / AV_TIME_BASE);
-    metadata[Bitrate] = roundBitrate(formatContext->bit_rate);
+    metadata[TrackProperty::Duration] =
+        toMinutes(formatContext->duration / AV_TIME_BASE);
+    metadata[TrackProperty::Bitrate] = roundBitrate(formatContext->bit_rate);
 
     string cover;
 
@@ -101,17 +102,18 @@ auto extractMetadata(const string& path) -> metadata_array {
         }
 
         if (!foundAudio && stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            metadata[SampleRate] = to_string(stream->codecpar->sample_rate);
-            metadata[Channels] =
+            metadata[TrackProperty::SampleRate] =
+                to_string(stream->codecpar->sample_rate);
+            metadata[TrackProperty::Channels] =
                 to_string(stream->codecpar->ch_layout.nb_channels);
 
             string formatName = formatContext->iformat->name;
 
             ranges::transform(formatName, formatName.begin(), [](const u8 chr) {
-                return std::toupper(chr);
+                return toupper(chr);
             });
 
-            metadata[Format] = formatName;
+            metadata[TrackProperty::Format] = formatName;
             foundAudio = true;
         }
 
@@ -120,8 +122,9 @@ auto extractMetadata(const string& path) -> metadata_array {
         }
     }
 
-    metadata[Cover] = cover;
+    metadata[TrackProperty::Cover] = cover;
 
+    // TODO: Don't close the input to reuse?
     avformat_close_input(&formatContext);
     return metadata;
 }
