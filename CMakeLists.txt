@@ -14,9 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent)
-# re-add when implementing equalizer back
-# find_package(juce REQUIRED)
-find_package(frozen CONFIG REQUIRED)
+find_package(juce REQUIRED)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     src/*.hpp
@@ -47,14 +45,11 @@ target_link_libraries(rap PRIVATE
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::Concurrent
-    # re-add when implementing equalizer back
-    # juce::juce_dsp
+    juce::juce_dsp
     avcodec
     avformat
     avutil
     swresample
-    frozen::frozen
-    frozen::frozen-headers
 )
 
 
