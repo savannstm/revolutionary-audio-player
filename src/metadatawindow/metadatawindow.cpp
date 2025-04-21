@@ -30,7 +30,7 @@ void MetadataWindow::populateTree(const metadata_array& metadata) {
     for (const auto& [property, value] : TRACK_PROPERTIES_MAP) {
         auto* item = new QTreeWidgetItem(&treeWidget);
         item->setText(0, property);
-        item->setText(1, metadata[value].data());
+        item->setText(1, metadata[value]);
         treeWidget.addTopLevelItem(item);
     }
 }

@@ -11,7 +11,7 @@ AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
     audioFormat.setSampleFormat(QAudioFormat::Float);
 }
 
-auto AudioStreamer::start(const path& path) -> bool {
+auto AudioStreamer::start(const QString& path) -> bool {
     reset();
 
     i32 err;
@@ -21,7 +21,7 @@ auto AudioStreamer::start(const path& path) -> bool {
 
     err = avformat_open_input(
         &formatContextPtr,
-        path.string().c_str(),
+        path.toUtf8().constData(),
         nullptr,
         nullptr
     );
@@ -145,7 +145,7 @@ inline void AudioStreamer::equalizeBuffer(QByteArray& buf) {
         juce::dsp::ProcessContextReplacing<f32> context(channelBlock);
 
         for (u8 band = 0; band < EQ_BANDS_N; band++) {
-            filters[channel][band].process(context);
+            filters[channel][band]->process(context);
         }
     }
 
@@ -244,7 +244,7 @@ auto AudioStreamer::readData(str data, const qi64 maxSize) -> qi64 {
 
     memcpy(data, buffer.constData(), bufferSize);
 
-    emit progressUpdate(second());
+    emit progressUpdate(playbackSecond);
 
     initFilters();
     prepareBuffer();
@@ -276,10 +276,6 @@ auto AudioStreamer::duration() const -> u16 {
 
 auto AudioStreamer::getFormat() const -> QAudioFormat {
     return audioFormat;
-}
-
-inline auto AudioStreamer::second() const -> u16 {
-    return playbackSecond;
 }
 
 auto AudioStreamer::reset() -> bool {
@@ -333,7 +329,6 @@ void AudioStreamer::setEqEnabled(const bool enabled) {
 }
 
 void AudioStreamer::setGain(const i8 gain, const u8 band) {
-    qDebug() << "setting gain";
     dbGains[band] = gain;
     changedBands[band] = true;
 }
@@ -343,22 +338,57 @@ auto AudioStreamer::getGain(const u8 band) -> i8 {
 }
 
 inline void AudioStreamer::initFilters() {
-    for (auto [band, changed] : views::enumerate(changedBands)) {
+    for (auto [band, changed] :
+         views::enumerate(views::take(changedBands, bandCount))) {
         if (changed) {
-            auto coeffs = juce::dsp::IIR::Coefficients<f32>::makePeakFilter(
-                codecContext->sample_rate,
-                FREQUENCIES[band],
-                QFactor,
-                juce::Decibels::decibelsToGain(static_cast<f32>(dbGains[band]))
-            );
+            const auto coeffs =
+                juce::dsp::IIR::Coefficients<f32>::makePeakFilter(
+                    codecContext->sample_rate,
+                    frequencies[band],
+                    QFactor,
+                    juce::Decibels::decibelsToGain(
+                        static_cast<f32>(dbGains[band])
+                    )
+                );
 
             for (auto& filter :
                  views::take(filters, codecContext->ch_layout.nb_channels)) {
-                filter[band].coefficients = coeffs;
+                filter[band]->coefficients = coeffs;
                 filter[band].reset();
             }
 
             changed = false;
         }
     }
+}
+
+void AudioStreamer::setBands(const u8 count) {
+    bandCount = count;
+
+    switch (count) {
+        case 3:
+            frequencies = THREE_BAND_FREQUENCIES;
+            break;
+        case 5:
+            frequencies = FIVE_BAND_FREQUENCIES;
+            break;
+        case 10:
+            frequencies = TEN_BAND_FREQUENCIES;
+            break;
+        default:
+            break;
+    }
+
+    for (u8 i = 0; i < count; i++) {
+        dbGains[i] = 0;
+        changedBands[i] = true;
+    }
+};
+
+auto AudioStreamer::bands() -> const frequencies_array& {
+    return frequencies;
+};
+
+auto AudioStreamer::gains() -> const db_gains_array& {
+    return dbGains;
 }

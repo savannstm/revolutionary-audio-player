@@ -3,10 +3,14 @@
 #include "aliases.hpp"
 #include "rapidhash.h"
 
+#include <QString>
+
 struct RapidHasher {
     template <typename T>
     constexpr auto operator()(const T& value) const -> u64 {
-        if constexpr (std::is_same_v<T, string>) {
+        if constexpr (std::is_same_v<T, QString>) {
+            return rapidhash(value.toUtf8().constData(), value.size());
+        } else if constexpr (std::is_same_v<T, string>) {
             return rapidhash(value.data(), value.size());
         } else if constexpr (std::is_trivially_copyable_v<T>) {
             return rapidhash(&value, sizeof(T));

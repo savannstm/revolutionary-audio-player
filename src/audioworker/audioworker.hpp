@@ -13,7 +13,7 @@ class AudioWorker : public QObject {
     explicit AudioWorker(QObject* parent = nullptr);
     ~AudioWorker() override;
 
-    void start(const string& path);
+    void start(const QString& path);
     void stop();
     void suspend();
     void resume();
@@ -22,11 +22,15 @@ class AudioWorker : public QObject {
     void setVolume(f64 gain);
     void setGain(i8 gain, u8 band);
     auto getGain(u8 band) -> i8;
+    auto gains() -> const db_gains_array&;
 
     [[nodiscard]] auto isEqEnabled() const -> bool;
     void setEqEnabled(bool enabled);
 
     [[nodiscard]] auto playing() const -> bool;
+
+    void setBands(u8 count);
+    auto bands() -> const frequencies_array&;
 
    signals:
     void finished();

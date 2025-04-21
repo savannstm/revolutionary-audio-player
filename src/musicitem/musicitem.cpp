@@ -1,4 +1,3 @@
-
 #include "musicitem.hpp"
 
 MusicItem::MusicItem() {
@@ -9,10 +8,10 @@ MusicItem::MusicItem(const QString& text) : QStandardItem(text) {
     setEditable(false);
 }
 
-void MusicItem::setPath(const string& path) {
+void MusicItem::setPath(const QString& path) {
     trackPath = path;
 }
 
-auto MusicItem::getPath() const -> const string& {
+auto MusicItem::getPath() const -> const QString& {
     return trackPath;
 }

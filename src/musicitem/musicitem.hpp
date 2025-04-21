@@ -1,7 +1,5 @@
 #pragma once
 
-#include "aliases.hpp"
-
 #include <QStandardItem>
 
 class MusicItem : public QStandardItem {
@@ -9,9 +7,9 @@ class MusicItem : public QStandardItem {
     explicit MusicItem();
     explicit MusicItem(const QString& text);
 
-    void setPath(const string& path);
-    [[nodiscard]] auto getPath() const -> const string&;
+    void setPath(const QString& path);
+    [[nodiscard]] auto getPath() const -> const QString&;
 
    private:
-    string trackPath;
+    QString trackPath;
 };

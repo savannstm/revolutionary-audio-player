@@ -18,12 +18,16 @@ class MusicModel : public QStandardItemModel {
     void clearRowMetadata();
 
     [[nodiscard]] auto getRowMetadata(u16 row) const -> const metadata_array&;
-    [[nodiscard]] auto getRowPath(u16 row) const -> const string&;
-    [[nodiscard]] auto contains(const string& path) const -> bool;
+    [[nodiscard]] auto getRowProperty(u16 row, TrackProperty property)
+        -> const QString&;
+
+    void removeRowMetadata(u16 row);
+
+    [[nodiscard]] auto contains(const QString& path) const -> bool;
 
     void sort(i32 column, Qt::SortOrder order = Qt::AscendingOrder) override;
 
    private:
-    rapidhashset<string> tracks;
+    rapidhashset<QString> tracks;
     rapidhashmap<u32, metadata_array> rowMetadata;
 };

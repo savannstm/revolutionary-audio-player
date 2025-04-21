@@ -22,11 +22,13 @@ AudioWorker::AudioWorker(QObject* parent) : QObject(parent) {
 
 AudioWorker::~AudioWorker() {
     audioSink->stop();
+    delete audioSink;
+
     workerThread.quit();
     workerThread.wait();
 }
 
-void AudioWorker::start(const string& path) {
+void AudioWorker::start(const QString& path) {
     if (audioSink != nullptr) {
         audioSink->stop();
         delete audioSink;
@@ -42,15 +44,21 @@ void AudioWorker::start(const string& path) {
 }
 
 void AudioWorker::stop() {
-    audioSink->stop();
+    if (audioSink != nullptr) {
+        audioSink->stop();
+    }
 }
 
 void AudioWorker::suspend() {
-    audioSink->suspend();
+    if (audioSink != nullptr) {
+        audioSink->suspend();
+    }
 }
 
 void AudioWorker::resume() {
-    audioSink->resume();
+    if (audioSink != nullptr) {
+        audioSink->resume();
+    }
 }
 
 void AudioWorker::seekSecond(const u16 second) {
@@ -59,7 +67,10 @@ void AudioWorker::seekSecond(const u16 second) {
 
 void AudioWorker::setVolume(const f64 gain) {
     volumeGain = gain;
-    audioSink->setVolume(gain);
+
+    if (audioSink != nullptr) {
+        audioSink->setVolume(gain);
+    }
 }
 
 void AudioWorker::setGain(const i8 dbGain, const u8 band) {
@@ -79,5 +90,21 @@ auto AudioWorker::getGain(const u8 band) -> i8 {
 }
 
 auto AudioWorker::playing() const -> bool {
-    return audioSink->state() == QAudio::ActiveState;
+    if (audioSink != nullptr) {
+        return audioSink->state() == QAudio::ActiveState;
+    }
+
+    return false;
+}
+
+void AudioWorker::setBands(const u8 count) {
+    audioStreamer.setBands(count);
+};
+
+auto AudioWorker::bands() -> const frequencies_array& {
+    return audioStreamer.bands();
+};
+
+auto AudioWorker::gains() -> const db_gains_array& {
+    return audioStreamer.gains();
 }

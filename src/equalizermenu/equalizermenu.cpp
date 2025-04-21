@@ -3,96 +3,139 @@
 #include "audiostreamer.hpp"
 #include "custominput.hpp"
 
-#include <QHBoxLayout>
+#include <QIntValidator>
 #include <QLabel>
-#include <QLineEdit>
+#include <QPushButton>
 #include <QSlider>
-#include <QVBoxLayout>
-#include <QValidator>
-#include <QWidgetAction>
-
-constexpr i8 MAX_DB = 20;
-constexpr i8 MIN_DB = -20;
-constexpr u8 GAIN_EDIT_WIDTH = 32;
+#include <Qt>
 
 EqualizerMenu::EqualizerMenu(
     QPushButton* parentButton,
     AudioWorker* audioWorker
 ) :
-    QMenu(parentButton) {
-    auto* container = new QWidget(this);
-    auto* mainLayout = new QVBoxLayout(container);
-    auto* hLayout = new QHBoxLayout();
+    QDialog(parentButton, Qt::FramelessWindowHint | Qt::Dialog),
+    audioWorker(audioWorker) {
+    bandsSelect->addItems({ "3", "5", "10" });
+    bandsSelect->setCurrentIndex(2);
 
-    QVector<QWidget*> bandWidgets;
-
-    for (u8 i = 0; i < EQ_BANDS_N; i++) {
-        const i8 dbGain = audioWorker->getGain(i);
-
-        auto* vLayout = new QVBoxLayout();
-        vLayout->setAlignment(Qt::AlignHCenter);
-
-        auto* bandWidget = new QWidget();
-        auto* bandLayout = new QVBoxLayout(bandWidget);
-        bandLayout->setAlignment(Qt::AlignHCenter);
-
-        auto* gainEdit = new CustomInput(QString::number(dbGain));
-        gainEdit->setFixedWidth(GAIN_EDIT_WIDTH);
-        gainEdit->setAlignment(Qt::AlignRight);
-        gainEdit->setValidator(new QIntValidator(MIN_DB, MAX_DB, gainEdit));
-
-        auto* dbLabel = new QLabel("dB");
-
-        auto* slider = new QSlider(Qt::Vertical);
-        slider->setRange(MIN_DB, MAX_DB);
-        slider->setValue(dbGain);
-
-        auto* bottomLabel =
-            new QLabel(QString::fromStdString(format("{} Hz", FREQUENCIES[i])));
-
-        connect(slider, &QSlider::valueChanged, this, [=](const i8 gain) {
-            gainEdit->setText(QString::number(gain));
-            audioWorker->setGain(gain, i);
-            qDebug() << "value changed";
-        });
-
-        connect(gainEdit, &CustomInput::editingFinished, this, [=] {
-            slider->setValue(gainEdit->text().toInt());
-        });
-
-        auto* topLabelLayout = new QHBoxLayout();
-        topLabelLayout->addWidget(gainEdit);
-        topLabelLayout->addWidget(dbLabel);
-
-        bandLayout->addLayout(topLabelLayout, 0);
-        bandLayout->addWidget(slider, 0, Qt::AlignHCenter);
-        bandLayout->addWidget(bottomLabel, 0, Qt::AlignHCenter);
-
-        vLayout->addWidget(bandWidget);
-        hLayout->addLayout(vLayout);
-
-        bandWidgets.append(bandWidget);
+    connect(
+        bandsSelect,
+        &QComboBox::currentTextChanged,
+        this,
+        [=, this](const QString& text) {
+        const u8 bandsCount = text.toUInt();
+        audioWorker->setBands(bandsCount);
+        buildBands(bandsCount);
     }
+    );
 
-    for (auto* widget : bandWidgets) {
-        widget->setFixedWidth(bandWidgets.last()->sizeHint().width());
-    }
+    topLayout->setAlignment(Qt::AlignHCenter);
+    topLayout->addWidget(bandsLabel);
+    topLayout->addWidget(bandsSelect);
+    layout->addWidget(topContainer);
 
-    auto* toggleButton = new QPushButton("Toggle Equalizer");
-    toggleButton->setCheckable(true);
-    toggleButton->setChecked(audioWorker->isEqEnabled());
+    buildBands(bandsSelect->itemText(2).toUInt());
 
-    connect(toggleButton, &QPushButton::toggled, this, [=](const bool checked) {
+    eqToggleButton->setText("Equalizer disabled");
+    eqToggleButton->setCheckable(true);
+    connect(
+        eqToggleButton,
+        &QPushButton::toggled,
+        this,
+        [=, this](const bool checked) {
+        eqToggleButton->setText(
+            checked ? "Equalizer enabled" : "Equalizer disabled"
+        );
         audioWorker->setEqEnabled(checked);
-    });
+    }
+    );
+    bottomLayout->setAlignment(Qt::AlignHCenter);
+    bottomLayout->addWidget(eqToggleButton);
+    layout->addWidget(bottomContainer);
 
-    mainLayout->addLayout(hLayout);
-    mainLayout->addWidget(toggleButton, 0, Qt::AlignHCenter);
-
-    auto* widgetAction = new QWidgetAction(this);
-    widgetAction->setDefaultWidget(container);
-    this->addAction(widgetAction);
-
-    this->exec(parentButton->mapToGlobal(QPoint(0, parentButton->height())));
-    this->deleteLater();
+    this->move(parentButton->mapToGlobal(QPoint(0, parentButton->height())));
+    this->show();
 }
+
+void EqualizerMenu::buildBands(const u8 bands) {
+    delete middleContainer;
+
+    middleContainer = new QWidget(this);
+    middleLayout = new QHBoxLayout(middleContainer);
+
+    for (u8 band = 0; band < bands; band++) {
+        auto* sliderContainer = new QWidget(this);
+        auto* sliderLayout = new QVBoxLayout(sliderContainer);
+        sliderLayout->setAlignment(Qt::AlignHCenter);
+
+        auto* dbContainer = new QWidget(sliderContainer);
+        auto* dbLayout = new QHBoxLayout(dbContainer);
+        dbLayout->setAlignment(Qt::AlignHCenter);
+
+        auto* dbInput = new CustomInput(
+            QString::number(audioWorker->getGain(band)),
+            sliderContainer
+        );
+        const auto* validator = new QIntValidator(MIN_DB, MAX_DB, dbInput);
+        dbInput->setValidator(validator);
+        dbInput->setFixedWidth(GAIN_EDIT_WIDTH);
+
+        auto* dbLabel = new QLabel("dB", sliderContainer);
+
+        dbLayout->addWidget(dbInput);
+        dbLayout->addWidget(dbLabel);
+        sliderLayout->addWidget(dbContainer, 0, Qt::AlignHCenter);
+
+        auto* slider = new QSlider(Qt::Orientation::Vertical, sliderContainer);
+        slider->setRange(MIN_DB, MAX_DB);
+
+        connect(dbInput, &CustomInput::returnPressed, dbInput, [=, this] {
+            slider->setValue(dbInput->text().toInt());
+        });
+
+        connect(
+            slider,
+            &QSlider::valueChanged,
+            slider,
+            [=, this](const i8 dbGain) {
+            dbInput->setText(QString::number(dbGain));
+            audioWorker->setGain(dbGain, band);
+        }
+        );
+
+        auto* hzLabel = new QLabel(
+            format("{}Hz", audioWorker->bands()[band]).c_str(),
+            sliderContainer
+        );
+
+        sliderLayout->addWidget(slider, 0, Qt::AlignHCenter);
+        sliderLayout->addWidget(hzLabel, 0, Qt::AlignHCenter);
+
+        middleLayout->addWidget(sliderContainer);
+        sliders[band] = slider;
+    }
+
+    layout->insertWidget(1, middleContainer);
+}
+
+auto EqualizerMenu::getEqInfo()
+    -> tuple<bool, u8, db_gains_array, frequencies_array> {
+    return { eqToggleButton->isChecked(),
+             bandsSelect->currentIndex(),
+             audioWorker->gains(),
+             audioWorker->bands() };
+}
+
+void EqualizerMenu::setEqInfo(
+    const bool enabled,
+    const u8 bandIndex,
+    const db_gains_array gains,
+    const frequencies_array frequencies
+) {
+    eqToggleButton->setChecked(enabled);
+    bandsSelect->setCurrentIndex(bandIndex);
+
+    for (u8 band = 0; band < bandsSelect->currentText().toUInt(); band++) {
+        sliders[band]->setValue(gains[band]);
+    }
+};

@@ -2,6 +2,7 @@
 #include "musicmodel.hpp"
 
 #include "constants.hpp"
+#include "enums.hpp"
 #include "rapidhasher.hpp"
 
 #include <Qt>
@@ -27,16 +28,17 @@ void MusicModel::setRowMetadata(const u16 row, const metadata_array& metadata) {
     rowMetadata[row] = metadata;
 }
 
+auto MusicModel::getRowProperty(const u16 row, const TrackProperty property)
+    -> const QString& {
+    return rowMetadata.find(row)->second[property];
+}
+
 auto MusicModel::getRowMetadata(const u16 row) const -> const metadata_array& {
     return rowMetadata.find(row)->second;
 }
 
-auto MusicModel::getRowPath(const u16 row) const -> const string& {
-    return rowMetadata.find(row)->second[TrackProperty::Path];
-}
-
 void MusicModel::sort(const i32 column, const Qt::SortOrder order) {
-    rapidhashmap<string, metadata_array> metadataByPath;
+    rapidhashmap<QString, metadata_array> metadataByPath;
     metadataByPath.reserve(rowCount());
 
     for (const auto& [row, metadata] : rowMetadata) {
@@ -49,13 +51,17 @@ void MusicModel::sort(const i32 column, const Qt::SortOrder order) {
     newMetadata.reserve(rowCount());
 
     for (u16 row = 0; row < rowCount(); row++) {
-        const string& path = static_cast<MusicItem*>(item(row, 0))->getPath();
+        const QString& path = static_cast<MusicItem*>(item(row, 0))->getPath();
         newMetadata.emplace(row, std::move(metadataByPath.find(path)->second));
     }
 
     rowMetadata = std::move(newMetadata);
 }
 
-auto MusicModel::contains(const string& path) const -> bool {
+auto MusicModel::contains(const QString& path) const -> bool {
     return tracks.contains(path);
+}
+
+void MusicModel::removeRowMetadata(const u16 row) {
+    rowMetadata.erase(row);
 }

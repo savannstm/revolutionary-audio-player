@@ -2,14 +2,16 @@
 
 #include "aliases.hpp"
 
-inline auto toMinutes(const u16 secs) -> string {
+#include <QString>
+
+inline auto toMinutes(const u16 secs) -> QString {
     const u8 minutes = secs / 60;
     const u8 seconds = secs % 60;
 
-    const string secondsString = to_string(seconds);
-    const string secondsPadded =
+    const QString secondsString = QString::number(seconds);
+    const QString secondsPadded =
         seconds < 10 ? "0" + secondsString : secondsString;
 
-    const string formatted = format("{}:{}", minutes, secondsPadded);
+    const QString formatted = QString("%1:%2").arg(minutes).arg(secondsPadded);
     return formatted;
 }

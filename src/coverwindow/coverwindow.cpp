@@ -2,28 +2,10 @@
 
 #include <QPixmap>
 
-CoverWindow::CoverWindow(const string& coverBytes, QWidget* parent) {
+CoverWindow::CoverWindow(const vector<u8>& coverBytes, QWidget* parent) {
     setWindowTitle("Cover");
-
     layout.addWidget(&image);
-
-    auto pixmap = QPixmap();
-    pixmap.loadFromData(
-        reinterpret_cast<const uchar*>(coverBytes.data()),
-        coverBytes.size()
-    );
-    image.setPixmap(pixmap);
-
-    image.setScaledContents(true);
-    setLayout(&layout);
-
-    const u16 width = pixmap.width();
-    const u16 height = pixmap.height();
-
-    setMinimumSize(MIN_SIZE, MIN_SIZE);
-    setMaximumSize(width, height);
-    resize(width, height);
-    aspectRatio = static_cast<f64>(width) / height;
+    updateCover(coverBytes);
 }
 
 void CoverWindow::resizeEvent(QResizeEvent* event) {
@@ -41,4 +23,21 @@ void CoverWindow::resizeEvent(QResizeEvent* event) {
     }
 
     QDialog::resizeEvent(event);
+}
+
+void CoverWindow::updateCover(const vector<u8>& coverBytes) {
+    auto pixmap = QPixmap();
+    pixmap.loadFromData(coverBytes.data(), coverBytes.size());
+    image.setPixmap(pixmap);
+
+    image.setScaledContents(true);
+    setLayout(&layout);
+
+    const u16 width = pixmap.width();
+    const u16 height = pixmap.height();
+
+    setMinimumSize(MIN_SIZE, MIN_SIZE);
+    setMaximumSize(width, height);
+    resize(width, height);
+    aspectRatio = static_cast<f64>(width) / height;
 }

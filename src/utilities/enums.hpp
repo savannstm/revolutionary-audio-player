@@ -22,7 +22,6 @@ enum TrackProperty : u8 {
     Channels,
     Format,
     Path,
-    Cover,
     TRACK_PROPERTY_COUNT
 };
 

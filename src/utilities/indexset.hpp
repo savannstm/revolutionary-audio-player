@@ -6,10 +6,6 @@
 #include <ranges>
 
 class IndexSet {
-   private:
-    vector<u32> elements;
-    rapidhashmap<u32, usize> map;
-
    public:
     auto insert(const u32 element) -> bool {
         if (map.contains(element)) {
@@ -92,4 +88,8 @@ class IndexSet {
     [[nodiscard]] auto end() const noexcept { return elements.end(); }
 
     [[nodiscard]] auto view() const noexcept { return views::all(elements); }
+
+   private:
+    vector<u32> elements;
+    rapidhashmap<u32, usize> map;
 };

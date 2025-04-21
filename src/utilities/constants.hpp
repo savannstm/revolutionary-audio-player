@@ -3,6 +3,8 @@
 #include "aliases.hpp"
 #include "enums.hpp"
 
+#include <QString>
+
 constexpr array<cstr, 9> EXTENSIONS = { ".mp3", ".flac", ".opus",
                                         ".aac", ".wav",  ".ogg",
                                         ".m4a", ".mp4",  ".mkv" };
@@ -33,4 +35,4 @@ constexpr array<tuple<cstr, TrackProperty>, 19> TRACK_PROPERTIES_MAP = {
     { "Path", TrackProperty::Path },
 };
 
-using metadata_array = array<string, PROPERTY_COUNT>;
+using metadata_array = array<QString, PROPERTY_COUNT>;

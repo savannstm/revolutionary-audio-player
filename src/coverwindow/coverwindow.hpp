@@ -13,7 +13,12 @@ class CoverWindow : public QDialog {
     Q_OBJECT
 
    public:
-    explicit CoverWindow(const string& coverBytes, QWidget* parent = nullptr);
+    explicit CoverWindow(
+        const vector<u8>& coverBytes,
+        QWidget* parent = nullptr
+    );
+
+    void updateCover(const vector<u8>& coverBytes);
 
    protected:
     void resizeEvent(QResizeEvent* event) override;

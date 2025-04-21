@@ -41,6 +41,12 @@ target_link_directories(rap PRIVATE $ENV{FFMPEG_LIBRARY_DIRS})
 find_path(RAPIDHASH_INCLUDE_DIRS "rapidhash.h")
 target_include_directories(rap PRIVATE ${RAPIDHASH_INCLUDE_DIRS})
 
+configure_file(
+    src/version/version.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/version.h
+)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 target_link_libraries(rap PRIVATE
     Qt6::Widgets
     Qt6::Multimedia

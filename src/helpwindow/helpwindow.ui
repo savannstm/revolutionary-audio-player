@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SettingsWindow</class>
- <widget class="QDialog" name="SettingsWindow">
+ <class>HelpWindow</class>
+ <widget class="QDialog" name="HelpWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>RAP Settings</string>
+   <string>RAP Help</string>
   </property>
  </widget>
  <resources/>
