@@ -1,17 +1,18 @@
 #include "audiostreamer.hpp"
 
 #include "aliases.hpp"
-#include "constants.hpp"
 
 #include <libavutil/avutil.h>
 
 #include <QDebug>
 
+constexpr u8 SAMPLE_SIZE = sizeof(f32);
+
 AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
-    audioFormat.setSampleFormat(QAudioFormat::Float);
+    format_.setSampleFormat(QAudioFormat::Float);
 }
 
-auto AudioStreamer::start(const QString& path) -> bool {
+void AudioStreamer::start(const QString& path) {
     reset();
 
     i32 err;
@@ -27,11 +28,9 @@ auto AudioStreamer::start(const QString& path) -> bool {
     );
 
     if (err < 0) {
-        qWarning() << format(
-            "Failed to open input file: {}",
-            av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err)
-        );
-        return false;
+        qWarning(
+        ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
+        return;
     }
 
     formatContext.reset(formatContextPtr);
@@ -40,11 +39,9 @@ auto AudioStreamer::start(const QString& path) -> bool {
     err = avformat_find_stream_info(formatContextPtr, nullptr);
 
     if (err < 0) {
-        qWarning() << format(
-            "Failed to find stream info: {}",
-            av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err)
-        );
-        return false;
+        qWarning(
+        ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
+        return;
     }
 
     const AVCodec* codec;
@@ -62,7 +59,7 @@ auto AudioStreamer::start(const QString& path) -> bool {
     if (err < 0) {
         qWarning(
         ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
-        return false;
+        return;
     }
 
     const AVStream* audioStream = formatContextPtr->streams[audioStreamIndex];
@@ -76,7 +73,7 @@ auto AudioStreamer::start(const QString& path) -> bool {
     if (err < 0) {
         qWarning(
         ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
-        return false;
+        return;
     }
 
     const AVChannelLayout channelLayout = codecContext->ch_layout;
@@ -100,7 +97,7 @@ auto AudioStreamer::start(const QString& path) -> bool {
     if (err < 0) {
         qWarning(
         ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
-        return false;
+        return;
     }
 
     swrContext.reset(swrContextPtr);
@@ -113,13 +110,13 @@ auto AudioStreamer::start(const QString& path) -> bool {
 
     secondsDuration = formatContextPtr->duration / AV_TIME_BASE;
 
-    audioFormat.setSampleRate(sampleRate);
-    audioFormat.setChannelCount(channelNumber);
+    format_.setSampleRate(sampleRate);
+    format_.setChannelCount(channelNumber);
 
     initFilters();
     prepareBuffer();
 
-    return open(QIODevice::ReadOnly);
+    open(QIODevice::ReadOnly);
 }
 
 inline void AudioStreamer::equalizeBuffer(QByteArray& buf) {
@@ -145,7 +142,7 @@ inline void AudioStreamer::equalizeBuffer(QByteArray& buf) {
         juce::dsp::ProcessContextReplacing<f32> context(channelBlock);
 
         for (u8 band = 0; band < EQ_BANDS_N; band++) {
-            filters[channel][band]->process(context);
+            filters[channel][band].process(context);
         }
     }
 
@@ -230,7 +227,7 @@ inline void AudioStreamer::prepareBuffer() {
         }
 
         if (eqEnabled &&
-            !ranges::all_of(dbGains, [](const i8 gain) { return gain == 0; })) {
+            !ranges::all_of(gains_, [](const i8 gain) { return gain == 0; })) {
             equalizeBuffer(buffer);
         }
 
@@ -257,27 +254,6 @@ auto AudioStreamer::readData(str data, const qi64 maxSize) -> qi64 {
     return bufferSize;
 }
 
-auto AudioStreamer::bytesAvailable() const -> qi64 {
-    return nextBufferSize;
-}
-
-auto AudioStreamer::atEnd() const -> bool {
-    return nextBufferSize == 0;
-}
-
-// Not for write
-auto AudioStreamer::writeData(cstr /* data */, qi64 /* size */) -> qi64 {
-    return -1;
-}
-
-auto AudioStreamer::duration() const -> u16 {
-    return secondsDuration;
-}
-
-auto AudioStreamer::getFormat() const -> QAudioFormat {
-    return audioFormat;
-}
-
 auto AudioStreamer::reset() -> bool {
     QIODevice::close();
 
@@ -296,7 +272,7 @@ auto AudioStreamer::reset() -> bool {
     return true;
 }
 
-auto AudioStreamer::seekSecond(const u16 second) -> bool {
+void AudioStreamer::seekSecond(const u16 second) {
     const i64 timestamp = av_rescale(
         second,
         formatContext->streams[audioStreamIndex]->time_base.den,
@@ -316,44 +292,22 @@ auto AudioStreamer::seekSecond(const u16 second) -> bool {
 
     initFilters();
     prepareBuffer();
-
-    return true;
-}
-
-auto AudioStreamer::isEqEnabled() const -> bool {
-    return eqEnabled;
-}
-
-void AudioStreamer::setEqEnabled(const bool enabled) {
-    eqEnabled = enabled;
-}
-
-void AudioStreamer::setGain(const i8 gain, const u8 band) {
-    dbGains[band] = gain;
-    changedBands[band] = true;
-}
-
-auto AudioStreamer::getGain(const u8 band) -> i8 {
-    return dbGains[band];
 }
 
 inline void AudioStreamer::initFilters() {
     for (auto [band, changed] :
          views::enumerate(views::take(changedBands, bandCount))) {
         if (changed) {
-            const auto coeffs =
-                juce::dsp::IIR::Coefficients<f32>::makePeakFilter(
-                    codecContext->sample_rate,
-                    frequencies[band],
-                    QFactor,
-                    juce::Decibels::decibelsToGain(
-                        static_cast<f32>(dbGains[band])
-                    )
-                );
+            const auto coeffs = IIRCoefficients::makePeakFilter(
+                codecContext->sample_rate,
+                frequencies[band],
+                QFactor,
+                juce::Decibels::decibelsToGain(static_cast<f32>(gains_[band]))
+            );
 
             for (auto& filter :
                  views::take(filters, codecContext->ch_layout.nb_channels)) {
-                filter[band]->coefficients = coeffs;
+                filter[band].coefficients = coeffs;
                 filter[band].reset();
             }
 
@@ -380,15 +334,7 @@ void AudioStreamer::setBands(const u8 count) {
     }
 
     for (u8 i = 0; i < count; i++) {
-        dbGains[i] = 0;
+        gains_[i] = 0;
         changedBands[i] = true;
     }
 };
-
-auto AudioStreamer::bands() -> const frequencies_array& {
-    return frequencies;
-};
-
-auto AudioStreamer::gains() -> const db_gains_array& {
-    return dbGains;
-}

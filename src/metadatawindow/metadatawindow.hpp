@@ -1,11 +1,13 @@
 #pragma once
 
-#include "constants.hpp"
+#include "aliases.hpp"
 
 #include <QDialog>
 #include <QString>
 #include <QTreeWidget>
 #include <QVBoxLayout>
+
+// TODO: Resize to correct size
 
 class MetadataWindow : public QDialog {
     Q_OBJECT
@@ -19,6 +21,4 @@ class MetadataWindow : public QDialog {
    private:
     QTreeWidget treeWidget = QTreeWidget(this);
     QVBoxLayout layout = QVBoxLayout(this);
-    void populateTree(const metadata_array& metadata);
-    static auto propertyToLabel(TrackProperty prop) -> QString;
 };

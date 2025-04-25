@@ -5,9 +5,10 @@
 
 #include <QMainWindow>
 
-auto AboutWindow::setupUi() -> bool {
+auto AboutWindow::setupUi() -> Ui::AboutWindow* {
+    auto* ui = new Ui::AboutWindow();
     ui->setupUi(this);
-    return true;
+    return ui;
 }
 
 AboutWindow::AboutWindow(QWidget* parent) : QDialog(parent) {

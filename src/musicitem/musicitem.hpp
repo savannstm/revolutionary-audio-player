@@ -4,12 +4,18 @@
 
 class MusicItem : public QStandardItem {
    public:
-    explicit MusicItem();
-    explicit MusicItem(const QString& text);
+    explicit MusicItem() { setEditable(false); };
 
-    void setPath(const QString& path);
-    [[nodiscard]] auto getPath() const -> const QString&;
+    explicit MusicItem(const QString& text) : QStandardItem(text) {
+        setEditable(false);
+    };
+
+    constexpr void setPath(const QString& path) { path_ = path; };
+
+    [[nodiscard]] constexpr auto path() const -> const QString& {
+        return path_;
+    };
 
    private:
-    QString trackPath;
+    QString path_;
 };

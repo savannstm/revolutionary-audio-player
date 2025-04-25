@@ -5,22 +5,42 @@
 #include "tracktree.hpp"
 
 #include <QStackedWidget>
-#include <QTabWidget>
+#include <QTabBar>
+#include <QVBoxLayout>
+#include <QWidget>
 
-class PlaylistView : public QTabWidget {
+class PlaylistView : public QWidget {
     Q_OBJECT
 
    public:
     explicit PlaylistView(QWidget* parent = nullptr);
 
-    auto addPlaylist(bool focus = false, const QString& label = QString())
-        -> i32;
-    void insertPlaylist(i32 index, const QString& label);
-    void setHeaderLabels(const QStringList& labels);
-    [[nodiscard]] auto playlistTree(i32 index) const -> TrackTree*;
+    auto addTab(const QString& label) -> i8;
+    void removeTab(i8 index);
+    [[nodiscard]] auto tabCount() const -> i8;
+    void setCurrentIndex(i8 index);
+    [[nodiscard]] auto currentIndex() const -> i8;
+
+    void addTabWidget(i8 index);
+
+    auto createTree() -> TrackTree*;
+
+    [[nodiscard]] auto tree(i8 index) const -> TrackTree*;
+
+    [[nodiscard]] auto headerLabels() -> QStringList&;
+
+    [[nodiscard]] auto tabText(i8 index) const -> QString;
+
+   signals:
+    void renameTabRequested(i8 index);
+    void closeTabRequested(i8 index);
+    void indexChanged(i8 index);
 
    private:
-    QStringList headerLabels;
-    PlaylistTabBar* playlistTabBar = new PlaylistTabBar(this);
-    QStackedWidget* stackedWidget = findChild<QStackedWidget*>();
+    void changeTabWidget(i8 index);
+
+    QStringList headerLabels_ = { "Title", "Artist", "Track Number" };
+    PlaylistTabBar* tabBar = new PlaylistTabBar(this);
+    QStackedWidget* stackedWidget = new QStackedWidget(this);
+    QVBoxLayout* layout = new QVBoxLayout(this);
 };

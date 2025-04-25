@@ -22,8 +22,6 @@ class HelpWindow : public QDialog {
     ~HelpWindow() override;
 
    private:
-    auto setupUi() -> bool;
-
-    Ui::HelpWindow* ui = new Ui::HelpWindow();
-    const bool g = setupUi();
+    auto setupUi() -> Ui::HelpWindow*;
+    Ui::HelpWindow* ui = setupUi();
 };

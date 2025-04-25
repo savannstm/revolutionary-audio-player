@@ -1,87 +1,100 @@
 #include "playlisttabbar.hpp"
 
-#include <QMenu>
-#include <QMouseEvent>
-#include <QToolButton>
-
-using namespace Qt::Literals::StringLiterals;
-
-PlaylistTabBar::PlaylistTabBar(QTabWidget* parent) : QTabBar(parent) {
-    setTabsClosable(true);
-    addAddTab();
+PlaylistTabBar::PlaylistTabBar(QWidget* parent) : QWidget(parent) {
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(4);
+    insertTab(0, "", false);  // insert add tab
 }
 
-void PlaylistTabBar::addAddTab() {
-    const i32 addTabIndex = QTabBar::addTab("");
-    auto* addButton = new QToolButton();
-    addButton->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::ListAdd));
-    addButton->setFixedSize(BUTTON_SIZE);
-
-    connect(addButton, &QToolButton::pressed, this, [this] {
-        emit playlistAdded();
-    });
-
-    setTabButton(addTabIndex, ButtonPosition::RightSide, addButton);
+PlaylistTabBar::~PlaylistTabBar() {
+    qDeleteAll(tabs);
 }
 
-auto PlaylistTabBar::addPlaylistTab(const QString& label) -> i32 {
-    return insertPlaylistTab(count() - 1, label);
+void PlaylistTabBar::addTab(const QString& label) {
+    insertTab(static_cast<i8>(count() - 1), label, true);
 }
 
-auto PlaylistTabBar::insertPlaylistTab(i32 index, const QString& label) -> i32 {
-    QTabBar::insertTab(index, label);
-    attachCloseButton(index);
-    return index;
+void PlaylistTabBar::insertTab(
+    const i8 index,
+    const QString& label,
+    const bool closable
+) {
+    auto* tab = new PlaylistTab(label, closable, this);
+
+    tabs.insert(index, tab);
+    layout->insertWidget(index, tab);
+
+    connect(
+        tab,
+        &PlaylistTab::clicked,
+        this,
+        &PlaylistTabBar::handleTabClicked
+    );
+
+    if (closable) {
+        connect(tab, &PlaylistTab::closeButtonClicked, this, [=, this] {
+            emit closeButtonClicked(static_cast<i8>(tabs.indexOf(tab)));
+        });
+    } else {
+        connect(tab, &PlaylistTab::addButtonClicked, this, [this] {
+            emit tabAdded(static_cast<i8>(count() - 1));
+            addTab(u"Playlist %1"_s.arg(count()));
+        });
+    }
+
+    if (count() == 2) {
+        setCurrentIndex(0);
+    }
 }
 
-void PlaylistTabBar::attachCloseButton(i32 index) {
-    if (!tabsClosable() || isAddTab(index)) {
+void PlaylistTabBar::removeTab(const i8 index) {
+    PlaylistTab* tab = tabs.takeAt(index);
+    layout->removeWidget(tab);
+    delete tab;
+
+    setCurrentIndex(
+        static_cast<i8>(
+            currentIndex_ == count() - 1 ? currentIndex_ - 1 : currentIndex_
+        )
+    );
+}
+
+void PlaylistTabBar::setCurrentIndex(const i8 index) {
+    if (index == -1) {
         return;
     }
 
-    auto* closeButton = new QToolButton();
-    closeButton->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::ListRemove));
-    closeButton->setFixedSize(BUTTON_SIZE);
-
-    connect(closeButton, &QToolButton::pressed, this, [this, closeButton] {
-        removeTabByCloseButton(closeButton);
-    });
-
-    setTabButton(index, ButtonPosition::RightSide, closeButton);
+    currentIndex_ = index;
+    tabs[index]->setChecked(true);
+    emit indexChanged(index);
 }
 
-void PlaylistTabBar::removeTabByCloseButton(QToolButton* button) {
-    for (i32 i = 0; i < count(); i++) {
-        if (tabButton(i, ButtonPosition::RightSide) == button) {
-            if (!isAddTab(i)) {
-                removeTab(i);
-            }
-            break;
+auto PlaylistTabBar::currentIndex() const -> i8 {
+    return currentIndex_;
+}
+
+auto PlaylistTabBar::count() const -> i8 {
+    return static_cast<i8>(tabs.size());
+}
+
+void PlaylistTabBar::handleTabClicked() {
+    auto* senderTab = static_cast<PlaylistTab*>(sender());
+
+    for (const auto& tab : tabs) {
+        if (tab == senderTab) {
+            continue;
         }
+
+        tab->setChecked(false);
+    }
+
+    const i8 index = static_cast<i8>(tabs.indexOf(senderTab));
+
+    if (index != -1) {
+        setCurrentIndex(index);
     }
 }
 
-auto PlaylistTabBar::isAddTab(const i32 index) const -> bool {
-    return index == count() - 1;
-}
-
-void PlaylistTabBar::mousePressEvent(QMouseEvent* event) {
-    const i32 clickedIndex = tabAt(event->pos());
-
-    if (isAddTab(clickedIndex)) {
-        return;
-    }
-
-    if (event->button() == Qt::RightButton && clickedIndex != -1) {
-        QMenu contextMenu;
-        const QAction* renameAction = contextMenu.addAction("Rename Tab");
-
-        QAction* selected = contextMenu.exec(event->globalPosition().toPoint());
-        if (selected == renameAction) {
-            emit renameTabRequested(clickedIndex);
-        }
-        return;
-    }
-
-    QTabBar::mousePressEvent(event);
+auto PlaylistTabBar::tabText(const i8 index) const -> QString {
+    return tabs[index]->label();
 }

@@ -57,37 +57,31 @@ class IndexSet {
         return map.at(element);
     }
 
-    [[nodiscard]] auto size() const noexcept -> usize {
-        return elements.size();
-    }
+    [[nodiscard]] auto size() const -> usize { return elements.size(); }
 
-    [[nodiscard]] auto empty() const noexcept -> bool {
-        return elements.empty();
-    }
+    [[nodiscard]] auto empty() const -> bool { return elements.empty(); }
 
-    [[nodiscard]] auto last() const noexcept -> u32 { return elements.back(); }
+    [[nodiscard]] auto last() const -> u32 { return elements.back(); }
 
-    auto pop() noexcept -> u32 {
+    auto pop() -> u32 {
         const u32 element = this->last();
         elements.pop_back();
 
         return element;
     }
 
-    [[nodiscard]] auto first() const noexcept -> u32 {
-        return elements.front();
-    }
+    [[nodiscard]] auto first() const -> u32 { return elements.front(); }
 
-    void clear() noexcept {
+    void clear() {
         elements.clear();
         map.clear();
     }
 
-    [[nodiscard]] auto begin() const noexcept { return elements.begin(); }
+    [[nodiscard]] auto begin() const { return elements.begin(); }
 
-    [[nodiscard]] auto end() const noexcept { return elements.end(); }
+    [[nodiscard]] auto end() const { return elements.end(); }
 
-    [[nodiscard]] auto view() const noexcept { return views::all(elements); }
+    [[nodiscard]] auto view() const { return views::all(elements); }
 
    private:
     vector<u32> elements;

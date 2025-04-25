@@ -1,11 +1,29 @@
 #include "settingswindow.hpp"
 
-auto SettingsWindow::setupUi() -> bool {
+#include "aliases.hpp"
+
+#include <QStyleFactory>
+
+auto SettingsWindow::setupUi() -> Ui::SettingsWindow* {
+    auto* ui = new Ui::SettingsWindow();
     ui->setupUi(this);
-    return true;
+    return ui;
 }
 
-SettingsWindow::SettingsWindow(QWidget* parent) : QDialog(parent) {}
+SettingsWindow::SettingsWindow(QWidget* parent) : QDialog(parent) {
+    for (const auto& style : QStyleFactory::keys()) {
+        styleSelect->addItem(style);
+    }
+
+    connect(
+        styleSelect,
+        &QComboBox::currentIndexChanged,
+        this,
+        [&](const i32 index) {
+        QApplication::setStyle(styleSelect->itemText(index));
+    }
+    );
+}
 
 SettingsWindow::~SettingsWindow() {
     delete ui;

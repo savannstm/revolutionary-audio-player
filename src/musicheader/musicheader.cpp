@@ -1,7 +1,6 @@
 #include "musicheader.hpp"
 
 #include <QApplication>
-#include <QHeaderView>
 
 MusicHeader::MusicHeader(Qt::Orientation orientation, QWidget* parent) :
     QHeaderView(orientation, parent) {
@@ -9,6 +8,7 @@ MusicHeader::MusicHeader(Qt::Orientation orientation, QWidget* parent) :
     setSectionsClickable(true);
     setSectionsMovable(true);
     setSortIndicatorShown(true);
+    setSortIndicatorClearable(true);
 }
 
 void MusicHeader::mousePressEvent(QMouseEvent* event) {

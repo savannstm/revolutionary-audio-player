@@ -444,20 +444,7 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="PlaylistView" name="playlistView">
-        <property name="tabShape">
-         <enum>QTabWidget::TabShape::Triangular</enum>
-        </property>
-        <property name="currentIndex">
-         <number>-1</number>
-        </property>
-        <property name="tabsClosable">
-         <bool>true</bool>
-        </property>
-        <property name="movable">
-         <bool>true</bool>
-        </property>
-       </widget>
+       <widget class="PlaylistView" name="playlistView" native="true"/>
       </item>
      </layout>
     </item>
@@ -625,7 +612,7 @@
   </customwidget>
   <customwidget>
    <class>PlaylistView</class>
-   <extends>QTabWidget</extends>
+   <extends>QWidget</extends>
    <header>playlistview.hpp</header>
    <container>1</container>
   </customwidget>

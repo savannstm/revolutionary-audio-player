@@ -6,7 +6,6 @@ extern "C" {
 }
 
 #include "aliases.hpp"
-#include "constants.hpp"
 #include "ffmpeg.hpp"
 #include "tominutes.hpp"
 
@@ -15,7 +14,6 @@ constexpr array<u16, 18> STANDARD_BITRATES = { 32,  40,  48,  56,  64,  80,
                                                256, 320, 350, 384, 448, 510 };
 
 using namespace FFmpeg;
-using namespace Qt::Literals::StringLiterals;
 
 inline auto roundBitrate(const u32 bitrate) -> QString {
     const u32 kbps = bitrate / 1000;

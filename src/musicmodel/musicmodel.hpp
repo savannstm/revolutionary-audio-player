@@ -1,7 +1,6 @@
 #pragma once
 
 #include "aliases.hpp"
-#include "constants.hpp"
 #include "musicitem.hpp"
 #include "rapidhasher.hpp"
 
@@ -14,20 +13,40 @@ class MusicModel : public QStandardItemModel {
     explicit MusicModel(QObject* parent = nullptr);
 
     void setItem(u16 row, u16 column, MusicItem* item);
-    void setRowMetadata(u16 row, const metadata_array& metadata);
-    void clearRowMetadata();
 
-    [[nodiscard]] auto getRowMetadata(u16 row) const -> const metadata_array&;
-    [[nodiscard]] auto getRowProperty(u16 row, TrackProperty property)
-        -> const QString&;
+    constexpr void
+    setRowMetadata(const u16 row, const metadata_array& metadata) {
+        rowMetadata_[row] = metadata;
+    };
 
-    void removeRowMetadata(u16 row);
+    void clearRowMetadata() {
+        rowMetadata_.clear();
+        tracks.clear();
+    };
 
-    [[nodiscard]] auto contains(const QString& path) const -> bool;
+    [[nodiscard]] auto rowMetadata(const u16 row) const
+        -> const metadata_array& {
+        return rowMetadata_.find(row)->second;
+    };
+
+    [[nodiscard]] auto rowProperty(
+        const u16 row,
+        const TrackProperty property
+    ) const -> const QString& {
+        return rowMetadata_.find(row)->second[property];
+    };
+
+    void removeRowMetadata(const u16 row) { rowMetadata_.erase(row); };
+
+    [[nodiscard]] auto contains(const QString& path) const -> bool {
+        return tracks.contains(&path);
+    };
 
     void sort(i32 column, Qt::SortOrder order = Qt::AscendingOrder) override;
 
+    auto itemFromIndex(const QModelIndex& index) -> MusicItem*;
+
    private:
-    rapidhashset<QString> tracks;
-    rapidhashmap<u32, metadata_array> rowMetadata;
+    rapidhashset<const QString*> tracks;
+    rapidhashmap<u16, metadata_array> rowMetadata_;
 };

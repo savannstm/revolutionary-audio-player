@@ -1,31 +1,38 @@
 #pragma once
 
 #include "aliases.hpp"
+#include "playlisttab.hpp"
 
-#include <QTabBar>
-#include <QTabWidget>
+#include <QHBoxLayout>
+#include <QWidget>
 
-constexpr QSize BUTTON_SIZE = QSize(16, 16);
+// TODO: Implement tab dragging
 
-class PlaylistTabBar : public QTabBar {
+class PlaylistTabBar : public QWidget {
     Q_OBJECT
 
    public:
-    explicit PlaylistTabBar(QTabWidget* parent = nullptr);
+    explicit PlaylistTabBar(QWidget* parent = nullptr);
+    ~PlaylistTabBar() override;
 
-    auto addPlaylistTab(const QString& label) -> i32;
-    auto insertPlaylistTab(i32 index, const QString& label) -> i32;
+    void addTab(const QString& label);
+    void insertTab(i8 index, const QString& label, bool closable);
+    void removeTab(i8 index);
+    void setCurrentIndex(i8 index);
+    [[nodiscard]] auto currentIndex() const -> i8;
+    [[nodiscard]] auto count() const -> i8;
+    [[nodiscard]] auto tabText(i8 index) const -> QString;
 
    signals:
-    void playlistAdded();
-    void renameTabRequested(i32 index);
-
-   protected:
-    void mousePressEvent(QMouseEvent* event) override;
+    void indexChanged(i8 index);
+    void tabAdded(i8 index);
+    void closeButtonClicked(i8 index);
+    void addButtonClicked(i8 index);
 
    private:
-    void addAddTab();
-    void attachCloseButton(i32 index);
-    void removeTabByCloseButton(QToolButton* button);
-    [[nodiscard]] auto isAddTab(i32 index) const -> bool;
+    void handleTabClicked();
+
+    QHBoxLayout* layout = new QHBoxLayout(this);
+    QVector<PlaylistTab*> tabs;
+    i8 currentIndex_ = -1;
 };

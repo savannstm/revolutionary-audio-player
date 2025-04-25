@@ -1,11 +1,16 @@
 #include "coverwindow.hpp"
 
+#include "extractmetadata.hpp"
+
 #include <QPixmap>
 
-CoverWindow::CoverWindow(const vector<u8>& coverBytes, QWidget* parent) {
-    setWindowTitle("Cover");
+CoverWindow::CoverWindow(
+    const QString& coverPath,
+    const QString& title,
+    QWidget* parent
+) {
     layout.addWidget(&image);
-    updateCover(coverBytes);
+    updateCover(coverPath, title);
 }
 
 void CoverWindow::resizeEvent(QResizeEvent* event) {
@@ -25,13 +30,14 @@ void CoverWindow::resizeEvent(QResizeEvent* event) {
     QDialog::resizeEvent(event);
 }
 
-void CoverWindow::updateCover(const vector<u8>& coverBytes) {
+void CoverWindow::updateCover(const QString& coverPath, const QString& title) {
     auto pixmap = QPixmap();
+
+    const auto coverBytes = extractCover(coverPath.toUtf8().constData());
+
     pixmap.loadFromData(coverBytes.data(), coverBytes.size());
     image.setPixmap(pixmap);
-
     image.setScaledContents(true);
-    setLayout(&layout);
 
     const u16 width = pixmap.width();
     const u16 height = pixmap.height();
@@ -40,4 +46,6 @@ void CoverWindow::updateCover(const vector<u8>& coverBytes) {
     setMaximumSize(width, height);
     resize(width, height);
     aspectRatio = static_cast<f64>(width) / height;
+
+    setWindowTitle(u"%1: Cover"_s.arg(title));
 }

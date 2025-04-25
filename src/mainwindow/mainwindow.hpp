@@ -3,14 +3,14 @@
 #include "actionbutton.hpp"
 #include "aliases.hpp"
 #include "audioworker.hpp"
-#include "constants.hpp"
 #include "custominput.hpp"
 #include "customslider.hpp"
 #include "equalizermenu.hpp"
 #include "indexset.hpp"
 #include "musicheader.hpp"
 #include "musicmodel.hpp"
-#include "playlisttabbar.hpp"
+#include "optionmenu.hpp"
+#include "playlistview.hpp"
 #include "tracktree.hpp"
 #include "ui_mainwindow.h"
 
@@ -24,8 +24,8 @@
 #include <QMainWindow>
 #include <QMenu>
 #include <QPushButton>
-#include <QSettings>
 #include <QShortcut>
+#include <QString>
 #include <QSystemTrayIcon>
 #include <QThreadPool>
 #include <random>
@@ -38,7 +38,8 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
-// TODO: Drag tracks in tree to arrange them as user wants
+// TODO: Fix crash when trying to proceed to the next track when playlist has
+// been deleted
 
 constexpr u16 TRACK_PROPERTIES_ARRAY_SIZE = UINT8_MAX + 1;
 
@@ -90,7 +91,6 @@ class MainWindow : public QMainWindow {
     void dropEvent(QDropEvent* event) override;
 
    signals:
-    void filesDropped(const QStringList& filePaths);
     void trackDataReady(
         TrackTree* tree,
         const metadata_array& metadata,
@@ -101,10 +101,9 @@ class MainWindow : public QMainWindow {
    private:
     void saveSettings();
     void parseSettings();
-    auto setupUi() -> bool;
+    auto setupUi() -> Ui::MainWindow*;
 
     // Inline utility functions
-    inline void fillTable(TrackTree* tree, const QString& filePath);
     inline void fillTable(TrackTree* tree, const QStringList& paths);
     inline void fillTable(TrackTree* tree, QDirIterator& iterator);
     inline void jumpToTrack(Direction direction, bool clicked);
@@ -114,10 +113,45 @@ class MainWindow : public QMainWindow {
     static inline auto getTrackProperty(const QString& propertyString)
         -> TrackProperty;
 
+    void handleTrackPress(const QModelIndex& index);
+    void handleHeaderPress(u8 index, Qt::MouseButton button);
+    void searchTrack();
+    void showSearchInput();
+    void onAudioProgressUpdated(u16 second);
+    void onEndOfFile();
+    void updateProgress(u16 seconds);
+    void showSettings();
+    void showHelp();
+    void addFolder(bool createNewTab);
+    void addFile(bool createNewTab);
+    void togglePlayback();
+    void moveForward();
+    void moveBackward();
+    void showAboutWindow();
+    void processDroppedFiles(const QStringList& files);
+    void updateProgressLabel();
+    void updateVolume(u16 value);
+    void cancelSearchInput();
+    void toggleEqualizerMenu(bool checked);
+    void jumpForward();
+    void jumpBackward();
+    void toggleRepeat();
+    void pausePlayback();
+    void resumePlayback();
+    void stopPlaybackAndClear();
+    void toggleRandom();
+    void exit();
+    void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
+    void setupTrayIcon();
+    void initializeEqualizerMenu();
+    void changePlaylist(i8 index);
+    void closeTab(i8 index);
+    void processFile(TrackTree* tree, const QString& filePath);
+    auto createHeaderContextMenu() -> OptionMenu*;
+    void selectTrack(const QModelIndex& oldIndex, const QModelIndex& newIndex);
+
     // UI - Widgets
-    Ui::MainWindow* ui = new Ui::MainWindow();
-    // GENIUS
-    const bool g = setupUi();
+    Ui::MainWindow* ui = setupUi();
     QSystemTrayIcon* trayIcon = new QSystemTrayIcon(this);
     QMenu* trayIconMenu = new QMenu(this);
     TrackTree* trackTree = nullptr;
@@ -128,8 +162,6 @@ class MainWindow : public QMainWindow {
     CustomInput* searchTrackInput = new CustomInput(this);
     QLabel* trackLabel = ui->trackLabel;
     PlaylistView* playlistView = ui->playlistView;
-    PlaylistTabBar* playlistTabBar =
-        static_cast<PlaylistTabBar*>(ui->playlistView->tabBar());
 
     // UI - Buttons
     QPushButton* playButton = ui->playButton;
@@ -171,9 +203,6 @@ class MainWindow : public QMainWindow {
     QString lastDir;
 
     // UI State
-    QStringList headerLabels = { "Title", "Artist", "Track Number" };
-
-    // Audio
     QString audioDuration = "0:00";
 
     // Control Logic
@@ -198,4 +227,10 @@ class MainWindow : public QMainWindow {
     QFile settingsFile =
         QApplication::applicationDirPath() + "/" + "rap-settings.json";
     EqualizerMenu* equalizerMenu = nullptr;
+    u8 sortIndicatorCleared;
+
+    // Constants
+    array<cstr, 9> ALLOWED_EXTENSIONS = { ".mp3", ".flac", ".opus",
+                                          ".aac", ".wav",  ".ogg",
+                                          ".m4a", ".mp4",  ".mkv" };
 };

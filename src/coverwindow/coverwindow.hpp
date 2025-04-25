@@ -14,11 +14,12 @@ class CoverWindow : public QDialog {
 
    public:
     explicit CoverWindow(
-        const vector<u8>& coverBytes,
+        const QString& coverPath,
+        const QString& title,
         QWidget* parent = nullptr
     );
 
-    void updateCover(const vector<u8>& coverBytes);
+    void updateCover(const QString& coverPath, const QString& title);
 
    protected:
     void resizeEvent(QResizeEvent* event) override;

@@ -2,7 +2,9 @@
 
 #include "ui_settingswindow.h"
 
+#include <QComboBox>
 #include <QDialog>
+#include <QLabel>
 
 QT_BEGIN_NAMESPACE
 
@@ -22,8 +24,9 @@ class SettingsWindow : public QDialog {
     ~SettingsWindow() override;
 
    private:
-    auto setupUi() -> bool;
+    auto setupUi() -> Ui::SettingsWindow*;
 
-    Ui::SettingsWindow* ui = new Ui::SettingsWindow();
-    const bool g = setupUi();
+    Ui::SettingsWindow* ui = setupUi();
+    QComboBox* styleSelect = ui->styleSelect;
+    QLabel* styleSelectLabel = ui->styleSelectLabel;
 };

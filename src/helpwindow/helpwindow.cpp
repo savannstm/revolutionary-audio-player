@@ -1,8 +1,9 @@
 #include "helpwindow.hpp"
 
-auto HelpWindow::setupUi() -> bool {
+auto HelpWindow::setupUi() -> Ui::HelpWindow* {
+    auto* ui = new Ui::HelpWindow();
     ui->setupUi(this);
-    return true;
+    return ui;
 }
 
 HelpWindow::HelpWindow(QWidget* parent) : QDialog(parent) {}

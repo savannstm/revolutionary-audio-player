@@ -21,8 +21,6 @@ class AboutWindow : public QDialog {
     ~AboutWindow() override;
 
    private:
-    auto setupUi() -> bool;
-
-    Ui::AboutWindow* ui = new Ui::AboutWindow();
-    const bool g = setupUi();
+    auto setupUi() -> Ui::AboutWindow*;
+    Ui::AboutWindow* ui = setupUi();
 };

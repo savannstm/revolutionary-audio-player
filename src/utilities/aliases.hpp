@@ -1,10 +1,9 @@
 #pragma once
 
+#include "enums.hpp"
+
 #include <QString>
-#include <QStringLiteral>
-#include <cctype>
 #include <cstddef>
-#include <cstdint>
 #include <filesystem>
 #include <iostream>
 #include <map>
@@ -71,4 +70,5 @@ using hashmap = std::unordered_map<K, V>;
 template <typename K>
 using hashset = std::unordered_set<K>;
 
+using metadata_array = array<QString, TRACK_PROPERTY_COUNT>;
 using namespace Qt::Literals::StringLiterals;

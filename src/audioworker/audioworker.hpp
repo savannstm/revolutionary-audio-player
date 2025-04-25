@@ -14,23 +14,68 @@ class AudioWorker : public QObject {
     ~AudioWorker() override;
 
     void start(const QString& path);
-    void stop();
-    void suspend();
-    void resume();
-    void seekSecond(u16 second);
 
-    void setVolume(f64 gain);
-    void setGain(i8 gain, u8 band);
-    auto getGain(u8 band) -> i8;
-    auto gains() -> const db_gains_array&;
+    void stop() {
+        if (audioSink != nullptr) {
+            audioSink->stop();
+        }
+    };
 
-    [[nodiscard]] auto isEqEnabled() const -> bool;
-    void setEqEnabled(bool enabled);
+    void suspend() {
+        if (audioSink != nullptr) {
+            audioSink->suspend();
+        }
+    };
 
-    [[nodiscard]] auto playing() const -> bool;
+    void resume() {
+        if (audioSink != nullptr) {
+            audioSink->resume();
+        }
+    };
 
-    void setBands(u8 count);
-    auto bands() -> const frequencies_array&;
+    void seekSecond(const u16 second) { audioStreamer.seekSecond(second); };
+
+    void setVolume(const f64 gain) {
+        volumeGain = gain;
+
+        if (audioSink != nullptr) {
+            audioSink->setVolume(gain);
+        }
+    };
+
+    constexpr void setGain(const i8 dbGain, const u8 band) {
+        audioStreamer.setGain(dbGain, band);
+    };
+
+    [[nodiscard]] constexpr auto gain(const u8 band) const -> i8 {
+        return audioStreamer.gain(band);
+    };
+
+    [[nodiscard]] constexpr auto gains() const -> const db_gains_array& {
+        return audioStreamer.gains();
+    };
+
+    [[nodiscard]] constexpr auto isEqEnabled() const -> bool {
+        return audioStreamer.isEqEnabled();
+    };
+
+    constexpr void toggleEqualizer(const bool enabled) {
+        audioStreamer.toggleEqualizer(enabled);
+    };
+
+    [[nodiscard]] auto playing() const -> bool {
+        if (audioSink != nullptr) {
+            return audioSink->state() == QAudio::ActiveState;
+        }
+
+        return false;
+    };
+
+    void setBands(const u8 count) { audioStreamer.setBands(count); };
+
+    [[nodiscard]] constexpr auto bands() const -> const frequencies_array& {
+        return audioStreamer.bands();
+    };
 
    signals:
     void finished();

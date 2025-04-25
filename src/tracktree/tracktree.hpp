@@ -12,20 +12,30 @@ class TrackTree : public QTreeView {
     explicit TrackTree();
     explicit TrackTree(QWidget* parent);
 
-    [[nodiscard]] auto currentIndex() const -> QModelIndex;
     void setCurrentIndex(const QModelIndex& newIndex);
 
-    auto model() -> MusicModel*;
-    auto header() -> MusicHeader*;
+    [[nodiscard]] constexpr auto currentIndex() const -> QModelIndex {
+        return index;
+    };
+
+    [[nodiscard]] constexpr auto model() const -> MusicModel* {
+        return musicModel;
+    };
+
+    [[nodiscard]] constexpr auto header() const -> MusicHeader* {
+        return musicHeader;
+    };
 
    signals:
-    void pressed(const QModelIndex& oldIndex, const QModelIndex& newIndex);
+    void
+    trackSelected(const QModelIndex& oldIndex, const QModelIndex& newIndex);
 
    protected:
-    void mousePressEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
 
    private:
     QModelIndex index;
-    MusicHeader* musicHeader;
-    MusicModel* musicModel;
+    MusicHeader* musicHeader =
+        new MusicHeader(Qt::Orientation::Horizontal, this);
+    MusicModel* musicModel = new MusicModel(this);
 };

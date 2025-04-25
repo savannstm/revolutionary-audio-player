@@ -1,8 +1,8 @@
 #pragma once
 
-#include "aliases.hpp"
+#include <cstdint>
 
-enum TrackProperty : u8 {
+enum TrackProperty : std::uint8_t {
     Title,
     Artist,
     Album,
@@ -25,14 +25,14 @@ enum TrackProperty : u8 {
     TRACK_PROPERTY_COUNT
 };
 
-enum Direction : u8 {
+enum Direction : std::uint8_t {
     Forward,
     BackwardRandom,
     Backward,
     ForwardRandom
 };
 
-enum RepeatMode : u8 {
+enum RepeatMode : std::uint8_t {
     Off,
     Track,
     Playlist,

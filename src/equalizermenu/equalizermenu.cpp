@@ -46,15 +46,12 @@ EqualizerMenu::EqualizerMenu(
         eqToggleButton->setText(
             checked ? "Equalizer enabled" : "Equalizer disabled"
         );
-        audioWorker->setEqEnabled(checked);
+        audioWorker->toggleEqualizer(checked);
     }
     );
     bottomLayout->setAlignment(Qt::AlignHCenter);
     bottomLayout->addWidget(eqToggleButton);
     layout->addWidget(bottomContainer);
-
-    this->move(parentButton->mapToGlobal(QPoint(0, parentButton->height())));
-    this->show();
 }
 
 void EqualizerMenu::buildBands(const u8 bands) {
@@ -73,7 +70,7 @@ void EqualizerMenu::buildBands(const u8 bands) {
         dbLayout->setAlignment(Qt::AlignHCenter);
 
         auto* dbInput = new CustomInput(
-            QString::number(audioWorker->getGain(band)),
+            QString::number(audioWorker->gain(band)),
             sliderContainer
         );
         const auto* validator = new QIntValidator(MIN_DB, MAX_DB, dbInput);
@@ -118,7 +115,7 @@ void EqualizerMenu::buildBands(const u8 bands) {
     layout->insertWidget(1, middleContainer);
 }
 
-auto EqualizerMenu::getEqInfo()
+auto EqualizerMenu::getEqualizerInfo()
     -> tuple<bool, u8, db_gains_array, frequencies_array> {
     return { eqToggleButton->isChecked(),
              bandsSelect->currentIndex(),

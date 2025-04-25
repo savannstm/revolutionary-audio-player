@@ -25,7 +25,8 @@ class EqualizerMenu : public QDialog {
         db_gains_array gains,
         frequencies_array frequencies
     );
-    auto getEqInfo() -> tuple<bool, u8, db_gains_array, frequencies_array>;
+    auto getEqualizerInfo()
+        -> tuple<bool, u8, db_gains_array, frequencies_array>;
 
    private:
     void buildBands(u8 bands);
