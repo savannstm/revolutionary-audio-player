@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent)
-find_package(juce REQUIRED)
+find_package(JUCE REQUIRED)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     src/*.hpp
@@ -51,7 +51,7 @@ target_link_libraries(rap PRIVATE
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::Concurrent
-    juce::juce_dsp
+    juce_dsp
     avcodec
     avformat
     avutil
