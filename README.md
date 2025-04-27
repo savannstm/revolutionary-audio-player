@@ -2,6 +2,8 @@
 
 The Revolutionary Audio Player, abbreviated RAP (which initially was named Rusty Audio Player and developed using gtk4-rs) and codenamed Renaissance is a **NEW GENERATION** :fire: _minimalistic_ and **_FULL FEATURED_** :trollface: audio player.
 
+[Interface](./screenshots/gui.png)
+
 ## Why a new audio player?
 
 There's many audio players already out there, big amount of which is either filled with unnecessary things, or just legacy, like the extremely cool Windows `foobar2000` audio player.
@@ -22,7 +24,7 @@ You need a C++23 compatible compiler: `clang`, `gcc`, `msvc`.
 
 The project uses CMake as build system.
 
-You'll need `Qt6`, `JUCE`, `FFmpeg`, and `rapidhash` to build the project.
+You'll need `Qt6`, `JUCE`, `FFmpeg`, `CImg` and `rapidhash` to build the project.
 
 Path to the `rapidhash` headers can be passed as `-DRAPIDHASH_INCLUDE_DIRS`.
 
