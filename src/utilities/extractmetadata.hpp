@@ -9,6 +9,8 @@ extern "C" {
 #include "ffmpeg.hpp"
 #include "tominutes.hpp"
 
+#include <QMap>
+
 constexpr array<u16, 18> STANDARD_BITRATES = { 32,  40,  48,  56,  64,  80,
                                                96,  112, 128, 160, 192, 224,
                                                256, 320, 350, 384, 448, 510 };
@@ -33,8 +35,8 @@ inline auto roundBitrate(const u32 bitrate) -> QString {
     return u"%1k"_s.arg(closest);
 }
 
-inline auto extractMetadata(cstr path) -> metadata_array {
-    metadata_array metadata;
+inline auto extractMetadata(cstr path) -> QMap<u8, QString> {
+    QMap<u8, QString> metadata;
 
     FormatContextPtr formatContext;
     AVFormatContext* formatContextPtr = formatContext.get();
@@ -55,7 +57,7 @@ inline auto extractMetadata(cstr path) -> metadata_array {
         return tag ? tag->value : "";
     };
 
-    metadata[TrackProperty::Path] = path;
+    metadata[Path] = path;
 
     const QString titleTag = getTag("title");
     fs::path realPath;
@@ -64,24 +66,23 @@ inline auto extractMetadata(cstr path) -> metadata_array {
         realPath = path;
     }
 
-    metadata[TrackProperty::Title] =
+    metadata[Title] =
         titleTag.isEmpty() ? realPath.filename().string().c_str() : titleTag;
-    metadata[TrackProperty::Artist] = getTag("artist");
-    metadata[TrackProperty::Album] = getTag("album");
-    metadata[TrackProperty::TrackNumber] = getTag("track");
-    metadata[TrackProperty::AlbumArtist] = getTag("album_artist");
-    metadata[TrackProperty::Genre] = getTag("genre");
-    metadata[TrackProperty::Year] = getTag("date");
-    metadata[TrackProperty::Composer] = getTag("composer");
-    metadata[TrackProperty::BPM] = getTag("TBPM");
-    metadata[TrackProperty::Language] = getTag("language");
-    metadata[TrackProperty::DiscNumber] = getTag("disc");
-    metadata[TrackProperty::Comment] = getTag("comment");
-    metadata[TrackProperty::Publisher] = getTag("publisher");
+    metadata[Artist] = getTag("artist");
+    metadata[Album] = getTag("album");
+    metadata[TrackNumber] = getTag("track");
+    metadata[AlbumArtist] = getTag("album_artist");
+    metadata[Genre] = getTag("genre");
+    metadata[Year] = getTag("date");
+    metadata[Composer] = getTag("composer");
+    metadata[BPM] = getTag("TBPM");
+    metadata[Language] = getTag("language");
+    metadata[DiscNumber] = getTag("disc");
+    metadata[Comment] = getTag("comment");
+    metadata[Publisher] = getTag("publisher");
 
-    metadata[TrackProperty::Duration] =
-        toMinutes(formatContext->duration / AV_TIME_BASE);
-    metadata[TrackProperty::Bitrate] = roundBitrate(formatContext->bit_rate);
+    metadata[Duration] = toMinutes(formatContext->duration / AV_TIME_BASE);
+    metadata[Bitrate] = roundBitrate(formatContext->bit_rate);
 
     bool foundAudio = false;
 
@@ -91,13 +92,13 @@ inline auto extractMetadata(cstr path) -> metadata_array {
         const AVStream* stream = formatContext->streams[i];
 
         if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            metadata[TrackProperty::SampleRate] =
+            metadata[SampleRate] =
                 QString::number(stream->codecpar->sample_rate);
-            metadata[TrackProperty::Channels] =
+            metadata[Channels] =
                 QString::number(stream->codecpar->ch_layout.nb_channels);
 
             QString formatName = formatContext->iformat->name;
-            metadata[TrackProperty::Format] = formatName.toUpper();
+            metadata[Format] = formatName.toUpper();
             break;
         }
     }

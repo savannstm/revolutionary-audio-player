@@ -7,14 +7,12 @@
 #include <QTreeWidget>
 #include <QVBoxLayout>
 
-// TODO: Resize to correct size
-
 class MetadataWindow : public QDialog {
     Q_OBJECT
 
    public:
     explicit MetadataWindow(
-        const metadata_array& metadata,
+        const QMap<u8, QString>& metadata,
         QWidget* parent = nullptr
     );
 

@@ -72,3 +72,5 @@ using hashset = std::unordered_set<K>;
 
 using metadata_array = array<QString, TRACK_PROPERTY_COUNT>;
 using namespace Qt::Literals::StringLiterals;
+
+constexpr u16 PropertyRole = Qt::UserRole + 1;

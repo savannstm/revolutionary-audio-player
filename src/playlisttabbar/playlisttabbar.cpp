@@ -1,8 +1,12 @@
 #include "playlisttabbar.hpp"
 
+#include "playlisttab.hpp"
+
+#include <QMenu>
+
 PlaylistTabBar::PlaylistTabBar(QWidget* parent) : QWidget(parent) {
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(4);
+    layout.setContentsMargins(0, 0, 0, 0);
+    layout.setSpacing(4);
     insertTab(0, "", false);  // insert add tab
 }
 
@@ -22,35 +26,46 @@ void PlaylistTabBar::insertTab(
     auto* tab = new PlaylistTab(label, closable, this);
 
     tabs.insert(index, tab);
-    layout->insertWidget(index, tab);
+    layout.insertWidget(index, tab);
+
+    connect(tab, &PlaylistTab::clicked, this, [=, this] {
+        handleTabClicked(tab);
+    });
 
     connect(
         tab,
-        &PlaylistTab::clicked,
+        &PlaylistTab::removeTabs,
         this,
-        &PlaylistTabBar::handleTabClicked
+        [=, this](const RemoveMode mode) {
+        emit removeTabs(mode, tabIndex(tab));
+    }
     );
 
     if (closable) {
-        connect(tab, &PlaylistTab::closeButtonClicked, this, [=, this] {
-            emit closeButtonClicked(static_cast<i8>(tabs.indexOf(tab)));
+        connect(tab, &PlaylistTab::removeTabRequested, this, [=, this] {
+            emit removeTabRequested(tabIndex(tab));
         });
     } else {
-        connect(tab, &PlaylistTab::addButtonClicked, this, [this] {
+        connect(tab, &PlaylistTab::addButtonClicked, this, [=, this] {
             emit tabAdded(static_cast<i8>(count() - 1));
-            addTab(u"Playlist %1"_s.arg(count()));
+            addTab(tr("Playlist %1").arg(count()));
         });
     }
 
     if (count() == 2) {
+        previousIndex = 0;
         setCurrentIndex(0);
     }
 }
 
 void PlaylistTabBar::removeTab(const i8 index) {
     PlaylistTab* tab = tabs.takeAt(index);
-    layout->removeWidget(tab);
+    layout.removeWidget(tab);
     delete tab;
+
+    if (previousIndex > index) {
+        previousIndex--;
+    }
 
     setCurrentIndex(
         static_cast<i8>(
@@ -77,22 +92,23 @@ auto PlaylistTabBar::count() const -> i8 {
     return static_cast<i8>(tabs.size());
 }
 
-void PlaylistTabBar::handleTabClicked() {
-    auto* senderTab = static_cast<PlaylistTab*>(sender());
+auto PlaylistTabBar::tabAt(const i8 index) const -> PlaylistTab* {
+    return tabs[index];
+}
 
-    for (const auto& tab : tabs) {
-        if (tab == senderTab) {
-            continue;
-        }
+auto PlaylistTabBar::tabIndex(const PlaylistTab* tab) const -> i8 {
+    return static_cast<i8>(tabs.indexOf(tab));
+}
 
-        tab->setChecked(false);
+void PlaylistTabBar::handleTabClicked(PlaylistTab* tab) {
+    if (previousIndex != -1) {
+        tabAt(previousIndex)->setChecked(false);
     }
 
-    const i8 index = static_cast<i8>(tabs.indexOf(senderTab));
+    const i8 newIndex = tabIndex(tab);
+    setCurrentIndex(newIndex);
 
-    if (index != -1) {
-        setCurrentIndex(index);
-    }
+    previousIndex = newIndex;
 }
 
 auto PlaylistTabBar::tabText(const i8 index) const -> QString {

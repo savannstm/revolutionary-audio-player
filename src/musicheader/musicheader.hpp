@@ -9,10 +9,7 @@ class MusicHeader : public QHeaderView {
     Q_OBJECT
 
    public:
-    explicit MusicHeader(
-        Qt::Orientation orientation,
-        QWidget* parent = nullptr
-    );
+    using QHeaderView::QHeaderView;
 
    signals:
     void headerPressed(u8 index, Qt::MouseButton button);

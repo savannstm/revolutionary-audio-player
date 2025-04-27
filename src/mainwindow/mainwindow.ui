@@ -488,10 +488,18 @@
     <addaction name="actionAddFile"/>
     <addaction name="actionAddFolder"/>
    </widget>
+   <widget class="QMenu" name="menuLanguage">
+    <property name="title">
+     <string>Language</string>
+    </property>
+    <addaction name="actionRussian"/>
+    <addaction name="actionEnglish"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuPlaylist"/>
    <addaction name="menuEdit"/>
    <addaction name="menuAbout"/>
+   <addaction name="menuLanguage"/>
   </widget>
   <action name="actionOpenFile">
    <property name="text">
@@ -596,6 +604,16 @@
   <action name="actionAddFolder">
    <property name="text">
     <string>Add Folder</string>
+   </property>
+  </action>
+  <action name="actionRussian">
+   <property name="text">
+    <string>Russian</string>
+   </property>
+  </action>
+  <action name="actionEnglish">
+   <property name="text">
+    <string>English</string>
    </property>
   </action>
  </widget>

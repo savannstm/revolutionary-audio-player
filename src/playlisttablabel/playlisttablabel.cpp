@@ -34,3 +34,7 @@ void PlaylistTabLabel::contextMenuEvent(QContextMenuEvent* event) {
     event->ignore();
     emit rightClicked();
 }
+
+void PlaylistTabLabel::focusOutEvent(QFocusEvent* event) {
+    emit unfocused();
+}

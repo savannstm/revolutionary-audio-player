@@ -27,8 +27,7 @@ class TrackTree : public QTreeView {
     };
 
    signals:
-    void
-    trackSelected(const QModelIndex& oldIndex, const QModelIndex& newIndex);
+    void trackSelected(u32 oldIndex, u32 newIndex);
 
    protected:
     void mouseDoubleClickEvent(QMouseEvent* event) override;

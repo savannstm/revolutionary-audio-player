@@ -12,9 +12,11 @@ class PlaylistTabLabel : public QLineEdit {
     void doubleClicked();
     void clicked();
     void rightClicked();
+    void unfocused();
 
    protected:
     void mouseDoubleClickEvent(QMouseEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void contextMenuEvent(QContextMenuEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
 };

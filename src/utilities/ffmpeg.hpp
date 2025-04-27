@@ -3,7 +3,6 @@
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libavutil/avutil.h>
 #include <libswresample/swresample.h>
 }
 
@@ -21,14 +20,6 @@ namespace FFmpeg {
             avcodec_flush_buffers(ctx);
             avcodec_free_context(&ctx);
         }
-    };
-
-    struct CodecDeleter {
-        void operator()(AVCodec* /*codec*/) const {}
-    };
-
-    struct StreamDeleter {
-        void operator()(AVStream* /*stream*/) const {}
     };
 
     struct SwrContextDeleter {

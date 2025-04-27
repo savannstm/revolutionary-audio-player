@@ -10,6 +10,8 @@ constexpr u8 SAMPLE_SIZE = sizeof(f32);
 
 AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
     format_.setSampleFormat(QAudioFormat::Float);
+    filters[0].resize(TEN_BANDS);
+    filters[1].resize(TEN_BANDS);
 }
 
 void AudioStreamer::start(const QString& path) {
@@ -320,18 +322,33 @@ void AudioStreamer::setBands(const u8 count) {
     bandCount = count;
 
     switch (count) {
-        case 3:
-            frequencies = THREE_BAND_FREQUENCIES;
+        case THREE_BANDS:
+            frequencies = vector(
+                THREE_BAND_FREQUENCIES.begin(),
+                THREE_BAND_FREQUENCIES.end()
+            );
             break;
-        case 5:
-            frequencies = FIVE_BAND_FREQUENCIES;
+        case FIVE_BANDS:
+            frequencies = vector(
+                FIVE_BAND_FREQUENCIES.begin(),
+                FIVE_BAND_FREQUENCIES.end()
+            );
             break;
-        case 10:
-            frequencies = TEN_BAND_FREQUENCIES;
+        case TEN_BANDS:
+            frequencies = vector(
+                TEN_BAND_FREQUENCIES.begin(),
+                TEN_BAND_FREQUENCIES.end()
+            );
+            break;
+        case EIGHTEEN_BANDS:
+            break;
+        case THIRTY_BANDS:
             break;
         default:
             break;
     }
+
+    frequencies.shrink_to_fit();
 
     for (u8 i = 0; i < count; i++) {
         gains_[i] = 0;

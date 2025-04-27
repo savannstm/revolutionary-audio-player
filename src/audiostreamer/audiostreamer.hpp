@@ -32,6 +32,14 @@ constexpr frequencies_array FIVE_BAND_FREQUENCIES = { 60,
                                                       4000,
                                                       16000 };
 
+constexpr u8 THIRTY_BANDS = 30;
+constexpr u8 EIGHTEEN_BANDS = 18;
+constexpr u8 TEN_BANDS = 10;
+constexpr u8 FIVE_BANDS = 5;
+constexpr u8 THREE_BANDS = 3;
+
+// TODO: Implement 18 and 30 bands equalizers;
+
 class AudioStreamer : public QIODevice {
     Q_OBJECT
 
@@ -67,13 +75,13 @@ class AudioStreamer : public QIODevice {
         return gains_[band];
     };
 
-    [[nodiscard]] constexpr auto gains() const -> const db_gains_array& {
+    [[nodiscard]] constexpr auto gains() const -> const vector<i8>& {
         return gains_;
     };
 
     void setBands(u8 count);
 
-    [[nodiscard]] constexpr auto bands() const -> const frequencies_array& {
+    [[nodiscard]] constexpr auto bands() const -> const vector<f32>& {
         return frequencies;
     };
 
@@ -115,13 +123,13 @@ class AudioStreamer : public QIODevice {
     bool eqEnabled = false;
 
     u8 bandCount = EQ_BANDS_N;
-    frequencies_array frequencies = TEN_BAND_FREQUENCIES;
+    vector<f32> frequencies =
+        vector(TEN_BAND_FREQUENCIES.begin(), TEN_BAND_FREQUENCIES.end());
 
-    array<bool, EQ_BANDS_N> changedBands = {
-        false, false, false, false, false, false, false, false, false, false
-    };
+    vector<bool> changedBands = { false, false, false, false, false,
+                                  false, false, false, false, false };
 
-    db_gains_array gains_ = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    vector<i8> gains_ = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-    array<array<IIRFilter, EQ_BANDS_N>, CHANNEL_N> filters;
+    array<vector<IIRFilter>, CHANNEL_N> filters;
 };

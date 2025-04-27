@@ -1,21 +1,21 @@
 #include "metadatawindow.hpp"
 
-#include "trackpropertiesmap.hpp"
+#include "trackproperties.hpp"
 
 MetadataWindow::MetadataWindow(
-    const metadata_array& metadata,
+    const QMap<u8, QString>& metadata,
     QWidget* parent
 ) :
     QDialog(parent) {
-    setWindowTitle(u"%1: Metadata"_s.arg(metadata[TrackProperty::Title]));
+    setWindowTitle(u"%1: Metadata"_s.arg(metadata[Title]));
 
     treeWidget.setColumnCount(2);
     treeWidget.setHeaderLabels({ "Property", "Value" });
 
-    for (const auto& [label, property] : TRACK_PROPERTIES_MAP) {
+    for (const auto& [idx, label] : views::enumerate(trackPropertiesLabels())) {
         auto* item = new QTreeWidgetItem(&treeWidget);
         item->setText(0, label);
-        item->setText(1, metadata[property]);
+        item->setText(1, metadata[idx]);
         treeWidget.addTopLevelItem(item);
     }
 
@@ -23,5 +23,5 @@ MetadataWindow::MetadataWindow(
     treeWidget.resizeColumnToContents(1);
 
     layout.addWidget(&treeWidget);
-    setLayout(&layout);
+    setFixedSize(800, 600);
 }

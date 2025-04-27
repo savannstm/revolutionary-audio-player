@@ -19,14 +19,14 @@ class EqualizerMenu : public QDialog {
    public:
     explicit EqualizerMenu(QPushButton* parentButton, AudioWorker* audioWorker);
 
-    void setEqInfo(
+    void setEqualizerInfo(
         bool enabled,
         u8 bandIndex,
-        db_gains_array gains,
-        frequencies_array frequencies
+        const vector<i8>& gains,
+        const vector<f32>& frequencies
     );
     auto getEqualizerInfo()
-        -> tuple<bool, u8, db_gains_array, frequencies_array>;
+        -> tuple<bool, u8, const vector<i8>&, const vector<f32>&>;
 
    private:
     void buildBands(u8 bands);

@@ -11,7 +11,7 @@ auto main(int argc, char* argv[]) -> int {
     QApplication::setApplicationName("revolutionary-audio-player");
 
     QSharedMemory sharedMemory;
-    sharedMemory.setKey("com.savannstm.rap");
+    sharedMemory.setKey("revolutionary-audio-player");
 
     if (!sharedMemory.create(1)) {
         return 1;

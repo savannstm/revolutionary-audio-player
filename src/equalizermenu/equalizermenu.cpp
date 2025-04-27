@@ -77,7 +77,7 @@ void EqualizerMenu::buildBands(const u8 bands) {
         dbInput->setValidator(validator);
         dbInput->setFixedWidth(GAIN_EDIT_WIDTH);
 
-        auto* dbLabel = new QLabel("dB", sliderContainer);
+        auto* dbLabel = new QLabel(u"dB"_s, sliderContainer);
 
         dbLayout->addWidget(dbInput);
         dbLayout->addWidget(dbLabel);
@@ -101,7 +101,7 @@ void EqualizerMenu::buildBands(const u8 bands) {
         );
 
         auto* hzLabel = new QLabel(
-            format("{}Hz", audioWorker->bands()[band]).c_str(),
+            u"%1Hz"_s.arg(audioWorker->bands()[band]),
             sliderContainer
         );
 
@@ -116,18 +116,18 @@ void EqualizerMenu::buildBands(const u8 bands) {
 }
 
 auto EqualizerMenu::getEqualizerInfo()
-    -> tuple<bool, u8, db_gains_array, frequencies_array> {
+    -> tuple<bool, u8, const vector<i8>&, const vector<f32>&> {
     return { eqToggleButton->isChecked(),
              bandsSelect->currentIndex(),
              audioWorker->gains(),
              audioWorker->bands() };
 }
 
-void EqualizerMenu::setEqInfo(
+void EqualizerMenu::setEqualizerInfo(
     const bool enabled,
     const u8 bandIndex,
-    const db_gains_array gains,
-    const frequencies_array frequencies
+    const vector<i8>& gains,
+    const vector<f32>& frequencies
 ) {
     eqToggleButton->setChecked(enabled);
     bandsSelect->setCurrentIndex(bandIndex);

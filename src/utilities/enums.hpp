@@ -3,10 +3,11 @@
 #include <cstdint>
 
 enum TrackProperty : std::uint8_t {
+    Play,
     Title,
     Artist,
-    Album,
     TrackNumber,
+    Album,
     AlbumArtist,
     Genre,
     Year,

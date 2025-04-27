@@ -26,13 +26,17 @@ class PlaylistTabBar : public QWidget {
    signals:
     void indexChanged(i8 index);
     void tabAdded(i8 index);
-    void closeButtonClicked(i8 index);
+    void removeTabRequested(i8 index);
     void addButtonClicked(i8 index);
+    void removeTabs(RemoveMode mode, i8 index);
 
    private:
-    void handleTabClicked();
+    [[nodiscard]] auto tabAt(i8 index) const -> PlaylistTab*;
+    [[nodiscard]] auto tabIndex(const PlaylistTab* tab) const -> i8;
+    void handleTabClicked(PlaylistTab* tab);
 
-    QHBoxLayout* layout = new QHBoxLayout(this);
+    QHBoxLayout layout = QHBoxLayout(this);
     QVector<PlaylistTab*> tabs;
     i8 currentIndex_ = -1;
+    i8 previousIndex = -1;
 };

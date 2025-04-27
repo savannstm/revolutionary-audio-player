@@ -6,12 +6,16 @@ TrackTree::TrackTree() {
     setHeader(musicHeader);
     setModel(musicModel);
     setSelectionMode(QAbstractItemView::ExtendedSelection);
+    setIndentation(1);
+    setSortingEnabled(true);
 }
 
 TrackTree::TrackTree(QWidget* parent) : QTreeView(parent) {
     setHeader(musicHeader);
     setModel(musicModel);
     setSelectionMode(QAbstractItemView::ExtendedSelection);
+    setIndentation(1);
+    setSortingEnabled(true);
 }
 
 void TrackTree::mouseDoubleClickEvent(QMouseEvent* event) {
@@ -20,8 +24,9 @@ void TrackTree::mouseDoubleClickEvent(QMouseEvent* event) {
         return;
     }
 
-    emit trackSelected(index, newIndex);
+    emit trackSelected(index.row(), newIndex.row());
     index = newIndex;
+    setCurrentIndex(newIndex);
     QTreeView::mouseDoubleClickEvent(event);
 }
 

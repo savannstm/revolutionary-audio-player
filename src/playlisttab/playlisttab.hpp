@@ -11,6 +11,12 @@
 
 constexpr QSize CLOSE_BUTTON_SIZE = QSize(16, 16);
 
+enum RemoveMode : u8 {
+    ToLeft,
+    ToRight,
+    Other
+};
+
 class PlaylistTab : public QPushButton {
     Q_OBJECT
 
@@ -21,16 +27,15 @@ class PlaylistTab : public QPushButton {
         QWidget* parent = nullptr
     );
 
-    [[nodiscard]] auto label() const -> QString { return label_->text(); }
+    [[nodiscard]] auto label() const -> QString { return label_.text(); }
 
-    [[nodiscard]] constexpr auto button() const -> QToolButton* {
-        return tabButton;
-    }
+    auto labelPtr() -> PlaylistTabLabel*;
 
    signals:
     void clicked();
-    void closeButtonClicked();
+    void removeTabRequested();
     void addButtonClicked();
+    void removeTabs(RemoveMode mode);
 
    protected:
     void mousePressEvent(QMouseEvent* event) override;
@@ -40,7 +45,7 @@ class PlaylistTab : public QPushButton {
     void handleMousePress();
 
     bool addTab = false;
-    PlaylistTabLabel* label_;
-    QToolButton* tabButton = new QToolButton(this);
-    QHBoxLayout* layout_ = new QHBoxLayout(this);
+    PlaylistTabLabel label_;
+    QToolButton tabButton = QToolButton(this);
+    QHBoxLayout layout_ = QHBoxLayout(this);
 };

@@ -5,6 +5,7 @@
 #include <QAudioSink>
 #include <QObject>
 #include <QThread>
+#include <qaudio.h>
 
 class AudioWorker : public QObject {
     Q_OBJECT
@@ -51,7 +52,7 @@ class AudioWorker : public QObject {
         return audioStreamer.gain(band);
     };
 
-    [[nodiscard]] constexpr auto gains() const -> const db_gains_array& {
+    [[nodiscard]] constexpr auto gains() const -> const vector<i8>& {
         return audioStreamer.gains();
     };
 
@@ -63,17 +64,17 @@ class AudioWorker : public QObject {
         audioStreamer.toggleEqualizer(enabled);
     };
 
-    [[nodiscard]] auto playing() const -> bool {
+    [[nodiscard]] auto state() const -> QAudio::State {
         if (audioSink != nullptr) {
-            return audioSink->state() == QAudio::ActiveState;
+            return audioSink->state();
         }
 
-        return false;
+        return QAudio::IdleState;
     };
 
     void setBands(const u8 count) { audioStreamer.setBands(count); };
 
-    [[nodiscard]] constexpr auto bands() const -> const frequencies_array& {
+    [[nodiscard]] constexpr auto bands() const -> const vector<f32>& {
         return audioStreamer.bands();
     };
 

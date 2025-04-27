@@ -4,6 +4,7 @@
 #include "playlisttabbar.hpp"
 #include "tracktree.hpp"
 
+#include <QLabel>
 #include <QStackedWidget>
 #include <QTabBar>
 #include <QVBoxLayout>
@@ -20,27 +21,31 @@ class PlaylistView : public QWidget {
     [[nodiscard]] auto tabCount() const -> i8;
     void setCurrentIndex(i8 index);
     [[nodiscard]] auto currentIndex() const -> i8;
-
-    void addTabWidget(i8 index);
-
-    auto createTree() -> TrackTree*;
-
+    void createTabPage(i8 index);
+    auto createPage() -> QWidget*;
+    void setBackgroundImage(i8 index, const QString& path) const;
+    [[nodiscard]] auto backgroundImage(i8 index) const -> QLabel*;
+    [[nodiscard]] auto currentBackgroundImage() const -> QLabel*;
     [[nodiscard]] auto tree(i8 index) const -> TrackTree*;
-
-    [[nodiscard]] auto headerLabels() -> QStringList&;
-
+    [[nodiscard]] auto currentTree() const -> TrackTree*;
     [[nodiscard]] auto tabText(i8 index) const -> QString;
+    [[nodiscard]] auto currentPage() const -> QWidget*;
+    [[nodiscard]] auto page(i8 index) const -> QWidget*;
+    void removeBackgroundImage(i8 index) const;
+    [[nodiscard]] auto backgroundImagePath(i8 index) const -> QString;
+    [[nodiscard]] auto hasBackgroundImage(i8 index) const -> bool;
+    void removeTabs(RemoveMode mode, i8 index);
 
    signals:
     void renameTabRequested(i8 index);
     void closeTabRequested(i8 index);
     void indexChanged(i8 index);
+    void tabRemoved(i8 index);
 
    private:
-    void changeTabWidget(i8 index);
+    void changePage(i8 index);
 
-    QStringList headerLabels_ = { "Title", "Artist", "Track Number" };
-    PlaylistTabBar* tabBar = new PlaylistTabBar(this);
-    QStackedWidget* stackedWidget = new QStackedWidget(this);
-    QVBoxLayout* layout = new QVBoxLayout(this);
+    PlaylistTabBar tabBar = PlaylistTabBar(this);
+    QStackedWidget stackedWidget = QStackedWidget(this);
+    QVBoxLayout layout = QVBoxLayout(this);
 };

@@ -5,13 +5,13 @@
 #include <QStyleFactory>
 
 auto SettingsWindow::setupUi() -> Ui::SettingsWindow* {
-    auto* ui = new Ui::SettingsWindow();
-    ui->setupUi(this);
-    return ui;
+    auto* ui_ = new Ui::SettingsWindow();
+    ui_->setupUi(this);
+    return ui_;
 }
 
 SettingsWindow::SettingsWindow(QWidget* parent) : QDialog(parent) {
-    for (const auto& style : QStyleFactory::keys()) {
+    for (const QString& style : QStyleFactory::keys()) {
         styleSelect->addItem(style);
     }
 

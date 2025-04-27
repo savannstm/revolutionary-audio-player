@@ -2,15 +2,6 @@
 
 #include <QApplication>
 
-MusicHeader::MusicHeader(Qt::Orientation orientation, QWidget* parent) :
-    QHeaderView(orientation, parent) {
-    setDefaultAlignment(Qt::AlignLeft);
-    setSectionsClickable(true);
-    setSectionsMovable(true);
-    setSortIndicatorShown(true);
-    setSortIndicatorClearable(true);
-}
-
 void MusicHeader::mousePressEvent(QMouseEvent* event) {
     pressedIndex = static_cast<i8>(logicalIndexAt(event->pos()));
     pressPos = event->pos();
