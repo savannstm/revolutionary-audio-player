@@ -2,7 +2,7 @@
 
 The Revolutionary Audio Player, abbreviated RAP (which initially was named Rusty Audio Player and developed using gtk4-rs) and codenamed Renaissance is a **NEW GENERATION** :fire: _minimalistic_ and **_FULL FEATURED_** :trollface: audio player.
 
-[Interface](./screenshots/gui.png)
+![Interface](./screenshots/gui.png)
 
 ## Why a new audio player?
 
