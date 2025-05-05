@@ -1,8 +1,7 @@
 #include "settingswindow.hpp"
 
-#include "aliases.hpp"
-
 #include <QStyleFactory>
+#include <utility>
 
 auto SettingsWindow::setupUi() -> Ui::SettingsWindow* {
     auto* ui_ = new Ui::SettingsWindow();
@@ -10,17 +9,50 @@ auto SettingsWindow::setupUi() -> Ui::SettingsWindow* {
     return ui_;
 }
 
-SettingsWindow::SettingsWindow(QWidget* parent) : QDialog(parent) {
+SettingsWindow::SettingsWindow(shared_ptr<Settings> settings, QWidget* parent) :
+    QDialog(parent),
+    settings(std::move(settings)) {
     for (const QString& style : QStyleFactory::keys()) {
         styleSelect->addItem(style);
     }
 
+    styleSelect->setCurrentText(
+        APPLICATION_STYLES[settings->flags.applicationStyle].toString()
+    );
+    dragDropSelect->setCurrentIndex(settings->flags.dragNDropMode);
+    playlistNamingSelect->setCurrentIndex(settings->flags.playlistNaming);
+
     connect(
         styleSelect,
+        &QComboBox::currentTextChanged,
+        this,
+        [&](const QString& itemText) {
+        QApplication::setStyle(itemText);
+
+        for (const auto [idx, style] : views::enumerate(APPLICATION_STYLES)) {
+            if (itemText == style) {
+                settings->flags.applicationStyle = as<Style>(idx);
+                break;
+            }
+        }
+    }
+    );
+
+    connect(
+        dragDropSelect,
         &QComboBox::currentIndexChanged,
         this,
-        [&](const i32 index) {
-        QApplication::setStyle(styleSelect->itemText(index));
+        [&](const u8 index) {
+        settings->flags.dragNDropMode = as<DragDropMode>(index);
+    }
+    );
+
+    connect(
+        playlistNamingSelect,
+        &QComboBox::currentIndexChanged,
+        this,
+        [&](const u8 index) {
+        settings->flags.playlistNaming = as<PlaylistNaming>(index);
     }
     );
 }

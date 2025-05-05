@@ -1,9 +1,11 @@
 #include "musicheader.hpp"
 
+#include "constants.hpp"
+
 #include <QApplication>
 
 void MusicHeader::mousePressEvent(QMouseEvent* event) {
-    pressedIndex = static_cast<i8>(logicalIndexAt(event->pos()));
+    pressedIndex = as<i8>(logicalIndexAt(event->pos()));
     pressPos = event->pos();
     mousePressed = true;
     isDragging = false;
@@ -25,11 +27,9 @@ void MusicHeader::mouseReleaseEvent(QMouseEvent* event) {
         const u16 sectionStart = sectionPosition(pressedIndex);
         const u16 sectionEnd = sectionStart + sectionSize(pressedIndex);
 
-        constexpr u8 handleWidth = 4;
-
         const bool isWithinSection = posX >= sectionStart && posX <= sectionEnd;
-        const bool isNearLeftEdge = posX <= sectionStart + handleWidth;
-        const bool isNearRightEdge = posX >= sectionEnd - handleWidth;
+        const bool isNearLeftEdge = posX <= sectionStart + HEADER_HANDLE_WIDTH;
+        const bool isNearRightEdge = posX >= sectionEnd - HEADER_HANDLE_WIDTH;
 
         if (isWithinSection && !isNearLeftEdge && !isNearRightEdge) {
             emit headerPressed(pressedIndex, event->button());

@@ -1,12 +1,10 @@
 #include "helpwindow.hpp"
 
 auto HelpWindow::setupUi() -> Ui::HelpWindow* {
-    auto* ui = new Ui::HelpWindow();
-    ui->setupUi(this);
-    return ui;
+    auto* ui_ = new Ui::HelpWindow();
+    ui_->setupUi(this);
+    return ui_;
 }
-
-HelpWindow::HelpWindow(QWidget* parent) : QDialog(parent) {}
 
 HelpWindow::~HelpWindow() {
     delete ui;

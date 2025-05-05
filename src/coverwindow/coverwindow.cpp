@@ -1,51 +1,86 @@
 #include "coverwindow.hpp"
 
+#include "constants.hpp"
 #include "extractmetadata.hpp"
 
+#include <QMenu>
 #include <QPixmap>
+
+// TODO: Fix maximizing to fullscreen
+void CoverWindow::showContextMenu(const QPoint& pos) {
+    auto* menu = new QMenu(this);
+
+    const bool isFullscreen = isFullScreen();
+    const bool isOnTop = (windowFlags() & Qt::WindowStaysOnTopHint) != 0;
+
+    const QAction* maximizeAction;
+
+    if (isFullscreen) {
+        maximizeAction = menu->addAction(tr("Minimize"));
+    } else {
+        maximizeAction = menu->addAction(tr("Maximize To Fullscreen"));
+    };
+
+    const QAction* alwaysOnTopAction;
+
+    if (isOnTop) {
+        alwaysOnTopAction = menu->addAction(tr("Unset Always On Top"));
+    } else {
+        alwaysOnTopAction = menu->addAction(tr("Set Always On Top"));
+    }
+
+    const QAction* selectedAction = menu->exec(mapToGlobal(pos));
+    delete menu;
+
+    if (selectedAction == maximizeAction) {
+        if (isFullscreen) {
+            showNormal();
+            resize(image->pixmap().size());
+            setMaximumSize(image->pixmap().size());
+            image->setScaledContents(true);
+        } else {
+            setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+            image->setScaledContents(false);
+            image->resize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+            showFullScreen();
+        }
+    } else if (selectedAction == alwaysOnTopAction) {
+        setWindowFlag(Qt::WindowStaysOnTopHint, !isOnTop);
+        show();
+    }
+}
 
 CoverWindow::CoverWindow(
     const QString& coverPath,
     const QString& title,
     QWidget* parent
-) {
-    layout.addWidget(&image);
-    updateCover(coverPath, title);
+) :
+    QDialog(parent) {
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    setWindowTitle(tr("%1: Cover").arg(title));
+    setMinimumSize(MINIMUM_COVER_SIZE);
+    layout->addWidget(image);
+
+    connect(
+        this,
+        &QDialog::customContextMenuRequested,
+        this,
+        &CoverWindow::showContextMenu
+    );
+
+    updateCover(coverPath);
 }
 
-void CoverWindow::resizeEvent(QResizeEvent* event) {
-    const QSize newSize = event->size();
-    u16 newWidth = newSize.width();
-    u16 newHeight = static_cast<u16>(newWidth / aspectRatio);
+void CoverWindow::updateCover(const QString& coverPath) {
+    const vector<u8> coverBytes = extractCover(coverPath.toUtf8().constData());
 
-    if (newHeight > newSize.height()) {
-        newHeight = newSize.height();
-        newWidth = static_cast<u16>(newHeight * aspectRatio);
-    }
-
-    if (size() != QSize(newWidth, newHeight)) {
-        resize(newWidth, newHeight);
-    }
-
-    QDialog::resizeEvent(event);
-}
-
-void CoverWindow::updateCover(const QString& coverPath, const QString& title) {
-    auto pixmap = QPixmap();
-
-    const auto coverBytes = extractCover(coverPath.toUtf8().constData());
-
+    QPixmap pixmap;
     pixmap.loadFromData(coverBytes.data(), coverBytes.size());
-    image.setPixmap(pixmap);
-    image.setScaledContents(true);
 
-    const u16 width = pixmap.width();
-    const u16 height = pixmap.height();
+    image->setPixmap(pixmap);
+    image->setScaledContents(true);
+    image->setAlignment(Qt::AlignCenter);
 
-    setMinimumSize(MIN_SIZE, MIN_SIZE);
-    setMaximumSize(width, height);
-    resize(width, height);
-    aspectRatio = static_cast<f64>(width) / height;
-
-    setWindowTitle(u"%1: Cover"_s.arg(title));
+    setMaximumSize(image->pixmap().size());
+    resize(image->pixmap().size());
 }

@@ -1,9 +1,9 @@
 #pragma once
 
+#include "mainwindow.hpp"
 #include "ui_aboutwindow.h"
 
 #include <QDialog>
-#include <QMainWindow>
 
 QT_BEGIN_NAMESPACE
 
@@ -17,7 +17,7 @@ class AboutWindow : public QDialog {
     Q_OBJECT
 
    public:
-    explicit AboutWindow(QWidget* parent = nullptr);
+    explicit AboutWindow(MainWindow* parent = nullptr);
     ~AboutWindow() override;
 
    private:

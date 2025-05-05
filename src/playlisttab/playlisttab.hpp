@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aliases.hpp"
+#include "enums.hpp"
 #include "playlisttablabel.hpp"
 
 #include <QHBoxLayout>
@@ -8,8 +9,6 @@
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QToolButton>
-
-constexpr QSize CLOSE_BUTTON_SIZE = QSize(16, 16);
 
 enum RemoveMode : u8 {
     ToLeft,
@@ -27,15 +26,20 @@ class PlaylistTab : public QPushButton {
         QWidget* parent = nullptr
     );
 
-    [[nodiscard]] auto label() const -> QString { return label_.text(); }
+    [[nodiscard]] auto label() const -> QString { return label_->text(); }
 
-    auto labelPtr() -> PlaylistTabLabel*;
+    void setLabel(const QString& label) { label_->setText(label); };
+
+    constexpr auto labelPtr() -> PlaylistTabLabel* { return label_; };
 
    signals:
     void clicked();
+    void rightClicked();
     void removeTabRequested();
     void addButtonClicked();
-    void removeTabs(RemoveMode mode);
+    void removeTabsRequested(RemoveMode mode);
+    void exportPlaylistRequested(PlaylistFileType playlistType);
+    void importPlaylistRequested(PlaylistFileType playlistType);
 
    protected:
     void mousePressEvent(QMouseEvent* event) override;
@@ -43,9 +47,10 @@ class PlaylistTab : public QPushButton {
    private:
     inline auto labelTextWidth() -> i32;
     void handleMousePress();
+    void createContextMenu();
 
     bool addTab = false;
-    PlaylistTabLabel label_;
-    QToolButton tabButton = QToolButton(this);
-    QHBoxLayout layout_ = QHBoxLayout(this);
+    PlaylistTabLabel* label_;
+    QToolButton* tabButton = new QToolButton(this);
+    QHBoxLayout* layout_ = new QHBoxLayout(this);
 };

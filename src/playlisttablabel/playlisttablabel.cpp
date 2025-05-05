@@ -12,7 +12,7 @@ PlaylistTabLabel::PlaylistTabLabel(const QString& text, QWidget* parent) :
 
 void PlaylistTabLabel::mouseDoubleClickEvent(QMouseEvent* event) {
     setReadOnly(false);
-    setStyleSheet("");
+    setStyleSheet(QString());
     setFocus();
     selectAll();
     emit doubleClicked();

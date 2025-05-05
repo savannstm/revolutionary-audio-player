@@ -6,16 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>207</width>
-    <height>288</height>
+    <width>331</width>
+    <height>152</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>RAP Settings</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
-    <widget class="QWidget" name="widget" native="true">
+   <item alignment="Qt::AlignmentFlag::AlignLeft">
+    <widget class="QWidget" name="styleSelectContainer" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="spacing">
        <number>16</number>
@@ -41,7 +41,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>Style:</string>
+         <string>Style</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -50,6 +50,89 @@
       </item>
       <item>
        <widget class="QComboBox" name="styleSelect"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item alignment="Qt::AlignmentFlag::AlignLeft">
+    <widget class="QWidget" name="playlistNamingSelectContainer" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <property name="spacing">
+       <number>16</number>
+      </property>
+      <property name="leftMargin">
+       <number>8</number>
+      </property>
+      <property name="topMargin">
+       <number>8</number>
+      </property>
+      <property name="rightMargin">
+       <number>8</number>
+      </property>
+      <property name="bottomMargin">
+       <number>8</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="playlistNamingLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Playlist Naming</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="playlistNamingSelect">
+        <item>
+         <property name="text">
+          <string>Directory Name</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Track Metadata</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Numbered</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item alignment="Qt::AlignmentFlag::AlignLeft">
+    <widget class="QWidget" name="dragDropSelectContainer" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <widget class="QLabel" name="dragdropSelectLabel">
+        <property name="text">
+         <string>Drag &amp; Drop Mode</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="dragdropSelect">
+        <item>
+         <property name="text">
+          <string>Create New Playlist</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Insert To The Current Playlist</string>
+         </property>
+        </item>
+       </widget>
       </item>
      </layout>
     </widget>

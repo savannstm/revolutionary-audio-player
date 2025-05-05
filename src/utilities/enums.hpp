@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
+#include "aliases.hpp"
 
-enum TrackProperty : std::uint8_t {
+enum TrackProperty : u8 {
     Play,
     Title,
     Artist,
@@ -26,16 +26,43 @@ enum TrackProperty : std::uint8_t {
     TRACK_PROPERTY_COUNT
 };
 
-enum Direction : std::uint8_t {
+enum Direction : u8 {
     Forward,
     BackwardRandom,
     Backward,
     ForwardRandom
 };
 
-enum RepeatMode : std::uint8_t {
+enum RepeatMode : u8 {
     Off,
     Track,
     Playlist,
     REPEAT_MODES_COUNT,
+};
+
+enum DragDropMode : u8 {
+    CreateNewPlaylist,
+    AddToCurrentPlaylist
+};
+
+enum PlaylistNaming : u8 {
+    DirectoryName,
+    TrackMetadata,
+    Numbered
+};
+
+enum Style : u8 {
+    Windows11,
+    WindowsVista,
+    Windows,
+    Fusion,
+    Macintosh,
+    Breeze,
+    GTK,
+    Adwaita
+};
+
+enum PlaylistFileType : u8 {
+    XSPF,
+    M3U8
 };

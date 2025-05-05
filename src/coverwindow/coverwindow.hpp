@@ -7,8 +7,6 @@
 #include <QResizeEvent>
 #include <QVBoxLayout>
 
-constexpr u8 MIN_SIZE = 64;
-
 class CoverWindow : public QDialog {
     Q_OBJECT
 
@@ -19,13 +17,20 @@ class CoverWindow : public QDialog {
         QWidget* parent = nullptr
     );
 
-    void updateCover(const QString& coverPath, const QString& title);
+    void updateCover(const QString& coverPath);
 
    protected:
-    void resizeEvent(QResizeEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override {
+        if (!this->isFullScreen()) {
+            QDialog::resizeEvent(event);
+            const i32 side = min(event->size().width(), event->size().height());
+            resize(side, side);
+        }
+    }
 
    private:
-    QVBoxLayout layout = QVBoxLayout(this);
-    QLabel image = QLabel(this);
-    f64 aspectRatio = 0.0;
+    void showContextMenu(const QPoint& pos);
+
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    QLabel* image = new QLabel(this);
 };

@@ -1,18 +1,22 @@
 #include "aboutwindow.hpp"
 
-#include "aliases.hpp"
 #include "version.h"
 
-#include <QMainWindow>
-
 auto AboutWindow::setupUi() -> Ui::AboutWindow* {
-    auto* ui = new Ui::AboutWindow();
-    ui->setupUi(this);
-    return ui;
+    auto* ui_ = new Ui::AboutWindow();
+    ui_->setupUi(this);
+    return ui_;
 }
 
-AboutWindow::AboutWindow(QWidget* parent) : QDialog(parent) {
-    ui->versionLabel->setText(format("RAP v{}", APP_VERSION).c_str());
+AboutWindow::AboutWindow(MainWindow* parent) : QDialog(parent) {
+    connect(parent, &MainWindow::retranslated, this, [&] {
+        ui->retranslateUi(this);
+    });
+
+    ui->versionLabel->setText(u"RAP v%1"_s.arg(APP_VERSION));
+    ui->iconLabel->setPixmap(
+        QPixmap(QApplication::applicationDirPath() + "/icons/rap-logo.png")
+    );
 }
 
 AboutWindow::~AboutWindow() {

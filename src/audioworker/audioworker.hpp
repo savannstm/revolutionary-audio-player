@@ -1,17 +1,18 @@
 #pragma once
 
 #include "audiostreamer.hpp"
+#include "enums.hpp"
 
 #include <QAudioSink>
 #include <QObject>
 #include <QThread>
-#include <qaudio.h>
 
 class AudioWorker : public QObject {
     Q_OBJECT
 
    public:
     explicit AudioWorker(QObject* parent = nullptr);
+
     ~AudioWorker() override;
 
     void start(const QString& path);
@@ -34,7 +35,7 @@ class AudioWorker : public QObject {
         }
     };
 
-    void seekSecond(const u16 second) { audioStreamer.seekSecond(second); };
+    void seekSecond(const u16 second) { audioStreamer->seekSecond(second); };
 
     void setVolume(const f64 gain) {
         volumeGain = gain;
@@ -45,23 +46,24 @@ class AudioWorker : public QObject {
     };
 
     constexpr void setGain(const i8 dbGain, const u8 band) {
-        audioStreamer.setGain(dbGain, band);
+        audioStreamer->setGain(dbGain, band);
     };
 
     [[nodiscard]] constexpr auto gain(const u8 band) const -> i8 {
-        return audioStreamer.gain(band);
+        return audioStreamer->gain(band);
     };
 
-    [[nodiscard]] constexpr auto gains() const -> const vector<i8>& {
-        return audioStreamer.gains();
+    [[nodiscard]] constexpr auto gains() const
+        -> const array<i8, THIRTY_BANDS>& {
+        return audioStreamer->gains();
     };
 
-    [[nodiscard]] constexpr auto isEqEnabled() const -> bool {
-        return audioStreamer.isEqEnabled();
+    [[nodiscard]] constexpr auto equalizerEnabled() const -> bool {
+        return audioStreamer->equalizerEnabled();
     };
 
     constexpr void toggleEqualizer(const bool enabled) {
-        audioStreamer.toggleEqualizer(enabled);
+        audioStreamer->toggleEqualizer(enabled);
     };
 
     [[nodiscard]] auto state() const -> QAudio::State {
@@ -72,22 +74,23 @@ class AudioWorker : public QObject {
         return QAudio::IdleState;
     };
 
-    void setBands(const u8 count) { audioStreamer.setBands(count); };
+    void setBandCount(const u8 count) { audioStreamer->setBandCount(count); };
 
-    [[nodiscard]] constexpr auto bands() const -> const vector<f32>& {
-        return audioStreamer.bands();
+    [[nodiscard]] constexpr auto bands() const
+        -> const array<f32, THIRTY_BANDS>& {
+        return audioStreamer->bands();
     };
 
    signals:
     void finished();
     void duration(u16 seconds);
     void progressUpdated(u16 second);
-    void endOfFile();
+    void streamEnded();
     void volumeChanged(f64 gain);
 
    private:
-    QThread workerThread;
-    AudioStreamer audioStreamer;
+    QThread* workerThread = new QThread();
+    AudioStreamer* audioStreamer = new AudioStreamer(this);
     QAudioSink* audioSink = nullptr;
     f64 volumeGain = 1.0;
 };

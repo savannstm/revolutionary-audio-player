@@ -3,29 +3,34 @@
 #include "audiostreamer.hpp"
 
 #include <QAudio>
+#include <qaudio.h>
 
 AudioWorker::AudioWorker(QObject* parent) : QObject(parent) {
-    moveToThread(&workerThread);
-    workerThread.start();
+    moveToThread(workerThread);
+    workerThread->start();
 
     connect(
-        &audioStreamer,
+        audioStreamer,
         &AudioStreamer::progressUpdate,
         this,
-        [&](const u16 second) { emit progressUpdated(second); }
+        &AudioWorker::progressUpdated
     );
 
-    connect(&audioStreamer, &AudioStreamer::endOfFile, this, [&] {
-        emit endOfFile();
-    });
+    connect(
+        audioStreamer,
+        &AudioStreamer::streamEnded,
+        this,
+        &AudioWorker::streamEnded
+    );
 }
 
 AudioWorker::~AudioWorker() {
     audioSink->stop();
     delete audioSink;
 
-    workerThread.quit();
-    workerThread.wait();
+    workerThread->quit();
+    workerThread->wait();
+    delete workerThread;
 }
 
 void AudioWorker::start(const QString& path) {
@@ -34,11 +39,22 @@ void AudioWorker::start(const QString& path) {
         delete audioSink;
     }
 
-    audioStreamer.start(path);
+    audioStreamer->start(path);
 
-    audioSink = new QAudioSink(audioStreamer.format());
+    audioSink = new QAudioSink(audioStreamer->format());
+
+    // TODO: Listen for audio device failures, try to reconnect if any
+    connect(
+        audioSink,
+        &QAudioSink::stateChanged,
+        this,
+        [&](const QAudio::State state) {
+        if (state == QAudio::StoppedState) {}
+    }
+    );
+
     audioSink->setVolume(volumeGain);
-    audioSink->start(&audioStreamer);
+    audioSink->start(audioStreamer);
 
-    emit duration(audioStreamer.duration());
+    emit duration(audioStreamer->duration());
 }

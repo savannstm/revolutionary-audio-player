@@ -3,8 +3,6 @@
 #include "aliases.hpp"
 #include "rapidhash.h"
 
-#include <QString>
-
 struct RapidHasher {
     template <typename T>
     constexpr auto operator()(const T& value) const -> u64 {
@@ -24,3 +22,10 @@ template <typename K, typename V>
 using rapidhashmap = std::unordered_map<K, V, RapidHasher>;
 template <typename K>
 using rapidhashset = std::unordered_set<K, RapidHasher>;
+
+class MetadataMap : public rapidhashmap<u8, QString> {
+   public:
+    [[nodiscard]] auto operator[](const u8 key) const -> const QString& {
+        return find(key)->second;
+    }
+};

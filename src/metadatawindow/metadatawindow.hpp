@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aliases.hpp"
+#include "rapidhasher.hpp"
 
 #include <QDialog>
 #include <QString>
@@ -12,11 +12,11 @@ class MetadataWindow : public QDialog {
 
    public:
     explicit MetadataWindow(
-        const QMap<u8, QString>& metadata,
+        const MetadataMap& metadata,
         QWidget* parent = nullptr
     );
 
    private:
-    QTreeWidget treeWidget = QTreeWidget(this);
-    QVBoxLayout layout = QVBoxLayout(this);
+    QTreeWidget* treeWidget = new QTreeWidget(this);
+    QVBoxLayout* layout = new QVBoxLayout(this);
 };

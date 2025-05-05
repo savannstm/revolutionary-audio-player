@@ -1,5 +1,6 @@
 #pragma once
 
+#include "settings.hpp"
 #include "ui_settingswindow.h"
 
 #include <QComboBox>
@@ -20,13 +21,19 @@ class SettingsWindow : public QDialog {
     Q_OBJECT
 
    public:
-    explicit SettingsWindow(QWidget* parent);
+    explicit SettingsWindow(shared_ptr<Settings> settings, QWidget* parent);
     ~SettingsWindow() override;
 
    private:
     auto setupUi() -> Ui::SettingsWindow*;
-
     Ui::SettingsWindow* ui = setupUi();
+
+    shared_ptr<Settings> settings;
+
     QComboBox* styleSelect = ui->styleSelect;
     QLabel* styleSelectLabel = ui->styleSelectLabel;
+    QComboBox* playlistNamingSelect = ui->playlistNamingSelect;
+    QLabel* playlistNamingLabel = ui->playlistNamingLabel;
+    QComboBox* dragDropSelect = ui->dragdropSelect;
+    QLabel* dragDropSelectLabel = ui->dragdropSelectLabel;
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aliases.hpp"
+#include "enums.hpp"
 #include "musicitem.hpp"
 #include "rapidhasher.hpp"
 

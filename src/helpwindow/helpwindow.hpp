@@ -18,7 +18,7 @@ class HelpWindow : public QDialog {
     Q_OBJECT
 
    public:
-    explicit HelpWindow(QWidget* parent);
+    using QDialog::QDialog;
     ~HelpWindow() override;
 
    private:

@@ -1,8 +1,10 @@
 #pragma once
 
 #include "aliases.hpp"
+#include "constants.hpp"
 #include "ffmpeg.hpp"
 
+#include <juce_core/juce_core.h>
 #include <juce_dsp/juce_dsp.h>
 
 #include <QAudioFormat>
@@ -10,35 +12,8 @@
 
 using namespace FFmpeg;
 
-constexpr u8 EQ_BANDS_N = 10;
-constexpr f32 QFactor = 1.0;
-constexpr u8 CHANNEL_N = 2;
-
-using db_gains_array = array<i8, EQ_BANDS_N>;
-using frequencies_array = array<f32, EQ_BANDS_N>;
-
 using IIRFilter = juce::dsp::IIR::Filter<f32>;
 using IIRCoefficients = juce::dsp::IIR::Coefficients<f32>;
-
-constexpr frequencies_array TEN_BAND_FREQUENCIES = { 31,   62,   125,  250,
-                                                     500,  1000, 2000, 4000,
-                                                     8000, 16000 };
-
-constexpr frequencies_array THREE_BAND_FREQUENCIES = { 100, 1000, 10000 };
-
-constexpr frequencies_array FIVE_BAND_FREQUENCIES = { 60,
-                                                      250,
-                                                      1000,
-                                                      4000,
-                                                      16000 };
-
-constexpr u8 THIRTY_BANDS = 30;
-constexpr u8 EIGHTEEN_BANDS = 18;
-constexpr u8 TEN_BANDS = 10;
-constexpr u8 FIVE_BANDS = 5;
-constexpr u8 THREE_BANDS = 3;
-
-// TODO: Implement 18 and 30 bands equalizers;
 
 class AudioStreamer : public QIODevice {
     Q_OBJECT
@@ -75,26 +50,28 @@ class AudioStreamer : public QIODevice {
         return gains_[band];
     };
 
-    [[nodiscard]] constexpr auto gains() const -> const vector<i8>& {
+    [[nodiscard]] constexpr auto gains() const
+        -> const array<i8, THIRTY_BANDS>& {
         return gains_;
     };
 
-    void setBands(u8 count);
+    void setBandCount(u8 bands);
 
-    [[nodiscard]] constexpr auto bands() const -> const vector<f32>& {
+    [[nodiscard]] constexpr auto bands() const
+        -> const array<f32, THIRTY_BANDS>& {
         return frequencies;
     };
 
-    [[nodiscard]] auto isEqEnabled() const -> bool { return eqEnabled; };
+    [[nodiscard]] auto equalizerEnabled() const -> bool { return eqEnabled; };
 
     constexpr void toggleEqualizer(const bool enabled) { eqEnabled = enabled; };
 
    signals:
     void progressUpdate(u16 second);
-    void endOfFile();
+    void streamEnded();
 
    protected:
-    auto readData(str data, qi64 maxSize) -> qi64 override;
+    [[nodiscard]] auto readData(str data, qi64 /* size */) -> qi64 override;
 
     auto writeData(cstr /* data */, qi64 /* size */) -> qi64 override {
         return -1;
@@ -122,14 +99,10 @@ class AudioStreamer : public QIODevice {
 
     bool eqEnabled = false;
 
-    u8 bandCount = EQ_BANDS_N;
-    vector<f32> frequencies =
-        vector(TEN_BAND_FREQUENCIES.begin(), TEN_BAND_FREQUENCIES.end());
+    u8 bandCount = TEN_BANDS;
 
-    vector<bool> changedBands = { false, false, false, false, false,
-                                  false, false, false, false, false };
-
-    vector<i8> gains_ = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-    array<vector<IIRFilter>, CHANNEL_N> filters;
+    array<f32, THIRTY_BANDS> frequencies;
+    array<i8, THIRTY_BANDS> gains_;
+    array<bool, THIRTY_BANDS> changedBands;
+    vector<unique_ptr<IIRFilter>> filters;
 };

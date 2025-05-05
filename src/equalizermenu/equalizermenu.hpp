@@ -1,7 +1,7 @@
 #pragma once
 
-#include "audiostreamer.hpp"
 #include "audioworker.hpp"
+#include "constants.hpp"
 
 #include <QComboBox>
 #include <QDialog>
@@ -9,9 +9,7 @@
 #include <QLabel>
 #include <QPushButton>
 
-constexpr i8 MAX_DB = 20;
-constexpr i8 MIN_DB = -20;
-constexpr u8 GAIN_EDIT_WIDTH = 32;
+// TODO: Implement changeable frequencies for each band
 
 class EqualizerMenu : public QDialog {
     Q_OBJECT
@@ -22,14 +20,13 @@ class EqualizerMenu : public QDialog {
     void setEqualizerInfo(
         bool enabled,
         u8 bandIndex,
-        const vector<i8>& gains,
-        const vector<f32>& frequencies
+        const array<i8, THIRTY_BANDS>& gains,
+        const array<f32, THIRTY_BANDS>& frequencies
     );
-    auto getEqualizerInfo()
-        -> tuple<bool, u8, const vector<i8>&, const vector<f32>&>;
+    auto equalizerInfo() -> EqualizerInfo;
 
    private:
-    void buildBands(u8 bands);
+    inline void buildBands(u8 bands);
 
     AudioWorker* audioWorker;
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -43,9 +40,9 @@ class EqualizerMenu : public QDialog {
     QWidget* bottomContainer = new QWidget(this);
     QHBoxLayout* bottomLayout = new QHBoxLayout(bottomContainer);
 
-    QLabel* bandsLabel = new QLabel("Bands:", topContainer);
+    QLabel* bandsLabel = new QLabel(tr("Bands:"), topContainer);
     QComboBox* bandsSelect = new QComboBox(topContainer);
 
     QPushButton* eqToggleButton = new QPushButton(bottomContainer);
-    array<QSlider*, EQ_BANDS_N> sliders;
+    array<QSlider*, THIRTY_BANDS> sliders;
 };

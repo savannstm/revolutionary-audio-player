@@ -1,17 +1,15 @@
 #include "audiostreamer.hpp"
 
 #include "aliases.hpp"
+#include "constants.hpp"
 
 #include <libavutil/avutil.h>
 
 #include <QDebug>
-
-constexpr u8 SAMPLE_SIZE = sizeof(f32);
+#include <memory>
 
 AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
     format_.setSampleFormat(QAudioFormat::Float);
-    filters[0].resize(TEN_BANDS);
-    filters[1].resize(TEN_BANDS);
 }
 
 void AudioStreamer::start(const QString& path) {
@@ -125,7 +123,7 @@ inline void AudioStreamer::equalizeBuffer(QByteArray& buf) {
     const u8 channels = codecContext->ch_layout.nb_channels;
     const u16 sampleRate = codecContext->sample_rate;
     const i32 samplesNumber =
-        static_cast<i32>(buf.size() / static_cast<i32>(SAMPLE_SIZE * channels));
+        as<i32>(buf.size() / as<i32>(SAMPLE_SIZE * channels));
 
     juce::AudioBuffer<f32> juceBuffer(channels, samplesNumber);
     const f32* f32samples = reinterpret_cast<const f32*>(buf.constData());
@@ -143,8 +141,8 @@ inline void AudioStreamer::equalizeBuffer(QByteArray& buf) {
         juce::dsp::AudioBlock<f32> channelBlock(&writePtr, 1, samplesNumber);
         juce::dsp::ProcessContextReplacing<f32> context(channelBlock);
 
-        for (u8 band = 0; band < EQ_BANDS_N; band++) {
-            filters[channel][band].process(context);
+        for (u8 band = 0; band < bandCount; band++) {
+            filters[band]->process(context);
         }
     }
 
@@ -194,8 +192,8 @@ inline void AudioStreamer::prepareBuffer() {
                                   ? frame->pts
                                   : frame->best_effort_timestamp;
 
-        playbackSecond = static_cast<u16>(
-            static_cast<f64>(timestamp) *
+        playbackSecond = as<u16>(
+            as<f64>(timestamp) *
             av_q2d(formatContext->streams[audioStreamIndex]->time_base)
         );
 
@@ -238,9 +236,8 @@ inline void AudioStreamer::prepareBuffer() {
     }
 }
 
-auto AudioStreamer::readData(str data, const qi64 maxSize) -> qi64 {
+auto AudioStreamer::readData(str data, const qi64 /* size */) -> qi64 {
     const u32 bufferSize = buffer.size();
-
     memcpy(data, buffer.constData(), bufferSize);
 
     emit progressUpdate(playbackSecond);
@@ -249,7 +246,7 @@ auto AudioStreamer::readData(str data, const qi64 maxSize) -> qi64 {
     prepareBuffer();
 
     if (nextBufferSize == 0) {
-        emit endOfFile();
+        emit streamEnded();
         return -1;
     }
 
@@ -297,61 +294,73 @@ void AudioStreamer::seekSecond(const u16 second) {
 }
 
 inline void AudioStreamer::initFilters() {
-    for (auto [band, changed] :
+    filters.resize(bandCount);
+
+    for (u8 i = 0; i < bandCount; i++) {
+        filters[i] = make_unique<IIRFilter>();
+    }
+
+    for (const auto [band, changed] :
          views::enumerate(views::take(changedBands, bandCount))) {
         if (changed) {
             const auto coeffs = IIRCoefficients::makePeakFilter(
                 codecContext->sample_rate,
                 frequencies[band],
-                QFactor,
-                juce::Decibels::decibelsToGain(static_cast<f32>(gains_[band]))
+                Q_FACTOR,
+                juce::Decibels::decibelsToGain(as<f32>(gains_[band]))
             );
 
-            for (auto& filter :
-                 views::take(filters, codecContext->ch_layout.nb_channels)) {
-                filter[band].coefficients = coeffs;
-                filter[band].reset();
-            }
+            filters[band]->coefficients = coeffs;
+            filters[band]->reset();
 
             changed = false;
         }
     }
 }
 
-void AudioStreamer::setBands(const u8 count) {
-    bandCount = count;
+void AudioStreamer::setBandCount(const u8 bands) {
+    bandCount = bands;
 
-    switch (count) {
+    switch (bands) {
         case THREE_BANDS:
-            frequencies = vector(
-                THREE_BAND_FREQUENCIES.begin(),
-                THREE_BAND_FREQUENCIES.end()
+            memcpy(
+                frequencies.data(),
+                THREE_BAND_FREQUENCIES.data(),
+                THREE_BANDS * SAMPLE_SIZE
             );
             break;
         case FIVE_BANDS:
-            frequencies = vector(
-                FIVE_BAND_FREQUENCIES.begin(),
-                FIVE_BAND_FREQUENCIES.end()
+            memcpy(
+                frequencies.data(),
+                FIVE_BAND_FREQUENCIES.data(),
+                FIVE_BANDS * SAMPLE_SIZE
             );
             break;
         case TEN_BANDS:
-            frequencies = vector(
-                TEN_BAND_FREQUENCIES.begin(),
-                TEN_BAND_FREQUENCIES.end()
+            memcpy(
+                frequencies.data(),
+                TEN_BAND_FREQUENCIES.data(),
+                TEN_BANDS * SAMPLE_SIZE
             );
             break;
         case EIGHTEEN_BANDS:
+            memcpy(
+                frequencies.data(),
+                EIGHTEEN_BAND_FREQUENCIES.data(),
+                EIGHTEEN_BANDS * SAMPLE_SIZE
+            );
             break;
         case THIRTY_BANDS:
+            memcpy(
+                frequencies.data(),
+                THIRTY_BAND_FREQUENCIES.data(),
+                THIRTY_BANDS * SAMPLE_SIZE
+            );
             break;
         default:
             break;
     }
 
-    frequencies.shrink_to_fit();
-
-    for (u8 i = 0; i < count; i++) {
-        gains_[i] = 0;
-        changedBands[i] = true;
-    }
-};
+    gains_.fill(0);
+    changedBands.fill(false);
+}

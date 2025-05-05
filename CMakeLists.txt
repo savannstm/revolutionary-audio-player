@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Project definition
-project(rap VERSION 0.1.0 LANGUAGES C CXX)
+project(rap VERSION 0.2.0 LANGUAGES C CXX)
 
 # Set standards for C and C++
 set(CMAKE_C_STANDARD 17)
@@ -52,10 +52,13 @@ qt_add_lrelease(rap
 )
 
 # Create the executable, but do not yet finalize it
+set(WINDOWS_APPLICATION_ICON "resources/rap-logo.rc")
+
 qt_add_executable(rap
     MANUAL_FINALIZATION
     ${SOURCES}
     ${QM_FILES}
+    ${WINDOWS_APPLICATION_ICON}
 )
 
 # Set properties (e.g., no console window for Windows app)
@@ -66,6 +69,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # Include additional source subdirectories
 file(GLOB SUBDIRS LIST_DIRECTORIES true src/*)
+file(GLOB ICONS icons/*)
 
 # Find external includes (rapidhash)
 find_path(RAPIDHASH_INCLUDE_DIRS "rapidhash.h")
@@ -93,6 +97,7 @@ target_link_libraries(rap PRIVATE
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::Concurrent
+    juce_core
     juce_dsp
     avcodec
     avformat
@@ -117,4 +122,13 @@ add_custom_command(TARGET rap POST_BUILD
         ${TRANSLATION_QM_FILES}
         $<TARGET_FILE_DIR:rap>/translations
     COMMENT "Copying translation (.qm) files to the build configuration output directory"
+)
+
+add_custom_command(TARGET rap POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        $<TARGET_FILE_DIR:rap>/icons
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${ICONS}
+        $<TARGET_FILE_DIR:rap>/icons
+    COMMENT "Copying icons to the build configuration output directory"
 )

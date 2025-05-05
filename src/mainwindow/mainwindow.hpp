@@ -3,13 +3,18 @@
 #include "actionbutton.hpp"
 #include "aliases.hpp"
 #include "audioworker.hpp"
+#include "constants.hpp"
 #include "custominput.hpp"
 #include "customslider.hpp"
 #include "equalizermenu.hpp"
+#include "icontextbutton.hpp"
 #include "indexset.hpp"
 #include "musicheader.hpp"
 #include "musicmodel.hpp"
+#include "optionmenu.hpp"
 #include "playlistview.hpp"
+#include "scaledlabel.hpp"
+#include "settings.hpp"
 #include "tracktree.hpp"
 #include "ui_mainwindow.h"
 
@@ -17,11 +22,9 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QDir>
-#include <QJsonObject>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMainWindow>
-#include <QMenu>
 #include <QPushButton>
 #include <QShortcut>
 #include <QString>
@@ -38,9 +41,9 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
-constexpr array<cstr, 9> ALLOWED_EXTENSIONS = { ".mp3", ".flac", ".opus",
-                                                ".aac", ".wav",  ".ogg",
-                                                ".m4a", ".mp4",  ".mkv" };
+// TODO: Support .cue
+// TODO: Wave visualizer
+// TODO: More Playlist / File menu sections buttons
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -61,15 +64,12 @@ class MainWindow : public QMainWindow {
         const QString& path
     );
     void trackDataProcessed(TrackTree* tree);
+    void retranslated();
 
    private:
-    void saveSettings();
-    void loadSettings();
-    auto setupUi() -> Ui::MainWindow*;
-
-    // Inline utility functions
-    inline void fillTable(TrackTree* tree, const QStringList& paths);
-    inline void fillTable(TrackTree* tree, QDirIterator& iterator);
+    [[nodiscard]] inline auto saveSettings() -> result<bool, QString>;
+    inline void loadSettings();
+    [[nodiscard]] inline auto setupUi() -> Ui::MainWindow*;
     inline void jumpToTrack(Direction direction, bool clicked);
     inline void updatePlaybackPosition();
     inline void playTrack(TrackTree* tree, const QModelIndex& index);
@@ -83,8 +83,7 @@ class MainWindow : public QMainWindow {
     inline void updateProgress(u16 seconds);
     inline void showSettingsWindow();
     inline void showHelpWindow();
-    inline void addFolder(bool createNewTab);
-    inline void addFile(bool createNewTab);
+    inline void addEntry(bool createNewTab, bool isFolder);
     inline void togglePlayback();
     inline void moveForward();
     inline void moveBackward();
@@ -103,35 +102,45 @@ class MainWindow : public QMainWindow {
     inline void exit();
     inline void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
     inline void setupTrayIcon();
-    inline void initializeEqualizerMenu();
     inline void changePlaylist(i8 index);
     inline void closeTab(i8 index);
-    inline void processFile(TrackTree* tree, const QString& filePath);
     inline void selectTrack(i32 oldRow, u16 newRow);
-    inline auto getRowMetadata(TrackTree* tree, u16 row) -> QMap<u8, QString>;
     inline void resetSorting(i32 index, Qt::SortOrder sortOrder);
+    inline void retranslate(QLocale::Language language = QLocale::AnyLanguage);
+    inline void moveDockWidget(DockWidgetPosition dockWidgetPosition);
 
     // UI - Widgets
     Ui::MainWindow* ui = setupUi();
+
+    // Tray Icon
     QSystemTrayIcon* trayIcon = new QSystemTrayIcon(this);
-    QMenu* trayIconMenu = new QMenu(this);
+    OptionMenu* trayIconMenu = new OptionMenu(this);
+    QLabel* progressLabelCloned = new QLabel(trayIconMenu);
+    QLabel* volumeLabelCloned = new QLabel(trayIconMenu);
+    CustomSlider* volumeSliderCloned =
+        new CustomSlider(Qt::Horizontal, trayIconMenu);
+    CustomSlider* progressSliderCloned =
+        new CustomSlider(Qt::Horizontal, trayIconMenu);
+
+    // Labels
+    QLabel* progressLabel = ui->progressLabel;
+    QLabel* volumeLabel = ui->volumeLabel;
+    QLabel* trackLabel = ui->trackLabel;
+
+    // Playlist
+    PlaylistView* playlistView = ui->playlistView;
     TrackTree* trackTree = nullptr;
     MusicHeader* trackTreeHeader = nullptr;
     MusicModel* trackTreeModel = nullptr;
-    QLabel* progressLabel = ui->progressLabel;
-    QLabel* volumeLabel = ui->volumeLabel;
-    CustomInput* searchTrackInput = new CustomInput(this);
-    QLabel* trackLabel = ui->trackLabel;
-    PlaylistView* playlistView = ui->playlistView;
 
     // UI - Buttons
     QPushButton* playButton = ui->playButton;
-    QPushButton* stopButton = ui->stopButton;
-    QPushButton* backwardButton = ui->backwardButton;
-    QPushButton* forwardButton = ui->forwardButton;
-    ActionButton* repeatButton = ui->repeatButton;
+    ActionButton* stopButton = ui->stopButton;
+    ActionButton* backwardButton = ui->backwardButton;
+    ActionButton* forwardButton = ui->forwardButton;
+    IconTextButton* repeatButton = ui->repeatButton;
     ActionButton* randomButton = ui->randomButton;
-    QPushButton* eqButton = ui->eqButton;
+    QPushButton* equalizerButton = ui->equalizerButton;
 
     // UI - Sliders
     CustomSlider* volumeSlider = ui->volumeSlider;
@@ -161,12 +170,12 @@ class MainWindow : public QMainWindow {
     QAction* actionEnglish = ui->actionEnglish;
 
     // Settings
-    QJsonObject settings;
-    QString lastDir;
+    shared_ptr<Settings> settings;
 
     // UI State
-    QString audioDuration = "0:00";
-    QTranslator translator;
+    const QString ZERO_DURATION = u"0:00/0:00"_s;
+    QString trackDuration = ZERO_DURATION;
+    QTranslator* translator = new QTranslator(this);
 
     // Control Logic
     RepeatMode repeat = RepeatMode::Off;
@@ -176,20 +185,28 @@ class MainWindow : public QMainWindow {
     IndexSet playHistory;
     i8 playingPlaylist = -1;
 
+    QSplitter* mainArea = ui->mainArea;
+    QSplitter* dockWidget = ui->dockWidget;
+    ScaledLabel* dockCoverLabel = ui->dockCoverLabel;
+    QTreeWidget* dockMetadataTree = ui->dockMetadataTree;
+
     // Threads
     QThreadPool* threadPool = new QThreadPool();
     AudioWorker* audioWorker = new AudioWorker();
 
     // Search
+    CustomInput* searchTrackInput = new CustomInput(this);
     QVector<QModelIndex> searchMatches;
     isize searchMatchesPosition = 0;
     QShortcut* searchShortcut = new QShortcut(QKeySequence("Ctrl+F"), this);
     QString previousSearchPrompt;
 
-    // Miscellaneous
-    std::random_device randdevice;
+    // Settings
     QFile settingsFile =
-        QApplication::applicationDirPath() + "/" + "rap-settings.json";
+        QApplication::applicationDirPath() + "/rap-settings.json";
+
+    // Miscellaneous
     EqualizerMenu* equalizerMenu = nullptr;
     u8 sortIndicatorCleared;
+    std::random_device rng;
 };

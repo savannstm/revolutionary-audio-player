@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>593</width>
-    <height>133</height>
+    <height>273</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -54,7 +54,7 @@
     <property name="bottomMargin">
      <number>0</number>
     </property>
-    <item>
+    <item alignment="Qt::AlignmentFlag::AlignTop">
      <widget class="QWidget" name="controlContainer" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -107,6 +107,9 @@
            <height>32</height>
           </size>
          </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play/Pause&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
           <string/>
          </property>
@@ -116,7 +119,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="stopButton">
+        <widget class="ActionButton" name="stopButton">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -134,6 +137,9 @@
            <width>32</width>
            <height>32</height>
           </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stop&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
           <string/>
@@ -144,7 +150,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="backwardButton">
+        <widget class="ActionButton" name="backwardButton">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -162,6 +168,9 @@
            <width>32</width>
            <height>32</height>
           </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Backward&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
           <string/>
@@ -172,7 +181,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="forwardButton">
+        <widget class="ActionButton" name="forwardButton">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -190,6 +199,9 @@
            <width>32</width>
            <height>32</height>
           </size>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Forward&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
           <string/>
@@ -197,10 +209,13 @@
          <property name="icon">
           <iconset theme="QIcon::ThemeIcon::MediaSkipForward"/>
          </property>
+         <property name="default">
+          <bool>false</bool>
+         </property>
         </widget>
        </item>
        <item>
-        <widget class="ActionButton" name="repeatButton">
+        <widget class="IconTextButton" name="repeatButton">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -218,6 +233,14 @@
            <width>32</width>
            <height>32</height>
           </size>
+         </property>
+         <property name="font">
+          <font>
+           <pointsize>7</pointsize>
+          </font>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Repeat&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
           <string/>
@@ -227,6 +250,9 @@
          </property>
          <property name="checkable">
           <bool>true</bool>
+         </property>
+         <property name="flat">
+          <bool>false</bool>
          </property>
         </widget>
        </item>
@@ -250,6 +276,9 @@
            <height>32</height>
           </size>
          </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Random&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
           <string/>
          </property>
@@ -268,7 +297,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="eqButton">
+        <widget class="QPushButton" name="equalizerButton">
          <property name="minimumSize">
           <size>
            <width>32</width>
@@ -281,11 +310,14 @@
            <height>32</height>
           </size>
          </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Equalizer&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
           <string/>
          </property>
          <property name="icon">
-          <iconset theme="QIcon::ThemeIcon::CallStart"/>
+          <iconset theme="QIcon::ThemeIcon::AudioCard"/>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -315,6 +347,9 @@
          <property name="mouseTracking">
           <bool>true</bool>
          </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Volume Slider&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="styleSheet">
           <string notr="true"/>
          </property>
@@ -340,8 +375,11 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Volume&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
-          <string>100%</string>
+          <string notr="true">100%</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignmentFlag::AlignJustify|Qt::AlignmentFlag::AlignVCenter</set>
@@ -374,6 +412,9 @@
          <property name="mouseTracking">
           <bool>true</bool>
          </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Progress Slider&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="styleSheet">
           <string notr="true"/>
          </property>
@@ -393,8 +434,11 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Progress&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
-          <string>0:00/0:00</string>
+          <string notr="true">0:00/0:00</string>
          </property>
          <property name="textFormat">
           <enum>Qt::TextFormat::PlainText</enum>
@@ -413,7 +457,7 @@
        <item>
         <widget class="QLabel" name="trackLabel">
          <property name="text">
-          <string/>
+          <string notr="true"/>
          </property>
         </widget>
        </item>
@@ -428,25 +472,183 @@
       <zorder>volumeSlider</zorder>
       <zorder>progressLabel</zorder>
       <zorder>volumeLabel</zorder>
-      <zorder>eqButton</zorder>
+      <zorder>equalizerButton</zorder>
       <zorder>trackLabel</zorder>
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="tableLayout">
-      <property name="spacing">
-       <number>0</number>
+     <widget class="QSplitter" name="mainArea">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
       </property>
-      <property name="sizeConstraint">
-       <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
+      <property name="orientation">
+       <enum>Qt::Orientation::Horizontal</enum>
       </property>
-      <property name="leftMargin">
-       <number>0</number>
+      <property name="opaqueResize">
+       <bool>false</bool>
       </property>
-      <item>
-       <widget class="PlaylistView" name="playlistView" native="true"/>
-      </item>
-     </layout>
+      <widget class="PlaylistView" name="playlistView" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
+      <widget class="QSplitter" name="dockWidget">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="contextMenuPolicy">
+        <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+       </property>
+       <property name="layoutDirection">
+        <enum>Qt::LayoutDirection::LeftToRight</enum>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Orientation::Vertical</enum>
+       </property>
+       <property name="opaqueResize">
+        <bool>true</bool>
+       </property>
+       <widget class="QTreeWidget" name="dockMetadataTree">
+        <property name="selectionBehavior">
+         <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+        </property>
+        <property name="indentation">
+         <number>2</number>
+        </property>
+        <property name="columnCount">
+         <number>2</number>
+        </property>
+        <column>
+         <property name="text">
+          <string>Property</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Value</string>
+         </property>
+        </column>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string/>
+         </property>
+        </item>
+       </widget>
+       <widget class="ScaledLabel" name="dockCoverLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string notr="true"/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
+       </widget>
+      </widget>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -633,6 +835,16 @@
    <extends>QWidget</extends>
    <header>playlistview.hpp</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>IconTextButton</class>
+   <extends>QPushButton</extends>
+   <header>icontextbutton.hpp</header>
+  </customwidget>
+  <customwidget>
+   <class>ScaledLabel</class>
+   <extends>QLabel</extends>
+   <header>scaledlabel.hpp</header>
   </customwidget>
  </customwidgets>
  <resources/>

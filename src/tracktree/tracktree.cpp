@@ -1,5 +1,7 @@
 #include "tracktree.hpp"
 
+#include "rapidhasher.hpp"
+
 #include <QMouseEvent>
 
 TrackTree::TrackTree() {
@@ -33,4 +35,19 @@ void TrackTree::mouseDoubleClickEvent(QMouseEvent* event) {
 void TrackTree::setCurrentIndex(const QModelIndex& newIndex) {
     index = newIndex;
     QTreeView::setCurrentIndex(index);
+}
+
+auto TrackTree::rowMetadata(const u16 row) const -> MetadataMap {
+    MetadataMap result;
+
+    for (u8 column = 0; column < TRACK_PROPERTY_COUNT; column++) {
+        const TrackProperty headerProperty = musicModel->trackProperty(column);
+        const QModelIndex index = musicModel->index(row, column);
+
+        if (index.isValid()) {
+            result.emplace(headerProperty, musicModel->data(index).toString());
+        }
+    }
+
+    return result;
 }

@@ -6,25 +6,22 @@ extern "C" {
 }
 
 #include "aliases.hpp"
+#include "constants.hpp"
+#include "enums.hpp"
 #include "ffmpeg.hpp"
+#include "rapidhasher.hpp"
 #include "tominutes.hpp"
-
-#include <QMap>
-
-constexpr array<u16, 18> STANDARD_BITRATES = { 32,  40,  48,  56,  64,  80,
-                                               96,  112, 128, 160, 192, 224,
-                                               256, 320, 350, 384, 448, 510 };
 
 using namespace FFmpeg;
 
 inline auto roundBitrate(const u32 bitrate) -> QString {
-    const u32 kbps = bitrate / 1000;
+    const u32 kbps = bitrate / KB_BYTES;
 
     u16 closest = STANDARD_BITRATES[0];
-    u32 minDiff = abs(static_cast<i32>(kbps - closest));
+    u32 minDiff = abs(as<i32>(kbps - closest));
 
     for (const u16 bitrate : STANDARD_BITRATES) {
-        const u32 diff = abs(static_cast<i32>(kbps - bitrate));
+        const u32 diff = abs(as<i32>(kbps - bitrate));
 
         if (diff < minDiff) {
             minDiff = diff;
@@ -35,8 +32,8 @@ inline auto roundBitrate(const u32 bitrate) -> QString {
     return u"%1k"_s.arg(closest);
 }
 
-inline auto extractMetadata(cstr path) -> QMap<u8, QString> {
-    QMap<u8, QString> metadata;
+inline auto extractMetadata(cstr path) -> MetadataMap {
+    MetadataMap metadata;
 
     FormatContextPtr formatContext;
     AVFormatContext* formatContextPtr = formatContext.get();
@@ -52,12 +49,12 @@ inline auto extractMetadata(cstr path) -> QMap<u8, QString> {
     }
 
     AVDictionary* tags = formatContext->metadata;
-    auto getTag = [&](cstr key) -> QString {
+    const auto getTag = [&](cstr key) -> QString {
         const AVDictionaryEntry* tag = av_dict_get(tags, key, nullptr, 0);
-        return tag ? tag->value : "";
+        return tag ? tag->value : QString();
     };
 
-    metadata[Path] = path;
+    metadata.emplace(Path, path);
 
     const QString titleTag = getTag("title");
     fs::path realPath;
@@ -66,39 +63,45 @@ inline auto extractMetadata(cstr path) -> QMap<u8, QString> {
         realPath = path;
     }
 
-    metadata[Title] =
-        titleTag.isEmpty() ? realPath.filename().string().c_str() : titleTag;
-    metadata[Artist] = getTag("artist");
-    metadata[Album] = getTag("album");
-    metadata[TrackNumber] = getTag("track");
-    metadata[AlbumArtist] = getTag("album_artist");
-    metadata[Genre] = getTag("genre");
-    metadata[Year] = getTag("date");
-    metadata[Composer] = getTag("composer");
-    metadata[BPM] = getTag("TBPM");
-    metadata[Language] = getTag("language");
-    metadata[DiscNumber] = getTag("disc");
-    metadata[Comment] = getTag("comment");
-    metadata[Publisher] = getTag("publisher");
+    metadata.emplace(
+        Title,
+        titleTag.isEmpty() ? realPath.filename().string().c_str() : titleTag
+    );
+    metadata.emplace(Artist, getTag("artist"));
+    metadata.emplace(Album, getTag("album"));
+    metadata.emplace(TrackNumber, getTag("track"));
+    metadata.emplace(AlbumArtist, getTag("album_artist"));
+    metadata.emplace(Genre, getTag("genre"));
+    metadata.emplace(Year, getTag("date"));
+    metadata.emplace(Composer, getTag("composer"));
+    metadata.emplace(BPM, getTag("TBPM"));
+    metadata.emplace(Language, getTag("language"));
+    metadata.emplace(DiscNumber, getTag("disc"));
+    metadata.emplace(Comment, getTag("comment"));
+    metadata.emplace(Publisher, getTag("publisher"));
 
-    metadata[Duration] = toMinutes(formatContext->duration / AV_TIME_BASE);
-    metadata[Bitrate] = roundBitrate(formatContext->bit_rate);
-
-    bool foundAudio = false;
+    metadata.emplace(
+        Duration,
+        toMinutes(formatContext->duration / AV_TIME_BASE)
+    );
+    metadata.emplace(Bitrate, roundBitrate(formatContext->bit_rate));
 
     const u8 streams = formatContext->nb_streams;
-
     for (u8 i = 0; i < streams; i++) {
         const AVStream* stream = formatContext->streams[i];
 
         if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            metadata[SampleRate] =
-                QString::number(stream->codecpar->sample_rate);
-            metadata[Channels] =
-                QString::number(stream->codecpar->ch_layout.nb_channels);
+            metadata.emplace(
+                SampleRate,
+                QString::number(stream->codecpar->sample_rate)
+            );
+            metadata.emplace(
+                Channels,
+                QString::number(stream->codecpar->ch_layout.nb_channels)
+            );
 
             QString formatName = formatContext->iformat->name;
-            metadata[Format] = formatName.toUpper();
+            metadata.emplace(Format, formatName.toUpper());
             break;
         }
     }
