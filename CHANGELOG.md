@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.2.1
+
+-   Changed exported `.xspf` and `.m3u8` playlists to use relative paths.
+-   Fixed crashing when interacting with settings.
+-   Added arguments parsing when opening files through system's context menu.
+-   Some fixes in playback toggling system.
+-   Proper repositioning of dock widget.
+-   Corrected the behavior of disabled/playlist repeat modes.
+-   Fixed corrupted equalizer output.
+-   Added the option to add "Open in RAP" item to Windows Explorer context menus.
+
 ## v0.2.0
 
 -   Copied progress and volume sliders and labels to the tray icon menu.

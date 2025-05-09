@@ -1,20 +1,47 @@
 #include "mainwindow.hpp"
 
 #include <QApplication>
-#include <QPixmapCache>
+#include <QLocalSocket>
 #include <QSharedMemory>
 
-auto main(int argc, char* argv[]) -> int {
-    const auto app = QApplication(argc, argv);
+inline auto parseArgs(const i32 argCount, char* args[]) -> QStringList {
+    QStringList paths;
 
-    // TODO: Opening files from system menu with player
-    // TODO: Context menu option of player
+    if (argCount > 1) {
+        paths.reserve(argCount);
+
+        for (i32 i = 1; i < argCount; i++) {
+            paths.append(args[i]);
+        }
+    }
+
+    return paths;
+}
+
+auto main(i32 argCount, char* args[]) -> i32 {
+    const auto app = QApplication(argCount, args);
 
     QSharedMemory sharedMemory;
     sharedMemory.setKey("revolutionary-audio-player");
 
+    QStringList paths = parseArgs(argCount, args);
+
     if (!sharedMemory.create(1)) {
-        return 1;
+        QLocalSocket socket;
+        socket.connectToServer("revolutionary-audio-player-server");
+
+        if (socket.waitForConnected(1000)) {
+            if (argCount > 1) {
+                QByteArray data = paths.join('\n').toUtf8();
+                socket.write(data);
+                socket.flush();
+                socket.waitForBytesWritten(1000);
+            }
+
+            socket.disconnectFromServer();
+        }
+
+        return 0;
     }
 
     std::locale::global(std::locale(".UTF-8"));
@@ -25,7 +52,7 @@ auto main(int argc, char* argv[]) -> int {
         QIcon(QApplication::applicationDirPath() + "/icons/rap-logo.png")
     );
 
-    MainWindow window;
+    MainWindow window(paths);
     window.showMaximized();
 
     return QApplication::exec();

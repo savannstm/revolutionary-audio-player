@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>331</width>
-    <height>152</height>
+    <width>342</width>
+    <height>196</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -132,6 +132,19 @@
           <string>Insert To The Current Playlist</string>
          </property>
         </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item alignment="Qt::AlignmentFlag::AlignLeft">
+    <widget class="QWidget" name="createMenuItemContainer" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QCheckBox" name="createMenuItemCheckbox">
+        <property name="text">
+         <string>Create &quot;Open in RAP&quot; directory context menu item</string>
+        </property>
        </widget>
       </item>
      </layout>

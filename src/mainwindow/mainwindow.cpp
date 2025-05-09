@@ -4,6 +4,7 @@
 #include "aliases.hpp"
 #include "audiostreamer.hpp"
 #include "audioworker.hpp"
+#include "constants.hpp"
 #include "coverwindow.hpp"
 #include "customslider.hpp"
 #include "enums.hpp"
@@ -24,12 +25,11 @@
 #include <QDirIterator>
 #include <QFileDialog>
 #include <QJsonDocument>
+#include <QLocalSocket>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QShortcut>
 #include <QWidgetAction>
-#include <qnamespace.h>
-#include <qsplitter.h>
 
 auto MainWindow::setupUi() -> Ui::MainWindow* {
     auto* ui_ = new Ui::MainWindow();
@@ -37,7 +37,12 @@ auto MainWindow::setupUi() -> Ui::MainWindow* {
     return ui_;
 }
 
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
+MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
+    QMainWindow(parent),
+    equalizerMenu(new EqualizerMenu(equalizerButton, audioWorker)) {
+    dockWidget->dockCoverLabel = dockCoverLabel;
+    dockWidget->dockMetadataTree = dockMetadataTree;
+
     connect(
         equalizerButton,
         &QPushButton::toggled,
@@ -45,25 +50,19 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         &MainWindow::toggleEqualizerMenu
     );
 
-    connect(actionForward, &QAction::triggered, this, &MainWindow::jumpForward);
+    connect(actionForward, &QAction::triggered, this, [&] {
+        jumpToTrack(forwardDirection, true);
+    });
 
-    connect(
-        actionBackward,
-        &QAction::triggered,
-        this,
-        &MainWindow::jumpBackward
-    );
+    connect(actionBackward, &QAction::triggered, this, [&] {
+        jumpToTrack(backwardDirection, true);
+    });
 
     connect(actionRepeat, &QAction::triggered, this, &MainWindow::toggleRepeat);
 
-    connect(actionPause, &QAction::triggered, this, &MainWindow::pausePlayback);
-
-    connect(
-        actionResume,
-        &QAction::triggered,
-        this,
-        &MainWindow::resumePlayback
-    );
+    connect(actionTogglePlayback, &QAction::triggered, this, [&] {
+        togglePlayback();
+    });
 
     connect(actionStop, &QAction::triggered, this, &MainWindow::stopPlayback);
 
@@ -237,56 +236,32 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     });
 
     connect(
-        playButton,
-        &QPushButton::pressed,
+        dockWidget,
+        &DockWidget::repositioned,
         this,
-        &MainWindow::togglePlayback
+        &MainWindow::moveDockWidget
     );
 
-    connect(dockWidget, &QSplitter::customContextMenuRequested, this, [&] {
-        auto* menu = new QMenu(this);
+    connect(server, &QLocalServer::newConnection, this, [&] {
+        QLocalSocket* clientConnection = server->nextPendingConnection();
 
-        const QAction* moveToLeftAction = menu->addAction(tr("Move To Left"));
-        const QAction* moveToRightAction = menu->addAction(tr("Move To Right"));
-        const QAction* moveToTopAction = menu->addAction(tr("Move To Top"));
-        const QAction* moveToBottomAction =
-            menu->addAction(tr("Move To Bottom"));
+        connect(
+            clientConnection,
+            &QLocalSocket::readyRead,
+            [this, clientConnection] {
+            const QByteArray data = clientConnection->readAll();
+            const QStringList paths =
+                QString::fromUtf8(data).split('\n', Qt::SkipEmptyParts);
 
-        const bool dockCoverLabelHidden = dockCoverLabel->isHidden();
-        QAction* showCoverAction = menu->addAction(tr("Show Cover"));
-        showCoverAction->setCheckable(true);
-        showCoverAction->setChecked(dockCoverLabelHidden);
+            processArgs(paths);
+            focus();
 
-        const bool dockMetadataTreeHidden = dockMetadataTree->isHidden();
-        QAction* showMetadataAction = menu->addAction(tr("Show Metadata"));
-        showMetadataAction->setCheckable(true);
-        showMetadataAction->setChecked(dockMetadataTreeHidden);
-
-        const QAction* selectedAction = menu->exec(QCursor::pos());
-        delete menu;
-
-        if (selectedAction == moveToLeftAction) {
-            moveDockWidget(Left);
-        } else if (selectedAction == moveToRightAction) {
-            moveDockWidget(Right);
-        } else if (selectedAction == moveToTopAction) {
-            moveDockWidget(Top);
-        } else if (selectedAction == moveToBottomAction) {
-            moveDockWidget(Bottom);
-        } else if (selectedAction == showCoverAction) {
-            if (dockCoverLabelHidden) {
-                dockCoverLabel->show();
-            } else if (!dockMetadataTreeHidden) {
-                dockCoverLabel->hide();
-            }
-        } else if (selectedAction == showMetadataAction) {
-            if (dockMetadataTreeHidden) {
-                dockMetadataTree->show();
-            } else if (!dockCoverLabelHidden) {
-                dockMetadataTree->hide();
-            }
+            clientConnection->disconnectFromServer();
         }
+        );
     });
+
+    server->listen("revolutionary-audio-player-server");
 
     progressLabelCloned->setText(trackDuration);
     progressSliderCloned->setRange(0, 0);
@@ -294,8 +269,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
     searchMatches.reserve(MINIMUM_MATCHES_NUMBER);
 
-    setupTrayIcon();
-
+    playButton->setAction(actionTogglePlayback);
     stopButton->setAction(actionStop);
     backwardButton->setAction(actionBackward);
     forwardButton->setAction(actionForward);
@@ -307,12 +281,36 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     searchTrackInput->setMinimumWidth(MINIMUM_MATCHES_NUMBER);
     searchTrackInput->setFixedHeight(SEARCH_INPUT_HEIGHT);
 
-    equalizerMenu = new EqualizerMenu(equalizerButton, audioWorker);
+    setupTrayIcon();
     loadSettings();
+    processArgs(paths);
 }
 
 MainWindow::~MainWindow() {
     delete ui;
+}
+
+void MainWindow::focus() {
+    show();
+    raise();
+    setWindowState(windowState() & ~Qt::WindowMinimized);
+}
+
+void MainWindow::processArgs(const QStringList& args) {
+    if (!args.empty()) {
+        const QFileInfo firstPathInfo = QFileInfo(args[0]);
+
+        const i8 index = playlistView->addTab(
+            settings->flags.playlistNaming == PlaylistNaming::DirectoryName
+                ? firstPathInfo.isDir() ? firstPathInfo.fileName()
+                                        : firstPathInfo.dir().dirName()
+                : QString()
+        );
+
+        TrackTree* tree = playlistView->tree(index);
+        tree->fillTable(args);
+        changePlaylist(index);
+    }
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
@@ -329,33 +327,51 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 void MainWindow::dropEvent(QDropEvent* event) {
     auto* tree = trackTree;
 
-    if (tree == nullptr ||
-        settings->flags.dragNDropMode == DragDropMode::CreateNewPlaylist) {
-        const i8 index = playlistView->addTab(QString());
-        tree = playlistView->tree(index);
-    }
-
     if (event->mimeData()->hasUrls()) {
-        for (const QUrl& url : event->mimeData()->urls()) {
-            if (!url.isEmpty()) {
-                tree->processFile(url.toLocalFile());
+        const QList<QUrl> urls = event->mimeData()->urls();
+        QStringList paths;
+
+        for (const QUrl& url : urls) {
+            const QString path = url.toLocalFile();
+
+            if (url.isEmpty()) {
+                continue;
+            }
+
+            const QFileInfo info(path);
+
+            if (info.isDir()) {
+                paths.append(path);
+                continue;
+            }
+
+            for (const QStringView extension : ALLOWED_FILE_EXTENSIONS) {
+                if (path.endsWith(extension)) {
+                    paths.append(path);
+                    break;
+                }
             }
         }
-    }
 
-    for (u8 column = TRACK_PROPERTY_COUNT - 1; column >= 0; column--) {
-        if (tree->model()->trackProperty(column) == Path) {
-            tree->sortByColumn(column, Qt::AscendingOrder);
-            break;
+        if (!paths.empty()) {
+            i8 index = playingPlaylist;
+
+            if (tree == nullptr || settings->flags.dragNDropMode ==
+                                       DragDropMode::CreateNewPlaylist) {
+                index = playlistView->addTab(
+                    settings->flags.playlistNaming == DirectoryName
+                        ? QFileInfo(paths[0]).dir().dirName()
+                        : QString()
+                );
+                tree = playlistView->tree(index);
+            }
+
+            tree->fillTable(paths);
         }
     }
 }
 
 void MainWindow::updatePlaybackPosition() {
-    if (audioWorker->state() == QtAudio::IdleState) {
-        return;
-    }
-
     const u16 second = progressSlider->value();
     QMetaObject::invokeMethod(
         audioWorker,
@@ -372,14 +388,16 @@ void MainWindow::updatePlaybackPosition() {
     progressLabelCloned->setText(trackDuration);
 }
 
-void MainWindow::jumpToTrack(const Direction direction, const bool clicked) {
-    auto* trackTree = playlistView->tree(playingPlaylist);
-
-    if (trackTree == nullptr) {
-        stopPlayback();
+void MainWindow::jumpToTrack(
+    const Direction direction,
+    const bool clicked,
+    const bool newPlaylist
+) {
+    if (playingPlaylist == -1) {
         return;
     }
 
+    auto* trackTree = playlistView->tree(playingPlaylist);
     auto* trackTreeModel = trackTree->model();
     auto* trackTreeHeader = trackTree->header();
 
@@ -388,8 +406,13 @@ void MainWindow::jumpToTrack(const Direction direction, const bool clicked) {
         return;
     }
 
-    const QModelIndex currentIndex = trackTree->currentIndex();
-    trackTreeModel->item(currentIndex.row(), 0)->setText(QString());
+    QModelIndex currentIndex = trackTree->currentIndex();
+    if (!currentIndex.isValid()) {
+        currentIndex = trackTreeModel->index(0, 0);
+    }
+
+    trackTreeModel->item(currentIndex.row(), 0)
+        ->setData(QString(), Qt::DecorationRole);
 
     const u16 currentRow = currentIndex.row();
     u16 nextRow;
@@ -397,12 +420,20 @@ void MainWindow::jumpToTrack(const Direction direction, const bool clicked) {
     switch (direction) {
         case Direction::Forward:
             if (currentRow == rowCount - 1) {
-                if (repeat == RepeatMode::Playlist || clicked) {
-                    nextRow = 0;
-                } else {
-                    stopPlayback();
-                    return;
+                switch (repeat) {
+                    case Playlist:
+                        nextRow = 0;
+                        break;
+                    case Off:
+                        changePlaylist(as<i8>(playingPlaylist + 1));
+                        jumpToTrack(direction, clicked, true);
+                        return;
+                    default:
+                        stopPlayback();
+                        return;
                 }
+            } else if (newPlaylist) {
+                nextRow = currentRow;
             } else {
                 nextRow = currentRow + 1;
             }
@@ -446,11 +477,18 @@ void MainWindow::jumpToTrack(const Direction direction, const bool clicked) {
 }
 
 void MainWindow::stopPlayback() {
-    if (trackTree != nullptr) {
-        trackTree->clearSelection();
-        trackTreeModel->item(trackTree->currentIndex().row(), 0)
-            ->setText(QString());
-        trackTree->setCurrentIndex(trackTreeModel->index(-1, -1));
+    if (playingPlaylist == -1) {
+        return;
+    }
+
+    auto* tree = playlistView->tree(playingPlaylist);
+    auto* treeModel = tree->model();
+
+    if (tree != nullptr) {
+        tree->clearSelection();
+        treeModel->item(tree->currentIndex().row(), 0)
+            ->setData(QString(), Qt::DecorationRole);
+        tree->setCurrentIndex(treeModel->index(-1, -1));
     }
 
     audioWorker->stop();
@@ -461,17 +499,15 @@ void MainWindow::stopPlayback() {
     progressLabelCloned->setText(ZERO_DURATION);
     trackDuration = ZERO_DURATION;
     playButton->setIcon(startIcon);
+    actionTogglePlayback->setText(tr("Play"));
     setWindowTitle("RAP");
 
     dockCoverLabel->clear();
-    for (u8 i = 0; i < TRACK_PROPERTY_COUNT; i++) {
+
+    for (u8 i = 0; i < TRACK_PROPERTY_COUNT - 1; i++) {
         auto* item = dockMetadataTree->itemFromIndex(
             dockMetadataTree->model()->index(as<i32>(i), 0)
         );
-
-        if (item == nullptr) {
-            continue;
-        }
 
         item->setText(0, QString());
         item->setText(1, QString());
@@ -484,12 +520,7 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     const u16 row = index.row();
     const MetadataMap metadata = tree->rowMetadata(row);
 
-    QMetaObject::invokeMethod(
-        audioWorker,
-        &AudioWorker::start,
-        Qt::QueuedConnection,
-        metadata[Path]
-    );
+    togglePlayback(metadata[Path]);
 
     tree->model()->itemFromIndex(index)->setData(startIcon, Qt::DecorationRole);
 
@@ -501,14 +532,9 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
 
     for (const auto& [idx, label] :
          views::drop(views::enumerate(trackPropertiesLabels()), 1)) {
-        qDebug() << idx;
         auto* item = dockMetadataTree->itemFromIndex(
             dockMetadataTree->model()->index(as<i32>(idx - 1), 0)
         );
-
-        if (item == nullptr) {
-            continue;
-        }
 
         item->setText(0, label);
         item->setText(1, metadata[idx]);
@@ -526,7 +552,7 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
         return err(settingsFile.errorString());
     }
 
-    const i8 tabCount = as<i8>(playlistView->tabCount() - 1);
+    const i8 tabCount = playlistView->tabCount();
 
     settings->currentTab = playlistView->currentIndex();
     settings->volume = volumeSlider->value();
@@ -567,17 +593,9 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
     u8 dockWidgetIndex = mainArea->children().indexOf(dockMetadataTree);
 
     if (mainAreaOrientation == Qt::Horizontal) {
-        if (dockWidgetIndex == 0) {
-            dockWidgetPosition = Left;
-        } else {
-            dockWidgetPosition = Right;
-        }
+        dockWidgetPosition = dockWidgetIndex == 0 ? Left : Right;
     } else {
-        if (dockWidgetIndex == 0) {
-            dockWidgetPosition = Top;
-        } else {
-            dockWidgetPosition = Bottom;
-        }
+        dockWidgetPosition = dockWidgetIndex == 0 ? Top : Bottom;
     }
 
     settings->dockWidgetSettings.position = dockWidgetPosition;
@@ -604,30 +622,24 @@ void MainWindow::retranslate(const QLocale::Language language) {
 
     ui->retranslateUi(this);
 
+    const i8 tabCount = playlistView->tabCount();
     const QStringList propertyLabelMap = trackPropertiesLabels();
 
-    for (i8 tab = 0; tab < playlistView->tabCount() - 1; tab++) {
+    for (i8 tab = 0; tab < tabCount; tab++) {
         auto* tree = playlistView->tree(tab);
         auto* model = tree->model();
 
         const QString label = playlistView->tabLabel(tab);
-        const QString number = label.split(' ').last();
-
-        bool numberIsNumber = true;
-
-        for (const QChar chr : number) {
-            if (!chr.isDigit()) {
-                numberIsNumber = false;
-                break;
-            }
-        }
+        const bool numeratedPlaylist =
+            label.contains(QRegularExpression(u"^Playlist \\d+$"_s));
 
         playlistView->setTabLabel(
             tab,
-            numberIsNumber ? tr("Playlist %1").arg(number) : label
+            numeratedPlaylist ? tr("Playlist %1").arg(label.split(' ').last())
+                              : label
         );
 
-        for (u8 column = 0; column < model->columnCount(); column++) {
+        for (u8 column = 0; column < TRACK_PROPERTY_COUNT; column++) {
             model->setHeaderData(
                 column,
                 Qt::Horizontal,
@@ -701,51 +713,43 @@ void MainWindow::loadSettings() {
 }
 
 void MainWindow::moveDockWidget(const DockWidgetPosition dockWidgetPosition) {
-    const Qt::Orientation mainAreaOrientation = mainArea->orientation();
-    const u8 dockWidgetOrder = mainArea->indexOf(dockWidget);
+    Qt::Orientation targetMainOrientation;
+    Qt::Orientation targetDockOrientation;
+    u8 targetIndex;
 
     switch (dockWidgetPosition) {
         case Left:
-            if (mainAreaOrientation == Qt::Horizontal && dockWidgetOrder == 0) {
-                return;
-            }
-
-            mainArea->setOrientation(Qt::Horizontal);
-            mainArea->setOrientation(Qt::Vertical);
-            mainArea->widget(dockWidgetOrder)->setParent(nullptr);
-            mainArea->insertWidget(0, dockWidget);
+            targetMainOrientation = Qt::Horizontal;
+            targetDockOrientation = Qt::Vertical;
+            targetIndex = 0;
             break;
         case Right:
-            if (mainAreaOrientation == Qt::Horizontal && dockWidgetOrder == 1) {
-                return;
-            }
-
-            mainArea->setOrientation(Qt::Horizontal);
-            mainArea->setOrientation(Qt::Vertical);
-            mainArea->widget(dockWidgetOrder)->setParent(nullptr);
-            mainArea->insertWidget(1, dockWidget);
+            targetMainOrientation = Qt::Horizontal;
+            targetDockOrientation = Qt::Vertical;
+            targetIndex = 1;
             break;
         case Top:
-            if (mainAreaOrientation == Qt::Vertical && dockWidgetOrder == 0) {
-                return;
-            }
-
-            mainArea->setOrientation(Qt::Vertical);
-            dockWidget->setOrientation(Qt::Horizontal);
-            mainArea->widget(dockWidgetOrder)->setParent(nullptr);
-            mainArea->insertWidget(0, dockWidget);
+            targetMainOrientation = Qt::Vertical;
+            targetDockOrientation = Qt::Horizontal;
+            targetIndex = 0;
             break;
         case Bottom:
-            if (mainAreaOrientation == Qt::Vertical && dockWidgetOrder == 1) {
-                return;
-            }
-
-            mainArea->setOrientation(Qt::Vertical);
-            dockWidget->setOrientation(Qt::Horizontal);
-            mainArea->widget(dockWidgetOrder)->setParent(nullptr);
-            mainArea->insertWidget(1, dockWidget);
+            targetMainOrientation = Qt::Vertical;
+            targetDockOrientation = Qt::Horizontal;
+            targetIndex = 1;
             break;
     }
+
+    if (mainArea->orientation() == targetMainOrientation &&
+        mainArea->indexOf(dockWidget) == targetIndex) {
+        return;
+    }
+
+    mainArea->setOrientation(targetMainOrientation);
+    dockWidget->setOrientation(targetDockOrientation);
+
+    mainArea->widget(mainArea->indexOf(dockWidget))->setParent(nullptr);
+    mainArea->insertWidget(targetIndex, dockWidget);
 }
 
 void MainWindow::handleTrackPress(const QModelIndex& index) {
@@ -870,13 +874,14 @@ void MainWindow::handleHeaderPress(
     if (button == Qt::RightButton) {
         auto* menu = new OptionMenu(this);
 
-        for (const QString& label : trackPropertiesLabels()) {
+        for (const auto& [idx, label] :
+             views::drop(views::enumerate(trackPropertiesLabels()), 1)) {
             auto* action = new QAction(label, menu);
             action->setCheckable(true);
 
             i8 columnIndex = -1;
 
-            for (u8 column = 0; column < TRACK_PROPERTY_COUNT; column++) {
+            for (u8 column = 1; column < TRACK_PROPERTY_COUNT; column++) {
                 if (trackTreeModel
                         ->headerData(column, Qt::Orientation::Horizontal)
                         .toString() == label) {
@@ -908,7 +913,7 @@ void MainWindow::handleHeaderPress(
 }
 
 void MainWindow::searchTrack() {
-    QString input = searchTrackInput->text();
+    const QString input = searchTrackInput->text();
 
     if (input != previousSearchPrompt) {
         searchMatches.clear();
@@ -1011,15 +1016,18 @@ void MainWindow::onAudioProgressUpdated(const u16 second) {
 }
 
 void MainWindow::playNext() {
-    if (repeat == RepeatMode::Track) {
-        QMetaObject::invokeMethod(
-            audioWorker,
-            &AudioWorker::seekSecond,
-            Qt::QueuedConnection,
-            0
-        );
-    } else {
-        jumpToTrack(forwardDirection, false);
+    switch (repeat) {
+        case Track:
+            QMetaObject::invokeMethod(
+                audioWorker,
+                &AudioWorker::seekSecond,
+                Qt::QueuedConnection,
+                0
+            );
+            break;
+        default:
+            jumpToTrack(forwardDirection, false);
+            break;
     }
 }
 
@@ -1044,11 +1052,12 @@ void MainWindow::showHelpWindow() {
 }
 
 void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
+    const QString searchDirectory =
+        settings->lastOpenedDirectory.isEmpty() ||
+                !QDir(settings->lastOpenedDirectory).exists()
+            ? QDir::rootPath()
+            : settings->lastOpenedDirectory;
     QString path;
-    QString searchDirectory = settings->lastOpenedDirectory.isEmpty(
-                              ) || !QDir(settings->lastOpenedDirectory).exists()
-                                  ? QDir::rootPath()
-                                  : settings->lastOpenedDirectory;
 
     if (isFolder) {
         path = QFileDialog::getExistingDirectory(
@@ -1089,7 +1098,11 @@ void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
     auto* tree = trackTree;
 
     if (createNewTab || tree == nullptr) {
-        const i8 index = playlistView->addTab(QFileInfo(path).fileName());
+        const i8 index = playlistView->addTab(
+            settings->flags.playlistNaming == DirectoryName
+                ? QFileInfo(path).fileName()
+                : QString()
+        );
         tree = playlistView->tree(index);
     }
 
@@ -1105,22 +1118,41 @@ void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
     }
 }
 
-void MainWindow::togglePlayback() {
-    const QAudio::State state = audioWorker->state();
+void MainWindow::togglePlayback(const QString& path) {
+    if (!path.isEmpty()) {
+        QMetaObject::invokeMethod(
+            audioWorker,
+            &AudioWorker::start,
+            Qt::QueuedConnection,
+            path
+        );
+        playButton->setIcon(pauseIcon);
+        playButton->setToolTip(tr("Pause"));
+        actionTogglePlayback->setText(tr("Pause"));
+    } else {
+        const QAudio::State state = audioWorker->state();
 
-    if (state == QAudio::ActiveState) {
-        actionPause->trigger();
-    } else if (state != QAudio::IdleState) {
-        actionResume->trigger();
+        if (state == QAudio::ActiveState) {
+            QMetaObject::invokeMethod(
+                audioWorker,
+                &AudioWorker::suspend,
+                Qt::QueuedConnection
+            );
+            playButton->setIcon(startIcon);
+            playButton->setToolTip(tr("Play"));
+            actionTogglePlayback->setText(tr("Play"));
+        } else if (state != QAudio::IdleState &&
+                   state != QAudio::StoppedState) {
+            QMetaObject::invokeMethod(
+                audioWorker,
+                &AudioWorker::resume,
+                Qt::QueuedConnection
+            );
+            playButton->setIcon(pauseIcon);
+            playButton->setToolTip(tr("Pause"));
+            actionTogglePlayback->setText(tr("Pause"));
+        }
     }
-}
-
-void MainWindow::moveForward() {
-    actionForward->trigger();
-}
-
-void MainWindow::moveBackward() {
-    actionBackward->trigger();
 }
 
 void MainWindow::showAboutWindow() {
@@ -1161,28 +1193,22 @@ void MainWindow::toggleEqualizerMenu(const bool checked) {
     }
 }
 
-void MainWindow::jumpForward() {
-    jumpToTrack(forwardDirection, true);
-}
-
-void MainWindow::jumpBackward() {
-    jumpToTrack(backwardDirection, true);
-}
-
 void MainWindow::toggleRepeat() {
     switch (repeat) {
         case RepeatMode::Off:
+            repeatButton->setChecked(true);
             repeat = RepeatMode::Playlist;
             actionRepeat->setText(tr("Repeat (Playlist)"));
             break;
         case RepeatMode::Playlist:
-            repeatButton->toggle();
-            repeatButton->setText("1");
+            repeatButton->setChecked(true);
+            repeatButton->setText(u"1"_s);
             actionRepeat->setText(tr("Repeat (Track)"));
             actionRepeat->setChecked(true);
             repeat = RepeatMode::Track;
             break;
         case RepeatMode::Track:
+            repeatButton->setChecked(false);
             repeatButton->setText(QString());
             actionRepeat->setText(tr("Repeat"));
             repeat = RepeatMode::Off;
@@ -1190,24 +1216,6 @@ void MainWindow::toggleRepeat() {
         default:
             break;
     }
-}
-
-void MainWindow::pausePlayback() {
-    QMetaObject::invokeMethod(
-        audioWorker,
-        &AudioWorker::suspend,
-        Qt::QueuedConnection
-    );
-    playButton->setIcon(startIcon);
-}
-
-void MainWindow::resumePlayback() {
-    QMetaObject::invokeMethod(
-        audioWorker,
-        &AudioWorker::resume,
-        Qt::QueuedConnection
-    );
-    playButton->setIcon(pauseIcon);
 }
 
 void MainWindow::toggleRandom() {
@@ -1251,9 +1259,7 @@ void MainWindow::onTrayIconActivated(
     const QSystemTrayIcon::ActivationReason reason
 ) {
     if (reason == QSystemTrayIcon::ActivationReason::Trigger) {
-        show();
-        raise();
-        setWindowState(windowState() & ~Qt::WindowMinimized);
+        focus();
     }
 }
 
@@ -1286,8 +1292,7 @@ void MainWindow::setupTrayIcon() {
     trayIconMenu->addActions(
         { volumeSliderAction,
           progressSliderAction,
-          actionResume,
-          actionPause,
+          actionTogglePlayback,
           actionStop,
           actionBackward,
           actionForward,
@@ -1300,14 +1305,16 @@ void MainWindow::setupTrayIcon() {
 }
 
 void MainWindow::changePlaylist(const i8 index) {
-    if (index == -1) {
+    if (index == -1 || index > playlistView->tabCount() - 1) {
         playingPlaylist = -1;
         trackTree = nullptr;
         trackTreeHeader = nullptr;
         trackTreeModel = nullptr;
+        stopPlayback();
         return;
     }
 
+    playingPlaylist = index;
     trackTree = playlistView->tree(index);
     trackTreeHeader = trackTree->header();
     trackTreeModel = trackTree->model();
@@ -1316,46 +1323,32 @@ void MainWindow::changePlaylist(const i8 index) {
         trackTree,
         &TrackTree::trackSelected,
         this,
-        &MainWindow::selectTrack
+        &MainWindow::selectTrack,
+        Qt::UniqueConnection
     );
 
     connect(
         trackTreeHeader,
         &MusicHeader::headerPressed,
         this,
-        &MainWindow::handleHeaderPress
+        &MainWindow::handleHeaderPress,
+        Qt::UniqueConnection
     );
 
     connect(
         trackTreeHeader,
         &MusicHeader::sortIndicatorChanged,
         this,
-        &MainWindow::resetSorting
+        &MainWindow::resetSorting,
+        Qt::UniqueConnection
     );
 
     connect(
         trackTree,
         &TrackTree::pressed,
         this,
-        &MainWindow::handleTrackPress
-    );
-
-    connect(
-        trackTree->selectionModel(),
-        &QItemSelectionModel::selectionChanged,
-        [=, this](
-            const QItemSelection& selected,
-            const QItemSelection& deselected
-        ) {
-        const QModelIndex requiredIndex = trackTree->currentIndex();
-
-        if (deselected.contains(requiredIndex)) {
-            trackTree->selectionModel()->select(
-                requiredIndex,
-                QItemSelectionModel::Select | QItemSelectionModel::Rows
-            );
-        }
-    }
+        &MainWindow::handleTrackPress,
+        Qt::UniqueConnection
     );
 }
 
@@ -1375,15 +1368,11 @@ void MainWindow::selectTrack(const i32 oldRow, const u16 newRow) {
     trackTree->clearSelection();
 }
 
-void MainWindow::resetSorting(const i32 index, const Qt::SortOrder sortOrder) {
-    const i32 section = trackTreeHeader->sortIndicatorSection();
-
-    if (section == -1) {
-        for (u8 column = TRACK_PROPERTY_COUNT - 1; column >= 0; column--) {
-            if (trackTreeModel->trackProperty(column) == Path) {
-                trackTree->sortByColumn(column, Qt::SortOrder::AscendingOrder);
-                break;
-            }
-        }
+void MainWindow::resetSorting(
+    const i32 /* unused */,
+    const Qt::SortOrder sortOrder
+) {
+    if (trackTreeHeader->sortIndicatorSection() == -1) {
+        trackTree->sortByPath();
     }
 };

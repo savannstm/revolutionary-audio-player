@@ -1,12 +1,8 @@
 #include "audiostreamer.hpp"
 
-#include "aliases.hpp"
-#include "constants.hpp"
-
 #include <libavutil/avutil.h>
 
 #include <QDebug>
-#include <memory>
 
 AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
     format_.setSampleFormat(QAudioFormat::Float);
@@ -113,13 +109,15 @@ void AudioStreamer::start(const QString& path) {
     format_.setSampleRate(sampleRate);
     format_.setChannelCount(channelNumber);
 
+    filters.resize(channelNumber);
+
     initFilters();
     prepareBuffer();
 
     open(QIODevice::ReadOnly);
 }
 
-inline void AudioStreamer::equalizeBuffer(QByteArray& buf) {
+void AudioStreamer::equalizeBuffer(QByteArray& buf) {
     const u8 channels = codecContext->ch_layout.nb_channels;
     const u16 sampleRate = codecContext->sample_rate;
     const i32 samplesNumber =
@@ -142,7 +140,9 @@ inline void AudioStreamer::equalizeBuffer(QByteArray& buf) {
         juce::dsp::ProcessContextReplacing<f32> context(channelBlock);
 
         for (u8 band = 0; band < bandCount; band++) {
-            filters[band]->process(context);
+            if (gains_[band] != 0) {
+                filters[channel][band]->process(context);
+            }
         }
     }
 
@@ -157,7 +157,7 @@ inline void AudioStreamer::equalizeBuffer(QByteArray& buf) {
     }
 }
 
-inline void AudioStreamer::prepareBuffer() {
+void AudioStreamer::prepareBuffer() {
     while (true) {
         if (av_read_frame(formatContext.get(), packet.get()) < 0) {
             nextBufferSize = 0;
@@ -293,11 +293,15 @@ void AudioStreamer::seekSecond(const u16 second) {
     prepareBuffer();
 }
 
-inline void AudioStreamer::initFilters() {
-    filters.resize(bandCount);
+void AudioStreamer::initFilters() {
+    for (auto& channelFilters : filters) {
+        if (channelFilters.size() != bandCount) {
+            channelFilters.resize(bandCount);
 
-    for (u8 i = 0; i < bandCount; i++) {
-        filters[i] = make_unique<IIRFilter>();
+            for (auto& filter : channelFilters) {
+                filter = make_unique<IIRFilter>();
+            }
+        }
     }
 
     for (const auto [band, changed] :
@@ -310,8 +314,10 @@ inline void AudioStreamer::initFilters() {
                 juce::Decibels::decibelsToGain(as<f32>(gains_[band]))
             );
 
-            filters[band]->coefficients = coeffs;
-            filters[band]->reset();
+            for (auto& channelFilters : filters) {
+                channelFilters[band]->coefficients = coeffs;
+                channelFilters[band]->reset();
+            }
 
             changed = false;
         }

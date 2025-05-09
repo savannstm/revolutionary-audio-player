@@ -17,7 +17,7 @@ class PlaylistTabBar : public QWidget {
     ~PlaylistTabBar() override;
 
     void addTab(const QString& label);
-    void insertTab(i8 index, const QString& label, bool closable);
+    void insertTab(i8 index, QString label, bool closable);
     void removeTab(i8 index);
     void setCurrentIndex(i8 index);
     [[nodiscard]] auto currentIndex() const -> i8;
@@ -30,7 +30,7 @@ class PlaylistTabBar : public QWidget {
     void tabAdded(i8 index);
     void tabRemoved(i8 index);
     void addButtonClicked(i8 index);
-    void tabsRemoved(RemoveMode mode, i8 index);
+    void tabsRemoved(TabRemoveMode mode, i8 index);
     void exportPlaylistRequested(i8 index, PlaylistFileType playlistType);
     void importPlaylistRequested(PlaylistFileType playlistType);
 

@@ -3,7 +3,6 @@
 #include "audiostreamer.hpp"
 
 #include <QAudio>
-#include <qaudio.h>
 
 AudioWorker::AudioWorker(QObject* parent) : QObject(parent) {
     moveToThread(workerThread);
@@ -40,7 +39,6 @@ void AudioWorker::start(const QString& path) {
     }
 
     audioStreamer->start(path);
-
     audioSink = new QAudioSink(audioStreamer->format());
 
     // TODO: Listen for audio device failures, try to reconnect if any
@@ -55,6 +53,5 @@ void AudioWorker::start(const QString& path) {
 
     audioSink->setVolume(volumeGain);
     audioSink->start(audioStreamer);
-
     emit duration(audioStreamer->duration());
 }

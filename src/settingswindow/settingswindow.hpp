@@ -3,6 +3,7 @@
 #include "settings.hpp"
 #include "ui_settingswindow.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDialog>
 #include <QLabel>
@@ -16,6 +17,7 @@ namespace Ui {
 QT_END_NAMESPACE
 
 // TODO: Implement settings window
+// TODO: Implement changeable output
 
 class SettingsWindow : public QDialog {
     Q_OBJECT
@@ -25,6 +27,9 @@ class SettingsWindow : public QDialog {
     ~SettingsWindow() override;
 
    private:
+    static void removeOpenDirectoryEntry();
+    static void addOpenDirectoryEntry();
+    static void associateFileTypes();
     auto setupUi() -> Ui::SettingsWindow*;
     Ui::SettingsWindow* ui = setupUi();
 
@@ -36,4 +41,5 @@ class SettingsWindow : public QDialog {
     QLabel* playlistNamingLabel = ui->playlistNamingLabel;
     QComboBox* dragDropSelect = ui->dragdropSelect;
     QLabel* dragDropSelectLabel = ui->dragdropSelectLabel;
+    QCheckBox* createMenuItemCheckbox = ui->createMenuItemCheckbox;
 };

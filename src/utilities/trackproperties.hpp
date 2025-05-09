@@ -4,7 +4,7 @@
 
 inline auto trackPropertiesLabels() -> QStringList {
     return {
-        "",
+        QString(),
         QObject::tr("Title"),
         QObject::tr("Artist"),
         QObject::tr("Track Number"),

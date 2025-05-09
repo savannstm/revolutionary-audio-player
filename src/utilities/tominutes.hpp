@@ -10,7 +10,7 @@ inline auto toMinutes(const u16 secs) -> QString {
 
     const QString secondsString = QString::number(seconds);
     const QString secondsPadded =
-        seconds < 10 ? "0" + secondsString : secondsString;
+        seconds < 10 ? '0' + secondsString : secondsString;
 
     const QString formatted = QString("%1:%2").arg(minutes).arg(secondsPadded);
     return formatted;

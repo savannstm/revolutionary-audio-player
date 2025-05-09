@@ -68,6 +68,10 @@ void EqualizerMenu::buildBands(const u8 bands) {
         auto* dbLayout = new QHBoxLayout(dbContainer);
         dbLayout->setAlignment(Qt::AlignHCenter);
 
+        auto* hzContainer = new QWidget(sliderContainer);
+        auto* hzLayout = new QHBoxLayout(hzContainer);
+        hzLayout->setAlignment(Qt::AlignHCenter);
+
         auto* dbInput = new CustomInput(
             QString::number(audioWorker->gain(band)),
             sliderContainer
@@ -85,25 +89,36 @@ void EqualizerMenu::buildBands(const u8 bands) {
         auto* slider = new QSlider(Qt::Vertical, sliderContainer);
         slider->setRange(MIN_DB, MAX_DB);
 
-        connect(dbInput, &CustomInput::returnPressed, dbInput, [=, this] {
+        auto* hzInput = new CustomInput(
+            QString::number(frequencies[band]),
+            sliderContainer
+        );
+        auto* hzLabel = new QLabel(tr("Hz"), sliderContainer);
+
+        hzLayout->addWidget(hzInput);
+        hzLayout->addWidget(hzLabel);
+
+        sliderLayout->addWidget(slider, 0, Qt::AlignHCenter);
+        sliderLayout->addWidget(hzContainer, 0, Qt::AlignHCenter);
+
+        connect(dbInput, &CustomInput::returnPressed, this, [=, this] {
             slider->setValue(dbInput->text().toInt());
+            audioWorker->setGain(as<i8>(dbInput->text().toInt()), band);
         });
 
         connect(
             slider,
             &QSlider::valueChanged,
-            slider,
+            this,
             [=, this](const i8 dbGain) {
             dbInput->setText(QString::number(dbGain));
             audioWorker->setGain(dbGain, band);
         }
         );
 
-        auto* hzLabel =
-            new QLabel(tr("%1Hz").arg(frequencies[band]), sliderContainer);
-
-        sliderLayout->addWidget(slider, 0, Qt::AlignHCenter);
-        sliderLayout->addWidget(hzLabel, 0, Qt::AlignHCenter);
+        connect(hzInput, &CustomInput::returnPressed, this, [=, this] {
+            audioWorker->setFrequency(hzInput->text().toFloat(), band);
+        });
 
         middleLayout->addWidget(sliderContainer);
         sliders[band] = slider;

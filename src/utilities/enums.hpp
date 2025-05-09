@@ -66,3 +66,16 @@ enum PlaylistFileType : u8 {
     XSPF,
     M3U8
 };
+
+enum TabRemoveMode : u8 {
+    ToLeft,
+    ToRight,
+    Other
+};
+
+enum DockWidgetPosition : u8 {
+    Left,
+    Top,
+    Bottom,
+    Right
+};

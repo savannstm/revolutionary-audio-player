@@ -12,13 +12,6 @@
 #include <QJsonValue>
 #include <QStyle>
 
-enum DockWidgetPosition : u8 {
-    Left,
-    Top,
-    Bottom,
-    Right
-};
-
 template <typename T>
 inline auto toJsonArray(const T& container) -> QJsonArray {
     QJsonArray array;
@@ -53,12 +46,7 @@ inline auto toStringList(const QJsonArray& jsonArray) -> QStringList {
     return list;
 }
 
-class JsonSerializable {
-   public:
-    [[nodiscard]] virtual auto stringify() const -> QJsonObject = 0;
-};
-
-class TabObject : public JsonSerializable {
+class TabObject {
    public:
     explicit TabObject() = default;
 
@@ -74,7 +62,7 @@ class TabObject : public JsonSerializable {
         );
     }
 
-    [[nodiscard]] auto stringify() const -> QJsonObject override {
+    [[nodiscard]] auto stringify() const -> QJsonObject {
         QJsonObject json;
         json["label"] = label;
         json["backgroundImagePath"] = backgroundImagePath;
@@ -91,7 +79,7 @@ class TabObject : public JsonSerializable {
     array<bool, TRACK_PROPERTY_COUNT> columnStates;
 };
 
-class EqualizerSettings : public JsonSerializable {
+class EqualizerSettings {
    public:
     explicit EqualizerSettings() {
         gains.fill(0);
@@ -116,7 +104,7 @@ class EqualizerSettings : public JsonSerializable {
         }
     }
 
-    [[nodiscard]] auto stringify() const -> QJsonObject override {
+    [[nodiscard]] auto stringify() const -> QJsonObject {
         QJsonObject json;
         json["enabled"] = enabled;
         json["bandIndex"] = bandIndex;
@@ -131,15 +119,15 @@ class EqualizerSettings : public JsonSerializable {
     array<f32, THIRTY_BANDS> frequencies;
 };
 
-class SettingsFlags : public JsonSerializable {
+class SettingsFlags {
    public:
     explicit SettingsFlags() {
         const QString style = QApplication::style()->name();
-        auto item = ranges::find(APPLICATION_STYLES, style);
+        const auto item = ranges::find(APPLICATION_STYLES, style);
 
         if (item != APPLICATION_STYLES.end()) {
             applicationStyle =
-                as<Style>(std::distance(APPLICATION_STYLES.begin(), item));
+                as<Style>(ranges::distance(APPLICATION_STYLES.begin(), item));
         }
     };
 
@@ -147,13 +135,15 @@ class SettingsFlags : public JsonSerializable {
         applicationStyle = as<Style>(obj["applicationStyle"].toInt());
         dragNDropMode = as<DragDropMode>(obj["dragNDropMode"].toInt());
         playlistNaming = as<PlaylistNaming>(obj["playlistNaming"].toInt());
+        contextMenuEntryEnabled = obj["contextMenuEntryEnabled"].toBool();
     }
 
-    [[nodiscard]] auto stringify() const -> QJsonObject override {
+    [[nodiscard]] auto stringify() const -> QJsonObject {
         QJsonObject json;
         json["applicationStyle"] = applicationStyle;
         json["dragNDropMode"] = dragNDropMode;
         json["playlistNaming"] = playlistNaming;
+        json["contextMenuEntryEnabled"] = contextMenuEntryEnabled;
         return json;
     }
 
@@ -162,9 +152,10 @@ class SettingsFlags : public JsonSerializable {
     Style applicationStyle;
     DragDropMode dragNDropMode = DragDropMode::CreateNewPlaylist;
     PlaylistNaming playlistNaming = PlaylistNaming::DirectoryName;
+    bool contextMenuEntryEnabled = false;
 };
 
-class DockWidgetSettings : public JsonSerializable {
+class DockWidgetSettings {
    public:
     explicit DockWidgetSettings() = default;
 
@@ -174,7 +165,7 @@ class DockWidgetSettings : public JsonSerializable {
         imageSize = obj["imageSize"].toInt();
     }
 
-    [[nodiscard]] auto stringify() const -> QJsonObject override {
+    [[nodiscard]] auto stringify() const -> QJsonObject {
         QJsonObject json;
         json["size"] = size;
         json["position"] = position;
@@ -187,7 +178,7 @@ class DockWidgetSettings : public JsonSerializable {
     u16 imageSize = 0;
 };
 
-class Settings : public JsonSerializable {
+class Settings {
    public:
     explicit Settings() = default;
 
@@ -232,7 +223,7 @@ class Settings : public JsonSerializable {
         }
     }
 
-    [[nodiscard]] auto stringify() const -> QJsonObject override {
+    [[nodiscard]] auto stringify() const -> QJsonObject {
         QJsonObject json;
         json["equalizerSettings"] = equalizerSettings.stringify();
         json["lastOpenedDirectory"] = lastOpenedDirectory;

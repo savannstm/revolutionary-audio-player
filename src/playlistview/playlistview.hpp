@@ -46,7 +46,7 @@ class PlaylistView : public QWidget {
     void removeBackgroundImage(i8 index) const;
     [[nodiscard]] auto backgroundImagePath(i8 index) const -> QString;
     [[nodiscard]] auto hasBackgroundImage(i8 index) const -> bool;
-    void removeTabPages(RemoveMode mode, i8 index);
+    void removeTabPages(TabRemoveMode mode, i8 index);
     void removeTabPage(i8 index);
 
    signals:
@@ -59,11 +59,11 @@ class PlaylistView : public QWidget {
     void changePage(i8 index);
     static inline auto exportXSPF(
         const QString& outputPath,
-        const vector<MetadataMap>& properties
+        const vector<MetadataMap>& metadataVector
     ) -> result<bool, QString>;
     static inline auto exportM3U8(
         const QString& outputPath,
-        const vector<MetadataMap>& properties
+        const vector<MetadataMap>& metadataVector
     ) -> result<bool, QString>;
     inline void exportPlaylist(i8 index, PlaylistFileType playlistType);
     inline void importPlaylist(PlaylistFileType playlistType);
@@ -110,7 +110,8 @@ class PlaylistView : public QWidget {
             case TrackProperty::Format:
                 return "format";
             default:
-                return QString();
+                return {};
+                break;
         }
     };
 

@@ -10,6 +10,8 @@
 #include <QPushButton>
 
 // TODO: Implement changeable frequencies for each band
+// TODO: Fix too big width
+// TODO: Add "reset frequencies", "reset gains", "reset all" buttons
 
 class EqualizerMenu : public QDialog {
     Q_OBJECT

@@ -166,9 +166,9 @@ void PlaylistTab::createContextMenu() {
         );
     } else {
         emit removeTabsRequested(
-            selectedAction == removeToLeftAction    ? RemoveMode::ToLeft
-            : selectedAction == removeToRightAction ? RemoveMode::ToRight
-                                                    : RemoveMode::Other
+            selectedAction == removeToLeftAction    ? TabRemoveMode::ToLeft
+            : selectedAction == removeToRightAction ? TabRemoveMode::ToRight
+                                                    : TabRemoveMode::Other
         );
     }
 }

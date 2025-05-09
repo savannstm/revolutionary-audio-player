@@ -6,6 +6,7 @@
 #include "constants.hpp"
 #include "custominput.hpp"
 #include "customslider.hpp"
+#include "dockwidget.hpp"
 #include "equalizermenu.hpp"
 #include "icontextbutton.hpp"
 #include "indexset.hpp"
@@ -24,6 +25,7 @@
 #include <QDir>
 #include <QLabel>
 #include <QLineEdit>
+#include <QLocalServer>
 #include <QMainWindow>
 #include <QPushButton>
 #include <QShortcut>
@@ -44,12 +46,13 @@ QT_END_NAMESPACE
 // TODO: Support .cue
 // TODO: Wave visualizer
 // TODO: More Playlist / File menu sections buttons
+// TODO: Add "play slice" thing
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
    public:
-    explicit MainWindow(QWidget* parent = nullptr);
+    explicit MainWindow(const QStringList& paths, QWidget* parent = nullptr);
     ~MainWindow() override;
 
    protected:
@@ -67,10 +70,11 @@ class MainWindow : public QMainWindow {
     void retranslated();
 
    private:
-    [[nodiscard]] inline auto saveSettings() -> result<bool, QString>;
+    inline auto saveSettings() -> result<bool, QString>;
     inline void loadSettings();
-    [[nodiscard]] inline auto setupUi() -> Ui::MainWindow*;
-    inline void jumpToTrack(Direction direction, bool clicked);
+    inline auto setupUi() -> Ui::MainWindow*;
+    inline void
+    jumpToTrack(Direction direction, bool clicked, bool newPlaylist = false);
     inline void updatePlaybackPosition();
     inline void playTrack(TrackTree* tree, const QModelIndex& index);
     inline void stopPlayback();
@@ -84,20 +88,14 @@ class MainWindow : public QMainWindow {
     inline void showSettingsWindow();
     inline void showHelpWindow();
     inline void addEntry(bool createNewTab, bool isFolder);
-    inline void togglePlayback();
-    inline void moveForward();
-    inline void moveBackward();
+    inline void togglePlayback(const QString& path = QString());
     inline void showAboutWindow();
     inline void processDroppedFiles(const QStringList& files);
     inline void updateProgressLabel();
     inline void updateVolume(u16 value);
     inline void cancelSearchInput();
     inline void toggleEqualizerMenu(bool checked);
-    inline void jumpForward();
-    inline void jumpBackward();
     inline void toggleRepeat();
-    inline void pausePlayback();
-    inline void resumePlayback();
     inline void toggleRandom();
     inline void exit();
     inline void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
@@ -108,6 +106,8 @@ class MainWindow : public QMainWindow {
     inline void resetSorting(i32 index, Qt::SortOrder sortOrder);
     inline void retranslate(QLocale::Language language = QLocale::AnyLanguage);
     inline void moveDockWidget(DockWidgetPosition dockWidgetPosition);
+    inline void processArgs(const QStringList& args);
+    inline void focus();
 
     // UI - Widgets
     Ui::MainWindow* ui = setupUi();
@@ -134,7 +134,7 @@ class MainWindow : public QMainWindow {
     MusicModel* trackTreeModel = nullptr;
 
     // UI - Buttons
-    QPushButton* playButton = ui->playButton;
+    ActionButton* playButton = ui->playButton;
     ActionButton* stopButton = ui->stopButton;
     ActionButton* backwardButton = ui->backwardButton;
     ActionButton* forwardButton = ui->forwardButton;
@@ -158,8 +158,7 @@ class MainWindow : public QMainWindow {
     QAction* actionForward = ui->actionForward;
     QAction* actionBackward = ui->actionBackward;
     QAction* actionRepeat = ui->actionRepeat;
-    QAction* actionPause = ui->actionPause;
-    QAction* actionResume = ui->actionResume;
+    QAction* actionTogglePlayback = ui->actionTogglePlayback;
     QAction* actionStop = ui->actionStop;
     QAction* actionRandom = ui->actionRandom;
     QAction* actionSettings = ui->actionSettings;
@@ -186,7 +185,7 @@ class MainWindow : public QMainWindow {
     i8 playingPlaylist = -1;
 
     QSplitter* mainArea = ui->mainArea;
-    QSplitter* dockWidget = ui->dockWidget;
+    DockWidget* dockWidget = ui->dockWidget;
     ScaledLabel* dockCoverLabel = ui->dockCoverLabel;
     QTreeWidget* dockMetadataTree = ui->dockMetadataTree;
 
@@ -209,4 +208,5 @@ class MainWindow : public QMainWindow {
     EqualizerMenu* equalizerMenu = nullptr;
     u8 sortIndicatorCleared;
     std::random_device rng;
+    QLocalServer* server = new QLocalServer(this);
 };

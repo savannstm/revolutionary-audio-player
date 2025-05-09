@@ -63,9 +63,9 @@ constexpr array<f32, THREE_BANDS> THREE_BAND_FREQUENCIES = { 100, 1000, 10000 };
 
 constexpr u16 PROPERTY_ROLE = Qt::UserRole + 1;
 
-constexpr array<QStringView, 9> ALLOWED_FILE_EXTENSIONS = {
-    u".mp3", u".flac", u".opus", u".aac", u".wav",
-    u".ogg", u".m4a",  u".mp4",  u".mkv"
+constexpr array<QStringView, 10> ALLOWED_FILE_EXTENSIONS = {
+    u"mp3", u"flac", u"opus", u"aac", u"wav",
+    u"ogg", u"m4a",  u"mp4",  u"mkv", u"mka"
 };
 
 constexpr array<QStringView, TRACK_PROPERTY_COUNT> SEARCH_PROPERTIES = {

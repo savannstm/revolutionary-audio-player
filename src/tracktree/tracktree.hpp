@@ -1,7 +1,6 @@
 #pragma once
 
 #include "constants.hpp"
-#include "extractmetadata.hpp"
 #include "musicheader.hpp"
 #include "musicmodel.hpp"
 
@@ -12,8 +11,7 @@ class TrackTree : public QTreeView {
     Q_OBJECT
 
    public:
-    explicit TrackTree();
-    explicit TrackTree(QWidget* parent);
+    explicit TrackTree(QWidget* parent = nullptr);
 
     void setCurrentIndex(const QModelIndex& newIndex);
 
@@ -30,88 +28,9 @@ class TrackTree : public QTreeView {
     };
 
     [[nodiscard]] auto rowMetadata(u16 row) const -> MetadataMap;
-
-    void processFile(const QString& filePath) {
-        bool valid = false;
-
-        for (QStringView extension : ALLOWED_FILE_EXTENSIONS) {
-            if (filePath.endsWith(extension)) {
-                valid = true;
-                break;
-            }
-        }
-
-        if (!valid) {
-            return;
-        }
-
-        const MetadataMap metadata =
-            extractMetadata(filePath.toStdString().c_str());
-
-        const u16 row = musicModel->rowCount();
-
-        for (u8 column = 0; column < TRACK_PROPERTY_COUNT; column++) {
-            const u8 headerProperty = musicModel->trackProperty(column);
-            auto* item = new MusicItem();
-
-            if (headerProperty == TrackNumber) {
-                QString number;
-
-                for (const auto& [idx, chr] :
-                     views::enumerate(metadata[headerProperty])) {
-                    if (idx == 0 && chr == '0') {
-                        continue;
-                    }
-
-                    if (!chr.isDigit()) {
-                        break;
-                    }
-
-                    number.append(chr);
-                }
-
-                item->setData(number.toInt(), Qt::EditRole);
-            } else if (headerProperty == Play) {
-                item->setText(QString());
-            } else {
-                item->setText(metadata[headerProperty]);
-            }
-
-            musicModel->setItem(row, column, item);
-        }
-    }
-
-    void fillTable(const QStringList& filePaths) {
-        for (const QString& filePath : filePaths) {
-            if (musicModel->contains(filePath)) {
-                continue;
-            }
-
-            processFile(filePath);
-        }
-
-        for (u8 column = 0; column < TRACK_PROPERTY_COUNT; column++) {
-            resizeColumnToContents(column);
-        }
-    }
-
-    void fillTable(QDirIterator& iterator) {
-        while (iterator.hasNext()) {
-            iterator.next();
-            const QFileInfo entry = iterator.fileInfo();
-            const QString path = entry.filePath();
-
-            if (musicModel->contains(path)) {
-                continue;
-            }
-
-            processFile(path);
-        }
-
-        for (u8 column = 0; column < TRACK_PROPERTY_COUNT; column++) {
-            resizeColumnToContents(column);
-        }
-    };
+    void sortByPath();
+    void fillTable(const QStringList& paths);
+    void fillTable(QDirIterator& iterator);
 
    signals:
     void trackSelected(u32 oldIndex, u32 newIndex);
@@ -120,6 +39,8 @@ class TrackTree : public QTreeView {
     void mouseDoubleClickEvent(QMouseEvent* event) override;
 
    private:
+    inline void addFile(const QString& filePath);
+
     QModelIndex index;
     MusicHeader* musicHeader =
         new MusicHeader(Qt::Orientation::Horizontal, this);

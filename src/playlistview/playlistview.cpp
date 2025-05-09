@@ -77,23 +77,18 @@ PlaylistView::PlaylistView(QWidget* parent) : QWidget(parent) {
     );
 }
 
-void PlaylistView::removeTabPages(const RemoveMode mode, const i8 index) {
+void PlaylistView::removeTabPages(const TabRemoveMode mode, const i8 index) {
     switch (mode) {
-        case ToLeft:
-            for (i8 i = as<i8>(index - 1); i >= 0; i--) {
-                removeTabPage(i);
-            }
-            break;
-        case ToRight:
-            for (i8 i = as<i8>(tabCount() - 2); i > index; i--) {
-                removeTabPage(i);
-            }
-            break;
         case Other:
-            for (i8 i = as<i8>(tabCount() - 2); i > index; i--) {
+        case ToRight:
+            for (i8 i = as<i8>(tabCount() - 1); i > index; i--) {
                 removeTabPage(i);
             }
 
+            if (mode == ToRight) {
+                break;
+            }
+        case ToLeft:
             for (i8 i = as<i8>(index - 1); i >= 0; i--) {
                 removeTabPage(i);
             }
@@ -137,7 +132,7 @@ auto PlaylistView::createPage(
     if (columnProperties.empty()) {
         pageTreeModel->setHorizontalHeaderLabels(trackPropertiesLabels());
     } else {
-        const auto propertyLabelMap = trackPropertiesLabels();
+        const QStringList propertyLabelMap = trackPropertiesLabels();
 
         for (u8 i = 0; i < TRACK_PROPERTY_COUNT; i++) {
             pageTreeModel->setHeaderData(
@@ -429,7 +424,7 @@ void PlaylistView::setTabLabel(const i8 index, const QString& label) {
 
 auto PlaylistView::exportXSPF(
     const QString& outputPath,
-    const vector<MetadataMap>& properties
+    const vector<MetadataMap>& metadataVector
 ) -> result<bool, QString> {
     QFile file(outputPath);
 
@@ -441,46 +436,40 @@ auto PlaylistView::exportXSPF(
     output.setEncoding(QStringConverter::Utf8);
 
     output << R"(<?xml version="1.0" encoding="UTF-8"?>)";
-    output << "\n";
+    output << '\n';
     output << R"(<playlist version="1" xmlns="http://xspf.org/ns/0/">)";
-    output << "\n";
+    output << '\n';
     output << "<trackList>";
-    output << "\n";
+    output << '\n';
 
-    for (const auto& track : properties) {
+    for (const auto& metadata : metadataVector) {
         output << "<track>";
-        output << "\n";
+        output << '\n';
 
-        for (const auto& [key, value] : track) {
-            if (key == TrackProperty::Play) {
-                continue;
-            }
-
-            QString tag = trackPropertyToTag(as<TrackProperty>(key));
-            if (tag.isEmpty()) {
-                continue;
-            }
+        for (const auto& [property, value] : views::drop(metadata, 1)) {
+            const QString tag = trackPropertyToTag(as<TrackProperty>(property));
 
             QString content = value;
 
-            if (key == TrackProperty::Path) {
-                QUrl url = QUrl::fromLocalFile(value);
-                content = url.toString();
+            if (property == TrackProperty::Path) {
+                content =
+                    QDir(outputPath.sliced(0, outputPath.lastIndexOf('/')))
+                        .relativeFilePath(value);
             }
 
-            output << "<" << tag << ">" << content.toHtmlEscaped() << "</"
-                   << tag << ">";
-            output << "\n";
+            output << '<' << tag << '>' << content.toHtmlEscaped() << "</"
+                   << tag << '>';
+            output << '\n';
         }
 
         output << "</track>";
-        output << "\n";
+        output << '\n';
     }
 
     output << "</trackList>";
-    output << "\n";
+    output << '\n';
     output << "</playlist>";
-    output << "\n";
+    output << '\n';
 
     file.close();
     return true;
@@ -488,7 +477,7 @@ auto PlaylistView::exportXSPF(
 
 auto PlaylistView::exportM3U8(
     const QString& outputPath,
-    const vector<MetadataMap>& properties
+    const vector<MetadataMap>& metadataVector
 ) -> result<bool, QString> {
     QFile outputFile = QFile(outputPath);
 
@@ -500,13 +489,13 @@ auto PlaylistView::exportM3U8(
     output.setEncoding(QStringConverter::Utf8);
 
     output << "#EXTM3U";
-    output << "\n";
+    output << '\n';
 
-    for (const auto& properties : properties) {
-        const QString title = properties.find(Title)->second;
-        const QString artist = properties.find(Artist)->second;
-        const QString path = properties.find(Path)->second;
-        const QString durationStr = properties.find(Duration)->second;
+    for (const auto& metadata : metadataVector) {
+        const QString title = metadata.find(Title)->second;
+        const QString artist = metadata.find(Artist)->second;
+        const QString path = metadata.find(Path)->second;
+        const QString durationStr = metadata.find(Duration)->second;
 
         u16 duration = 0;
 
@@ -518,11 +507,12 @@ auto PlaylistView::exportM3U8(
         duration += seconds.toUInt();
 
         output << "#EXTINF:";
-        output << duration << "," << artist << " - " << title;
-        output << "\n";
+        output << duration << ',' << artist << " - " << title;
+        output << '\n';
 
-        output << path;
-        output << "\n";
+        output << QDir(outputPath.sliced(0, outputPath.lastIndexOf('/')))
+                      .relativeFilePath(path);
+        output << '\n';
     }
 
     outputFile.close();
@@ -535,7 +525,7 @@ void PlaylistView::exportPlaylist(
 ) {
     const auto* trackTree = tree(index);
 
-    auto outputPath =
+    QString outputPath =
         QFileDialog::getExistingDirectory(this, tr("Select Output Directory"));
 
     if (outputPath.isEmpty()) {
@@ -551,11 +541,11 @@ void PlaylistView::exportPlaylist(
         const auto pressedButton = QMessageBox::warning(
             this,
             tr("Playlist already exists"),
-            "Rewrite it?",
-            QMessageBox::Yes
+            tr("Playlist already exists. Rewrite it?"),
+            QMessageBox::Yes | QMessageBox::No
         );
 
-        if (pressedButton != QMessageBox::Ok) {
+        if (pressedButton != QMessageBox::Yes) {
             return;
         }
     }
@@ -586,7 +576,7 @@ void PlaylistView::exportPlaylist(
     }
 };
 
-void PlaylistView::importPlaylist(PlaylistFileType playlistType) {
+void PlaylistView::importPlaylist(const PlaylistFileType playlistType) {
     const QString filter = playlistType == XSPF ? tr("XSPF Playlist (*.xspf)")
                                                 : tr("M3U8 Playlist (*.m3u8)");
 
@@ -637,7 +627,7 @@ void PlaylistView::importPlaylist(PlaylistFileType playlistType) {
             while (!input.atEnd()) {
                 const QString line = input.readLine().trimmed();
 
-                if (!line.isEmpty() && !line.startsWith("#")) {
+                if (!line.isEmpty() && !line.startsWith('#')) {
                     filePaths << line;
                 }
             }
@@ -655,7 +645,7 @@ void PlaylistView::importPlaylist(PlaylistFileType playlistType) {
     }
 
     const QString fileName = filePath.fileName();
-    const i8 index = addTab(fileName.sliced(0, fileName.lastIndexOf(".")));
+    const i8 index = addTab(fileName.sliced(0, fileName.lastIndexOf('.')));
     auto* trackTree = tree(index);
     trackTree->fillTable(filePaths);
 }

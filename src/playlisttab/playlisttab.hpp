@@ -5,16 +5,9 @@
 #include "playlisttablabel.hpp"
 
 #include <QHBoxLayout>
-#include <QLineEdit>
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QToolButton>
-
-enum RemoveMode : u8 {
-    ToLeft,
-    ToRight,
-    Other
-};
 
 class PlaylistTab : public QPushButton {
     Q_OBJECT
@@ -37,7 +30,7 @@ class PlaylistTab : public QPushButton {
     void rightClicked();
     void removeTabRequested();
     void addButtonClicked();
-    void removeTabsRequested(RemoveMode mode);
+    void removeTabsRequested(TabRemoveMode mode);
     void exportPlaylistRequested(PlaylistFileType playlistType);
     void importPlaylistRequested(PlaylistFileType playlistType);
 

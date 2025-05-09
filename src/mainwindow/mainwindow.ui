@@ -88,7 +88,7 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QPushButton" name="playButton">
+        <widget class="ActionButton" name="playButton">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -108,7 +108,7 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play/Pause&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
           <string/>
@@ -498,7 +498,7 @@
         </sizepolicy>
        </property>
       </widget>
-      <widget class="QSplitter" name="dockWidget">
+      <widget class="DockWidget" name="dockWidget">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>0</horstretch>
@@ -750,22 +750,6 @@
     <enum>QAction::MenuRole::NoRole</enum>
    </property>
   </action>
-  <action name="actionPause">
-   <property name="text">
-    <string>Pause</string>
-   </property>
-   <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
-   </property>
-  </action>
-  <action name="actionResume">
-   <property name="text">
-    <string>Resume</string>
-   </property>
-   <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
-   </property>
-  </action>
   <action name="actionStop">
    <property name="text">
     <string>Stop</string>
@@ -818,6 +802,14 @@
     <string>English</string>
    </property>
   </action>
+  <action name="actionTogglePlayback">
+   <property name="text">
+    <string>Play</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -845,6 +837,12 @@
    <class>ScaledLabel</class>
    <extends>QLabel</extends>
    <header>scaledlabel.hpp</header>
+  </customwidget>
+  <customwidget>
+   <class>DockWidget</class>
+   <extends>QSplitter</extends>
+   <header>dockwidget.hpp</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

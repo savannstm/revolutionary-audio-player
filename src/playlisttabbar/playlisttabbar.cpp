@@ -16,14 +16,18 @@ PlaylistTabBar::~PlaylistTabBar() {
 }
 
 void PlaylistTabBar::addTab(const QString& label) {
-    insertTab(as<i8>(tabCount() - 1), label, true);
+    insertTab(tabCount(), label, true);
 }
 
 void PlaylistTabBar::insertTab(
     const i8 index,
-    const QString& label,
+    QString label,
     const bool closable
 ) {
+    if (closable && label.isEmpty()) {
+        label = tr("Playlist %1").arg(tabCount());
+    }
+
     auto* tab = new PlaylistTab(label, closable, this);
 
     tabs.insert(index, tab);
@@ -42,23 +46,18 @@ void PlaylistTabBar::insertTab(
             tab,
             &PlaylistTab::removeTabsRequested,
             this,
-            [=, this](const RemoveMode mode) {
+            [=, this](const TabRemoveMode mode) {
             switch (mode) {
-                case ToLeft:
-                    for (i8 i = as<i8>(index - 1); i >= 0; i--) {
-                        removeTab(i);
-                    }
-                    break;
-                case ToRight:
-                    for (i8 i = as<i8>(tabCount() - 2); i > index; i--) {
-                        removeTab(i);
-                    }
-                    break;
                 case Other:
-                    for (i8 i = as<i8>(tabCount() - 2); i > index; i--) {
+                case ToRight:
+                    for (i8 i = as<i8>(tabCount() - 1); i > index; i--) {
                         removeTab(i);
                     }
 
+                    if (mode == ToRight) {
+                        break;
+                    }
+                case ToLeft:
                     for (i8 i = as<i8>(index - 1); i >= 0; i--) {
                         removeTab(i);
                     }
@@ -81,7 +80,7 @@ void PlaylistTabBar::insertTab(
     } else {
         connect(tab, &PlaylistTab::addButtonClicked, this, [=, this] {
             const i8 tabs = tabCount();
-            insertTab(as<i8>(tabs - 1), tr("Playlist %1").arg(tabs - 1), true);
+            insertTab(tabs, QString(), true);
         });
 
         connect(
@@ -92,9 +91,9 @@ void PlaylistTabBar::insertTab(
         );
     }
 
-    emit tabAdded(as<i8>(tabCount() - 2));
+    emit tabAdded(as<i8>(tabCount() - 1));
 
-    if (tabCount() == 2) {
+    if (tabCount() == 1) {
         previousIndex = 0;
         setCurrentIndex(0);
     }
@@ -126,6 +125,7 @@ void PlaylistTabBar::setCurrentIndex(const i8 index) {
     emit indexChanged(index);
 
     if (index == -1) {
+        currentIndex_ = -1;
         return;
     }
 
@@ -138,7 +138,7 @@ auto PlaylistTabBar::currentIndex() const -> i8 {
 }
 
 auto PlaylistTabBar::tabCount() const -> i8 {
-    return as<i8>(tabs.size());
+    return as<i8>(tabs.size() - 1);  // ignore the add tab
 }
 
 auto PlaylistTabBar::tabAt(const i8 index) const -> PlaylistTab* {

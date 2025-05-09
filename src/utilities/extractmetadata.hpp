@@ -32,13 +32,14 @@ inline auto roundBitrate(const u32 bitrate) -> QString {
     return u"%1k"_s.arg(closest);
 }
 
-inline auto extractMetadata(cstr path) -> MetadataMap {
+inline auto extractMetadata(cstr filePath) -> MetadataMap {
     MetadataMap metadata;
 
     FormatContextPtr formatContext;
     AVFormatContext* formatContextPtr = formatContext.get();
 
-    if (avformat_open_input(&formatContextPtr, path, nullptr, nullptr) < 0) {
+    if (avformat_open_input(&formatContextPtr, filePath, nullptr, nullptr) <
+        0) {
         return metadata;
     }
 
@@ -54,13 +55,13 @@ inline auto extractMetadata(cstr path) -> MetadataMap {
         return tag ? tag->value : QString();
     };
 
-    metadata.emplace(Path, path);
+    metadata.emplace(Path, filePath);
 
     const QString titleTag = getTag("title");
-    fs::path realPath;
+    path realPath;
 
     if (titleTag.isEmpty()) {
-        realPath = path;
+        realPath = filePath;
     }
 
     metadata.emplace(

@@ -2,7 +2,9 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Project definition
-project(rap VERSION 0.2.0 LANGUAGES C CXX)
+set(PROJECT_NAME rap)
+set(PROJECT_VERSION "0.2.1")
+project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES C CXX)
 
 # Set standards for C and C++
 set(CMAKE_C_STANDARD 17)
@@ -39,22 +41,18 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
 # Collect translation source files
 file(GLOB TRANSLATION_TS_FILES translations/*)
 
-# (Optional) Create a target to update translations
-qt_add_lupdate(rap
+# Add translations
+qt6_add_translations(
+    ${PROJECT_NAME}
+    TS_FILES ${TRANSLATION_TS_FILES}
     SOURCES ${SOURCES}
-    TS_FILES ${TRANSLATION_TS_FILES}
-)
-
-# Compile translations (.ts -> .qm)
-qt_add_lrelease(rap
-    TS_FILES ${TRANSLATION_TS_FILES}
     QM_FILES_OUTPUT_VARIABLE TRANSLATION_QM_FILES
 )
 
 # Create the executable, but do not yet finalize it
-set(WINDOWS_APPLICATION_ICON "resources/rap-logo.rc")
+set(WINDOWS_APPLICATION_ICON "resources/${PROJECT_NAME}-logo.rc")
 
-qt_add_executable(rap
+qt_add_executable(${PROJECT_NAME}
     MANUAL_FINALIZATION
     ${SOURCES}
     ${QM_FILES}
@@ -62,7 +60,7 @@ qt_add_executable(rap
 )
 
 # Set properties (e.g., no console window for Windows app)
-set_target_properties(rap PROPERTIES WIN32_EXECUTABLE TRUE)
+set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
 
 # Include the directory for generated files (e.g., version.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -81,19 +79,19 @@ configure_file(
 )
 
 # Include paths
-target_include_directories(rap PRIVATE
+target_include_directories(${PROJECT_NAME} PRIVATE
     ${SUBDIRS}
     $ENV{FFMPEG_INCLUDE_DIRS}
     ${RAPIDHASH_INCLUDE_DIRS}
 )
 
 # Link directories
-target_link_directories(rap PRIVATE
+target_link_directories(${PROJECT_NAME} PRIVATE
     $ENV{FFMPEG_LIBRARY_DIRS}
 )
 
 # Link libraries
-target_link_libraries(rap PRIVATE
+target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::Concurrent
@@ -108,27 +106,27 @@ target_link_libraries(rap PRIVATE
 
 # Install the built executable
 include(GNUInstallDirs)
-install(TARGETS rap
+install(TARGETS ${PROJECT_NAME}
     BUNDLE DESTINATION .
 )
 
 # Finalize the Qt executable setup
-qt_finalize_executable(rap)
+qt_finalize_executable(${PROJECT_NAME})
 
-add_custom_command(TARGET rap POST_BUILD
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
-        $<TARGET_FILE_DIR:rap>/translations
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/translations
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${TRANSLATION_QM_FILES}
-        $<TARGET_FILE_DIR:rap>/translations
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/translations
     COMMENT "Copying translation (.qm) files to the build configuration output directory"
 )
 
-add_custom_command(TARGET rap POST_BUILD
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
-        $<TARGET_FILE_DIR:rap>/icons
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/icons
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${ICONS}
-        $<TARGET_FILE_DIR:rap>/icons
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/icons
     COMMENT "Copying icons to the build configuration output directory"
 )

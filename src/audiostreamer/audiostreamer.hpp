@@ -4,7 +4,6 @@
 #include "constants.hpp"
 #include "ffmpeg.hpp"
 
-#include <juce_core/juce_core.h>
 #include <juce_dsp/juce_dsp.h>
 
 #include <QAudioFormat>
@@ -46,6 +45,11 @@ class AudioStreamer : public QIODevice {
         changedBands[band] = true;
     };
 
+    constexpr void setFrequency(const f32 frequency, const u8 band) {
+        frequencies[band] = frequency;
+        changedBands[band] = true;
+    }
+
     [[nodiscard]] constexpr auto gain(const u8 band) const -> i8 {
         return gains_[band];
     };
@@ -71,7 +75,7 @@ class AudioStreamer : public QIODevice {
     void streamEnded();
 
    protected:
-    [[nodiscard]] auto readData(str data, qi64 /* size */) -> qi64 override;
+    auto readData(str data, qi64 /* size */) -> qi64 override;
 
     auto writeData(cstr /* data */, qi64 /* size */) -> qi64 override {
         return -1;
@@ -104,5 +108,5 @@ class AudioStreamer : public QIODevice {
     array<f32, THIRTY_BANDS> frequencies;
     array<i8, THIRTY_BANDS> gains_;
     array<bool, THIRTY_BANDS> changedBands;
-    vector<unique_ptr<IIRFilter>> filters;
+    vector<vector<unique_ptr<IIRFilter>>> filters;
 };

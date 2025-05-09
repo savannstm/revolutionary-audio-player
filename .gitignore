@@ -3,3 +3,4 @@
 /.cache
 /CMakeLists.txt.user
 /.vscode
+/dist
