@@ -141,7 +141,7 @@ void AudioStreamer::equalizeBuffer(QByteArray& buf) {
 
         for (u8 band = 0; band < bandCount; band++) {
             if (gains_[band] != 0) {
-                filters[channel][band]->process(context);
+                filters[channel][band].process(context);
             }
         }
     }
@@ -297,10 +297,6 @@ void AudioStreamer::initFilters() {
     for (auto& channelFilters : filters) {
         if (channelFilters.size() != bandCount) {
             channelFilters.resize(bandCount);
-
-            for (auto& filter : channelFilters) {
-                filter = make_unique<IIRFilter>();
-            }
         }
     }
 
@@ -315,8 +311,8 @@ void AudioStreamer::initFilters() {
             );
 
             for (auto& channelFilters : filters) {
-                channelFilters[band]->coefficients = coeffs;
-                channelFilters[band]->reset();
+                channelFilters[band].coefficients = coeffs;
+                channelFilters[band].reset();
             }
 
             changed = false;

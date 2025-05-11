@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.2.2
+
+-   Another load of playback fixes.
+-   Fixed adding the same tracks to the playlist which already has them.
+-   Fixed tabs behavior when sometimes two tabs will be selected simultaneously.
+
 ## v0.2.1
 
 -   Changed exported `.xspf` and `.m3u8` playlists to use relative paths.

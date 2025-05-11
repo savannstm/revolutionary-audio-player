@@ -82,10 +82,10 @@ constexpr array<u16, 18> STANDARD_BITRATES = { 32,  40,  48,  56,  64,  80,
 
 constexpr array<TrackProperty, TRACK_PROPERTY_COUNT>
     TRACK_TREE_DEFAULT_COLUMN_PROPERTIES = {
-        Play,        Title,      Artist,     TrackNumber, Album,
-        AlbumArtist, Genre,      Year,       Duration,    Composer,
-        BPM,         Language,   DiscNumber, Comment,     Publisher,
-        Bitrate,     SampleRate, Channels,   Format,      Path,
+        Play,        Title,      Artist,   TrackNumber, Album,
+        AlbumArtist, Genre,      Year,     Composer,    BPM,
+        Language,    DiscNumber, Comment,  Publisher,   Duration,
+        Bitrate,     SampleRate, Channels, Format,      Path,
     };
 
 constexpr array<bool, TRACK_PROPERTY_COUNT> TRACK_TREE_DEFAULT_COLUMN_STATES = {

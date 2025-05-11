@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aliases.hpp"
+#include "constants.hpp"
 #include "enums.hpp"
 #include "playlisttabbar.hpp"
 #include "tracktree.hpp"

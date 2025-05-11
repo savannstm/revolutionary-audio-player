@@ -73,8 +73,7 @@ class MainWindow : public QMainWindow {
     inline auto saveSettings() -> result<bool, QString>;
     inline void loadSettings();
     inline auto setupUi() -> Ui::MainWindow*;
-    inline void
-    jumpToTrack(Direction direction, bool clicked, bool newPlaylist = false);
+    inline void advancePlaylist(Direction direction);
     inline void updatePlaybackPosition();
     inline void playTrack(TrackTree* tree, const QModelIndex& index);
     inline void stopPlayback();
@@ -100,7 +99,7 @@ class MainWindow : public QMainWindow {
     inline void exit();
     inline void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
     inline void setupTrayIcon();
-    inline void changePlaylist(i8 index);
+    inline auto changePlaylist(i8 index) -> bool;
     inline void closeTab(i8 index);
     inline void selectTrack(i32 oldRow, u16 newRow);
     inline void resetSorting(i32 index, Qt::SortOrder sortOrder);

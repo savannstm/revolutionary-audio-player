@@ -12,17 +12,16 @@ TrackTree::TrackTree(QWidget* parent) : QTreeView(parent) {
     setIndentation(1);
     setSortingEnabled(true);
 
+    auto* sModel = selectionModel();
+
     connect(
-        selectionModel(),
+        sModel,
         &QItemSelectionModel::selectionChanged,
-        [this](
-            const QItemSelection& selected,
-            const QItemSelection& deselected
-        ) {
+        [=, this](const QItemSelection&, const QItemSelection& deselected) {
         const QModelIndex requiredIndex = currentIndex();
 
         if (deselected.contains(requiredIndex)) {
-            selectionModel()->select(
+            sModel->select(
                 requiredIndex,
                 QItemSelectionModel::Select | QItemSelectionModel::Rows
             );
@@ -51,7 +50,7 @@ void TrackTree::setCurrentIndex(const QModelIndex& newIndex) {
 auto TrackTree::rowMetadata(const u16 row) const -> MetadataMap {
     MetadataMap result;
 
-    for (u8 column = 0; column < TRACK_PROPERTY_COUNT; column++) {
+    for (u8 column = 1; column < TRACK_PROPERTY_COUNT; column++) {
         const TrackProperty headerProperty = musicModel->trackProperty(column);
         const QModelIndex index = musicModel->index(row, column);
 
@@ -69,8 +68,9 @@ void TrackTree::addFile(const QString& filePath) {
 
     const u16 row = musicModel->rowCount();
 
-    for (u8 column = 0; column < TRACK_PROPERTY_COUNT; column++) {
-        const u8 headerProperty = musicModel->trackProperty(column);
+    for (u8 column = 1; column < TRACK_PROPERTY_COUNT; column++) {
+        const auto headerProperty =
+            as<TrackProperty>(musicModel->trackProperty(column));
         auto* item = new MusicItem();
 
         if (headerProperty == TrackNumber) {
@@ -90,8 +90,6 @@ void TrackTree::addFile(const QString& filePath) {
             }
 
             item->setData(number.toInt(), Qt::EditRole);
-        } else if (headerProperty == Play) {
-            item->setText(QString());
         } else {
             item->setText(metadata[headerProperty]);
         }
@@ -126,10 +124,7 @@ void TrackTree::fillTable(const QStringList& paths) {
         addFile(path);
     }
 
-    for (u8 column = 0; column < TRACK_PROPERTY_COUNT; column++) {
-        resizeColumnToContents(column);
-    }
-
+    resizeColumnsToContents();
     sortByPath();
 }
 
@@ -150,9 +145,30 @@ void TrackTree::fillTable(QDirIterator& iterator) {
         }
     }
 
-    for (u8 column = 0; column < TRACK_PROPERTY_COUNT; column++) {
-        resizeColumnToContents(column);
-    }
-
+    resizeColumnsToContents();
     sortByPath();
 };
+
+void TrackTree::resizeColumnsToContents() {
+    for (u8 column = 1; column < TRACK_PROPERTY_COUNT; column++) {
+        resizeColumnToContents(column);
+    }
+}
+
+auto TrackTree::deselect(const i32 index) -> QModelIndex {
+    clearSelection();
+
+    const QModelIndex modelIndex = currentIndex();
+
+    if (index != -1) {
+        musicModel->item(index, 0)->setData(QString(), Qt::DecorationRole);
+    } else {
+        if (modelIndex.isValid()) {
+            musicModel->item(modelIndex.row(), 0)
+                ->setData(QString(), Qt::DecorationRole);
+        }
+    }
+
+    setCurrentIndex(musicModel->index(-1, -1));
+    return modelIndex;
+}

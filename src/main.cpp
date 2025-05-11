@@ -1,10 +1,12 @@
+#include "constants.hpp"
 #include "mainwindow.hpp"
 
 #include <QApplication>
 #include <QLocalSocket>
 #include <QSharedMemory>
 
-inline auto parseArgs(const i32 argCount, char* args[]) -> QStringList {
+inline auto parseArgs(const i32 argCount, std::span<char*> args)
+    -> QStringList {
     QStringList paths;
 
     if (argCount > 1) {
@@ -24,18 +26,18 @@ auto main(i32 argCount, char* args[]) -> i32 {
     QSharedMemory sharedMemory;
     sharedMemory.setKey("revolutionary-audio-player");
 
-    QStringList paths = parseArgs(argCount, args);
+    QStringList paths = parseArgs(argCount, std::span(args, argCount));
 
     if (!sharedMemory.create(1)) {
         QLocalSocket socket;
         socket.connectToServer("revolutionary-audio-player-server");
 
-        if (socket.waitForConnected(1000)) {
+        if (socket.waitForConnected(SECOND_MS)) {
             if (argCount > 1) {
                 QByteArray data = paths.join('\n').toUtf8();
                 socket.write(data);
                 socket.flush();
-                socket.waitForBytesWritten(1000);
+                socket.waitForBytesWritten(SECOND_MS);
             }
 
             socket.disconnectFromServer();

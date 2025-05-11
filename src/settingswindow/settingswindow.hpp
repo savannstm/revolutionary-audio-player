@@ -17,7 +17,7 @@ namespace Ui {
 QT_END_NAMESPACE
 
 // TODO: Implement settings window
-// TODO: Implement changeable output
+// TODO: Implement output device select
 
 class SettingsWindow : public QDialog {
     Q_OBJECT

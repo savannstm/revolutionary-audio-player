@@ -13,7 +13,6 @@
 #include "helpwindow.hpp"
 #include "metadatawindow.hpp"
 #include "musicheader.hpp"
-#include "musicitem.hpp"
 #include "playlistview.hpp"
 #include "randint.hpp"
 #include "settings.hpp"
@@ -51,11 +50,11 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     );
 
     connect(actionForward, &QAction::triggered, this, [&] {
-        jumpToTrack(forwardDirection, true);
+        advancePlaylist(forwardDirection);
     });
 
     connect(actionBackward, &QAction::triggered, this, [&] {
-        jumpToTrack(backwardDirection, true);
+        advancePlaylist(backwardDirection);
     });
 
     connect(actionRepeat, &QAction::triggered, this, &MainWindow::toggleRepeat);
@@ -222,8 +221,9 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     );
 
     connect(playlistView, &PlaylistView::tabRemoved, this, [&](const i8 index) {
-        if (index > playingPlaylist) {
-            playingPlaylist--;
+        if (playingPlaylist >= index) {
+            playingPlaylist -= 1;
+            changePlaylist(playingPlaylist);
         }
     });
 
@@ -299,13 +299,14 @@ void MainWindow::focus() {
 void MainWindow::processArgs(const QStringList& args) {
     if (!args.empty()) {
         const QFileInfo firstPathInfo = QFileInfo(args[0]);
+        QString tabLabel;
 
-        const i8 index = playlistView->addTab(
-            settings->flags.playlistNaming == PlaylistNaming::DirectoryName
-                ? firstPathInfo.isDir() ? firstPathInfo.fileName()
-                                        : firstPathInfo.dir().dirName()
-                : QString()
-        );
+        if (settings->flags.playlistNaming == PlaylistNaming::DirectoryName) {
+            tabLabel = firstPathInfo.isDir() ? firstPathInfo.fileName()
+                                             : firstPathInfo.dir().dirName();
+        }
+
+        const i8 index = playlistView->addTab(tabLabel);
 
         TrackTree* tree = playlistView->tree(index);
         tree->fillTable(args);
@@ -353,21 +354,23 @@ void MainWindow::dropEvent(QDropEvent* event) {
             }
         }
 
-        if (!paths.empty()) {
-            i8 index = playingPlaylist;
-
-            if (tree == nullptr || settings->flags.dragNDropMode ==
-                                       DragDropMode::CreateNewPlaylist) {
-                index = playlistView->addTab(
-                    settings->flags.playlistNaming == DirectoryName
-                        ? QFileInfo(paths[0]).dir().dirName()
-                        : QString()
-                );
-                tree = playlistView->tree(index);
-            }
-
-            tree->fillTable(paths);
+        if (paths.empty()) {
+            return;
         }
+
+        i8 index = playingPlaylist;
+
+        if (tree == nullptr ||
+            settings->flags.dragNDropMode == DragDropMode::CreateNewPlaylist) {
+            index = playlistView->addTab(
+                settings->flags.playlistNaming == DirectoryName
+                    ? QFileInfo(paths[0]).dir().dirName()
+                    : QString()
+            );
+            tree = playlistView->tree(index);
+        }
+
+        tree->fillTable(paths);
     }
 }
 
@@ -386,165 +389,6 @@ void MainWindow::updatePlaybackPosition() {
 
     progressLabel->setText(trackDuration);
     progressLabelCloned->setText(trackDuration);
-}
-
-void MainWindow::jumpToTrack(
-    const Direction direction,
-    const bool clicked,
-    const bool newPlaylist
-) {
-    if (playingPlaylist == -1) {
-        return;
-    }
-
-    auto* trackTree = playlistView->tree(playingPlaylist);
-    auto* trackTreeModel = trackTree->model();
-    auto* trackTreeHeader = trackTree->header();
-
-    const u16 rowCount = trackTreeModel->rowCount();
-    if (rowCount == 0) {
-        return;
-    }
-
-    QModelIndex currentIndex = trackTree->currentIndex();
-    if (!currentIndex.isValid()) {
-        currentIndex = trackTreeModel->index(0, 0);
-    }
-
-    trackTreeModel->item(currentIndex.row(), 0)
-        ->setData(QString(), Qt::DecorationRole);
-
-    const u16 currentRow = currentIndex.row();
-    u16 nextRow;
-
-    switch (direction) {
-        case Direction::Forward:
-            if (currentRow == rowCount - 1) {
-                switch (repeat) {
-                    case Playlist:
-                        nextRow = 0;
-                        break;
-                    case Off:
-                        changePlaylist(as<i8>(playingPlaylist + 1));
-                        jumpToTrack(direction, clicked, true);
-                        return;
-                    default:
-                        stopPlayback();
-                        return;
-                }
-            } else if (newPlaylist) {
-                nextRow = currentRow;
-            } else {
-                nextRow = currentRow + 1;
-            }
-            break;
-        case Direction::ForwardRandom: {
-            playHistory.insert(currentRow);
-
-            if (playHistory.size() == rowCount) {
-                playHistory.clear();
-            }
-
-            do {
-                nextRow = randint_range(0, rowCount - 1, rng());
-            } while (playHistory.contains(nextRow));
-            break;
-        }
-        case Direction::Backward:
-        backward:
-            if (currentRow == 0) {
-                nextRow = rowCount - 1;
-            } else {
-                nextRow = currentRow - 1;
-            }
-            break;
-        case Direction::BackwardRandom: {
-            if (playHistory.empty()) {
-                goto backward;
-            }
-
-            const u16 lastPlayed = playHistory.last();
-            playHistory.remove(lastPlayed);
-            nextRow = lastPlayed;
-            break;
-        }
-    }
-
-    const QModelIndex index = trackTreeModel->index(nextRow, 0);
-    trackTree->setCurrentIndex(index);
-
-    playTrack(trackTree, index);
-}
-
-void MainWindow::stopPlayback() {
-    if (playingPlaylist == -1) {
-        return;
-    }
-
-    auto* tree = playlistView->tree(playingPlaylist);
-    auto* treeModel = tree->model();
-
-    if (tree != nullptr) {
-        tree->clearSelection();
-        treeModel->item(tree->currentIndex().row(), 0)
-            ->setData(QString(), Qt::DecorationRole);
-        tree->setCurrentIndex(treeModel->index(-1, -1));
-    }
-
-    audioWorker->stop();
-    trackLabel->clear();
-    progressSlider->setRange(0, 0);
-    progressSliderCloned->setRange(0, 0);
-    progressLabel->setText(ZERO_DURATION);
-    progressLabelCloned->setText(ZERO_DURATION);
-    trackDuration = ZERO_DURATION;
-    playButton->setIcon(startIcon);
-    actionTogglePlayback->setText(tr("Play"));
-    setWindowTitle("RAP");
-
-    dockCoverLabel->clear();
-
-    for (u8 i = 0; i < TRACK_PROPERTY_COUNT - 1; i++) {
-        auto* item = dockMetadataTree->itemFromIndex(
-            dockMetadataTree->model()->index(as<i32>(i), 0)
-        );
-
-        item->setText(0, QString());
-        item->setText(1, QString());
-    }
-}
-
-void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
-    playButton->setIcon(pauseIcon);
-
-    const u16 row = index.row();
-    const MetadataMap metadata = tree->rowMetadata(row);
-
-    togglePlayback(metadata[Path]);
-
-    tree->model()->itemFromIndex(index)->setData(startIcon, Qt::DecorationRole);
-
-    const QString artistAndTrack =
-        u"%1 - %2"_s.arg(metadata[Artist], metadata[Title]);
-
-    trackLabel->setText(artistAndTrack);
-    setWindowTitle(u"RAP: %1"_s.arg(artistAndTrack));
-
-    for (const auto& [idx, label] :
-         views::drop(views::enumerate(trackPropertiesLabels()), 1)) {
-        auto* item = dockMetadataTree->itemFromIndex(
-            dockMetadataTree->model()->index(as<i32>(idx - 1), 0)
-        );
-
-        item->setText(0, label);
-        item->setText(1, metadata[idx]);
-    }
-
-    QPixmap cover;
-    const vector<u8> coverBytes = extractCover(metadata[Path].toUtf8().data());
-    cover.loadFromData(coverBytes.data(), coverBytes.size());
-    dockCoverLabel->setPixmap(cover);
-    dockCoverLabel->setMinimumSize(MINIMUM_COVER_SIZE);
 }
 
 auto MainWindow::saveSettings() -> result<bool, QString> {
@@ -1026,7 +870,7 @@ void MainWindow::playNext() {
             );
             break;
         default:
-            jumpToTrack(forwardDirection, false);
+            advancePlaylist(forwardDirection);
             break;
     }
 }
@@ -1115,43 +959,6 @@ void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
         tree->fillTable(entries);
     } else {
         tree->fillTable({ path });
-    }
-}
-
-void MainWindow::togglePlayback(const QString& path) {
-    if (!path.isEmpty()) {
-        QMetaObject::invokeMethod(
-            audioWorker,
-            &AudioWorker::start,
-            Qt::QueuedConnection,
-            path
-        );
-        playButton->setIcon(pauseIcon);
-        playButton->setToolTip(tr("Pause"));
-        actionTogglePlayback->setText(tr("Pause"));
-    } else {
-        const QAudio::State state = audioWorker->state();
-
-        if (state == QAudio::ActiveState) {
-            QMetaObject::invokeMethod(
-                audioWorker,
-                &AudioWorker::suspend,
-                Qt::QueuedConnection
-            );
-            playButton->setIcon(startIcon);
-            playButton->setToolTip(tr("Play"));
-            actionTogglePlayback->setText(tr("Play"));
-        } else if (state != QAudio::IdleState &&
-                   state != QAudio::StoppedState) {
-            QMetaObject::invokeMethod(
-                audioWorker,
-                &AudioWorker::resume,
-                Qt::QueuedConnection
-            );
-            playButton->setIcon(pauseIcon);
-            playButton->setToolTip(tr("Pause"));
-            actionTogglePlayback->setText(tr("Pause"));
-        }
     }
 }
 
@@ -1304,17 +1111,20 @@ void MainWindow::setupTrayIcon() {
     trayIcon->setContextMenu(trayIconMenu);
 }
 
-void MainWindow::changePlaylist(const i8 index) {
-    if (index == -1 || index > playlistView->tabCount() - 1) {
+auto MainWindow::changePlaylist(const i8 index) -> bool {
+    // No playlists left.
+    if (index == -1) {
         playingPlaylist = -1;
         trackTree = nullptr;
         trackTreeHeader = nullptr;
         trackTreeModel = nullptr;
-        stopPlayback();
-        return;
+        return false;
     }
 
-    playingPlaylist = index;
+    if (index > playlistView->tabCount() - 1) {
+        return false;
+    }
+
     trackTree = playlistView->tree(index);
     trackTreeHeader = trackTree->header();
     trackTreeModel = trackTree->model();
@@ -1350,15 +1160,16 @@ void MainWindow::changePlaylist(const i8 index) {
         &MainWindow::handleTrackPress,
         Qt::UniqueConnection
     );
+
+    return true;
 }
 
 void MainWindow::selectTrack(const i32 oldRow, const u16 newRow) {
     if (oldRow != newRow) {
-        if (oldRow != -1) {
-            trackTreeModel->item(oldRow, 0)->setData(
-                QString(),
-                Qt::DecorationRole
-            );
+        auto* tree = playlistView->tree(playingPlaylist);
+
+        if (tree != nullptr) {
+            tree->deselect(oldRow);
         }
 
         playingPlaylist = playlistView->currentIndex();
@@ -1366,6 +1177,189 @@ void MainWindow::selectTrack(const i32 oldRow, const u16 newRow) {
     }
 
     trackTree->clearSelection();
+}
+
+void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
+    playButton->setIcon(pauseIcon);
+
+    const MetadataMap metadata = tree->rowMetadata(index.row());
+    togglePlayback(metadata[Path]);
+
+    tree->model()->itemFromIndex(index)->setData(startIcon, Qt::DecorationRole);
+
+    const QString artistAndTrack =
+        u"%1 - %2"_s.arg(metadata[Artist], metadata[Title]);
+    trackLabel->setText(artistAndTrack);
+    setWindowTitle(u"RAP: %1"_s.arg(artistAndTrack));
+
+    for (const auto& [idx, label] :
+         views::drop(views::enumerate(trackPropertiesLabels()), 1)) {
+        auto* item = dockMetadataTree->itemFromIndex(
+            dockMetadataTree->model()->index(as<i32>(idx - 1), 0)
+        );
+
+        item->setText(0, label);
+        item->setText(1, metadata[idx]);
+    }
+
+    QPixmap cover;
+    const vector<u8> coverBytes = extractCover(metadata[Path].toUtf8().data());
+    cover.loadFromData(coverBytes.data(), coverBytes.size());
+    dockCoverLabel->setPixmap(cover);
+    dockCoverLabel->setMinimumSize(MINIMUM_COVER_SIZE);
+}
+
+void MainWindow::togglePlayback(const QString& path) {
+    if (!path.isEmpty()) {
+        QMetaObject::invokeMethod(
+            audioWorker,
+            &AudioWorker::start,
+            Qt::QueuedConnection,
+            path
+        );
+        playButton->setIcon(pauseIcon);
+        playButton->setToolTip(tr("Pause"));
+        actionTogglePlayback->setText(tr("Pause"));
+    } else {
+        const QAudio::State state = audioWorker->state();
+
+        if (state == QAudio::ActiveState) {
+            QMetaObject::invokeMethod(
+                audioWorker,
+                &AudioWorker::suspend,
+                Qt::QueuedConnection
+            );
+            playButton->setIcon(startIcon);
+            playButton->setToolTip(tr("Play"));
+            actionTogglePlayback->setText(tr("Play"));
+        } else if (state != QAudio::IdleState &&
+                   state != QAudio::StoppedState) {
+            QMetaObject::invokeMethod(
+                audioWorker,
+                &AudioWorker::resume,
+                Qt::QueuedConnection
+            );
+            playButton->setIcon(pauseIcon);
+            playButton->setToolTip(tr("Pause"));
+            actionTogglePlayback->setText(tr("Pause"));
+        }
+    }
+}
+
+void MainWindow::advancePlaylist(const Direction direction) {
+    auto* tree = playlistView->tree(playingPlaylist);
+
+    if (tree == nullptr) {
+        return;
+    }
+
+    auto* treeModel = tree->model();
+    auto* treeHeader = tree->header();
+
+    const u16 rowCount = treeModel->rowCount();
+    if (rowCount == 0) {
+        return;
+    }
+
+    const QModelIndex currentIndex = tree->deselect();
+    if (!currentIndex.isValid()) {
+        return;
+    }
+
+    const u16 currentRow = currentIndex.row();
+    u16 nextRow;
+
+    switch (direction) {
+        case Direction::Forward:
+            if (currentRow == rowCount - 1) {
+                switch (repeat) {
+                    case Playlist:
+                        nextRow = 0;
+                        break;
+                    case Off: {
+                        const bool success =
+                            changePlaylist(as<i8>(playingPlaylist + 1));
+
+                        if (!success) {
+                            stopPlayback();
+                            return;
+                        }
+
+                        playingPlaylist += 1;
+                        tree = trackTree;
+                        treeModel = trackTreeModel;
+                        treeHeader = trackTreeHeader;
+                        nextRow = 0;
+                        break;
+                    }
+                    default:
+                        stopPlayback();
+                        return;
+                }
+            } else {
+                nextRow = currentRow + 1;
+            }
+            break;
+        case Direction::ForwardRandom: {
+            playHistory.insert(currentRow);
+
+            if (playHistory.size() == rowCount) {
+                playHistory.clear();
+            }
+
+            do {
+                nextRow = randint_range(0, rowCount - 1, rng());
+            } while (playHistory.contains(nextRow));
+            break;
+        }
+        case Direction::Backward:
+        backward:
+            nextRow = (currentRow == 0 ? rowCount : currentRow) - 1;
+            break;
+        case Direction::BackwardRandom: {
+            if (playHistory.empty()) {
+                goto backward;
+            }
+
+            const u16 lastPlayed = playHistory.last();
+            playHistory.remove(lastPlayed);
+            nextRow = lastPlayed;
+            break;
+        }
+    }
+
+    const QModelIndex index = treeModel->index(nextRow, 0);
+    tree->setCurrentIndex(index);
+    playTrack(tree, index);
+}
+
+void MainWindow::stopPlayback() {
+    auto* tree = playlistView->tree(playingPlaylist);
+
+    if (tree != nullptr) {
+        tree->deselect();
+    }
+
+    audioWorker->stop();
+    trackLabel->clear();
+    progressSlider->setRange(0, 0);
+    progressSliderCloned->setRange(0, 0);
+    progressLabel->setText(ZERO_DURATION);
+    progressLabelCloned->setText(ZERO_DURATION);
+    trackDuration = ZERO_DURATION;
+    playButton->setIcon(startIcon);
+    actionTogglePlayback->setText(tr("Play"));
+    setWindowTitle("RAP");
+
+    dockCoverLabel->clear();
+
+    for (u8 i = 0; i < TRACK_PROPERTY_COUNT - 1; i++) {
+        auto* item = dockMetadataTree->itemFromIndex(
+            dockMetadataTree->model()->index(as<i32>(i), 0)
+        );
+        item->setText(0, QString());
+        item->setText(1, QString());
+    }
 }
 
 void MainWindow::resetSorting(

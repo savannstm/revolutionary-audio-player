@@ -58,16 +58,20 @@ inline auto extractMetadata(cstr filePath) -> MetadataMap {
     metadata.emplace(Path, filePath);
 
     const QString titleTag = getTag("title");
-    path realPath;
 
     if (titleTag.isEmpty()) {
-        realPath = filePath;
+        QString filePathString = filePath;
+        isize lastIndex = filePathString.lastIndexOf('/');
+
+        if (lastIndex == -1) {
+            lastIndex = filePathString.lastIndexOf('\\');
+        }
+
+        metadata.emplace(Title, filePathString.sliced(lastIndex));
+    } else {
+        metadata.emplace(Title, titleTag);
     }
 
-    metadata.emplace(
-        Title,
-        titleTag.isEmpty() ? realPath.filename().string().c_str() : titleTag
-    );
     metadata.emplace(Artist, getTag("artist"));
     metadata.emplace(Album, getTag("album"));
     metadata.emplace(TrackNumber, getTag("track"));

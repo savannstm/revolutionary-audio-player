@@ -8,6 +8,7 @@
 #include <QWidget>
 
 // TODO: Implement tab dragging
+// TODO: Implement scrolling
 
 class PlaylistTabBar : public QWidget {
     Q_OBJECT

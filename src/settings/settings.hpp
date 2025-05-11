@@ -28,7 +28,7 @@ inline auto fromJsonArray(const QJsonArray& jsonArray) -> array<T, N> {
     array<T, N> result;
     const u16 count = min<u16>(jsonArray.size(), N);
 
-    for (u16 i = 0; i < count; ++i) {
+    for (u16 i = 0; i < count; i++) {
         result[i] = jsonArray[i].toVariant().value<T>();
     }
 

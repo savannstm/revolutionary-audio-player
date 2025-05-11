@@ -108,5 +108,5 @@ class AudioStreamer : public QIODevice {
     array<f32, THIRTY_BANDS> frequencies;
     array<i8, THIRTY_BANDS> gains_;
     array<bool, THIRTY_BANDS> changedBands;
-    vector<vector<unique_ptr<IIRFilter>>> filters;
+    vector<vector<IIRFilter>> filters;
 };

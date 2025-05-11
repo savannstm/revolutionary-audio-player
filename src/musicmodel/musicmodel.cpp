@@ -12,6 +12,7 @@ MusicModel::MusicModel(QObject* parent) : QStandardItemModel(parent) {
 
 void MusicModel::setItem(const u16 row, const u16 col, MusicItem* item) {
     QStandardItemModel::setItem(row, col, item);
+    tracks.emplace(item->text());
 }
 
 auto MusicModel::itemFromIndex(const QModelIndex& index) const -> MusicItem* {
@@ -22,4 +23,16 @@ auto MusicModel::trackProperty(const u8 column) const -> TrackProperty {
     return as<TrackProperty>(
         headerData(column, Qt::Horizontal, PROPERTY_ROLE).toUInt()
     );
+}
+
+auto MusicModel::removeRows(
+    const i32 row,
+    const i32 count,
+    const QModelIndex& parent
+) -> bool {
+    for (i32 i = 0; i < count; i++) {
+        tracks.erase(this->item(row + i, 0)->text());
+    }
+
+    return QStandardItemModel::removeRows(row, count, parent);
 }

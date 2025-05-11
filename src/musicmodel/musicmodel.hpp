@@ -16,13 +16,16 @@ class MusicModel : public QStandardItemModel {
     void setItem(u16 row, u16 column, MusicItem* item);
 
     [[nodiscard]] auto contains(const QString& path) const -> bool {
-        return tracks.contains(&path);
+        return tracks.contains(path);
     };
 
     [[nodiscard]] auto itemFromIndex(const QModelIndex& index) const
         -> MusicItem*;
     [[nodiscard]] auto trackProperty(u8 column) const -> TrackProperty;
+    auto
+    removeRows(i32 row, i32 count, const QModelIndex& parent = QModelIndex())
+        -> bool override;
 
    private:
-    rapidhashset<const QString*> tracks;
+    rapidhashset<QString> tracks;
 };

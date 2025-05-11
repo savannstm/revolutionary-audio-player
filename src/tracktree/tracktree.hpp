@@ -1,11 +1,12 @@
 #pragma once
 
-#include "constants.hpp"
 #include "musicheader.hpp"
 #include "musicmodel.hpp"
 
 #include <QDirIterator>
 #include <QTreeView>
+
+// TODO: Add files on a separate thread
 
 class TrackTree : public QTreeView {
     Q_OBJECT
@@ -31,6 +32,7 @@ class TrackTree : public QTreeView {
     void sortByPath();
     void fillTable(const QStringList& paths);
     void fillTable(QDirIterator& iterator);
+    auto deselect(i32 index = -1) -> QModelIndex;
 
    signals:
     void trackSelected(u32 oldIndex, u32 newIndex);
@@ -39,6 +41,7 @@ class TrackTree : public QTreeView {
     void mouseDoubleClickEvent(QMouseEvent* event) override;
 
    private:
+    inline void resizeColumnsToContents();
     inline void addFile(const QString& filePath);
 
     QModelIndex index;

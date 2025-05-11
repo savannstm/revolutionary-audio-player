@@ -3,8 +3,6 @@
 #include "enums.hpp"
 #include "playlisttab.hpp"
 
-#include <QMenu>
-
 PlaylistTabBar::PlaylistTabBar(QWidget* parent) : QWidget(parent) {
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(4);
@@ -112,7 +110,7 @@ void PlaylistTabBar::removeTab(const i8 index) {
 
     i8 nextIndex = currentIndex_;
 
-    if (currentIndex_ == 0 && tabCount() > 1) {
+    if (currentIndex_ == 0 && tabCount() != 0) {
         nextIndex = 0;
     } else if (currentIndex_ >= index) {
         nextIndex = as<i8>(currentIndex_ - 1);
@@ -129,7 +127,12 @@ void PlaylistTabBar::setCurrentIndex(const i8 index) {
         return;
     }
 
+    if (previousIndex != -1) {
+        tabs[previousIndex]->setChecked(false);
+    }
+
     currentIndex_ = index;
+    previousIndex = index;
     tabs[index]->setChecked(true);
 }
 
@@ -150,14 +153,7 @@ auto PlaylistTabBar::tabIndex(const PlaylistTab* tab) const -> i8 {
 }
 
 void PlaylistTabBar::handleTabClicked(PlaylistTab* tab) {
-    if (previousIndex != -1) {
-        tabAt(previousIndex)->setChecked(false);
-    }
-
-    const i8 newIndex = tabIndex(tab);
-    setCurrentIndex(newIndex);
-
-    previousIndex = newIndex;
+    setCurrentIndex(tabIndex(tab));
 }
 
 auto PlaylistTabBar::tabLabel(const i8 index) const -> QString {

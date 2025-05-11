@@ -350,7 +350,13 @@ auto PlaylistView::currentTree() const -> TrackTree* {
 }
 
 auto PlaylistView::tree(const i8 index) const -> TrackTree* {
-    return stackedWidget->widget(index)->findChild<TrackTree*>("tree");
+    const auto* widget = stackedWidget->widget(index);
+
+    if (widget == nullptr) {
+        return nullptr;
+    }
+
+    return widget->findChild<TrackTree*>("tree");
 }
 
 auto PlaylistView::currentBackgroundImage() const -> QLabel* {
