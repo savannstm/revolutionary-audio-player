@@ -32,20 +32,39 @@ inline auto roundBitrate(const u32 bitrate) -> QString {
     return u"%1k"_s.arg(closest);
 }
 
-inline auto extractMetadata(cstr filePath) -> MetadataMap {
+inline auto extractMetadata(const QString& filePath) -> MetadataMap {
     MetadataMap metadata;
 
     FormatContextPtr formatContext;
     AVFormatContext* formatContextPtr = formatContext.get();
 
-    if (avformat_open_input(&formatContextPtr, filePath, nullptr, nullptr) <
-        0) {
+    i32 err;
+    array<char, AV_ERROR_MAX_STRING_SIZE> errBuf;
+
+    err = avformat_open_input(
+        &formatContextPtr,
+        filePath.toStdString().c_str(),
+        nullptr,
+        nullptr
+    );
+    if (err < 0) {
+        qWarning() << av_make_error_string(
+            errBuf.data(),
+            AV_ERROR_MAX_STRING_SIZE,
+            err
+        );
         return metadata;
     }
 
     formatContext.reset(formatContextPtr);
 
-    if (avformat_find_stream_info(formatContextPtr, nullptr) < 0) {
+    err = avformat_find_stream_info(formatContextPtr, nullptr);
+    if (err < 0) {
+        qWarning() << av_make_error_string(
+            errBuf.data(),
+            AV_ERROR_MAX_STRING_SIZE,
+            err
+        );
         return metadata;
     }
 
@@ -60,14 +79,13 @@ inline auto extractMetadata(cstr filePath) -> MetadataMap {
     const QString titleTag = getTag("title");
 
     if (titleTag.isEmpty()) {
-        QString filePathString = filePath;
-        isize lastIndex = filePathString.lastIndexOf('/');
+        isize lastIndex = filePath.lastIndexOf('/');
 
         if (lastIndex == -1) {
-            lastIndex = filePathString.lastIndexOf('\\');
+            lastIndex = filePath.lastIndexOf('\\');
         }
 
-        metadata.emplace(Title, filePathString.sliced(lastIndex));
+        metadata.emplace(Title, filePath.sliced(lastIndex));
     } else {
         metadata.emplace(Title, titleTag);
     }
@@ -91,10 +109,10 @@ inline auto extractMetadata(cstr filePath) -> MetadataMap {
     );
     metadata.emplace(Bitrate, roundBitrate(formatContext->bit_rate));
 
-    const u8 streams = formatContext->nb_streams;
-    for (u8 i = 0; i < streams; i++) {
-        const AVStream* stream = formatContext->streams[i];
+    const u8 streamCount = formatContext->nb_streams;
+    const span<AVStream*> streams = span(formatContext->streams, streamCount);
 
+    for (const AVStream* stream : streams) {
         if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             metadata.emplace(
                 SampleRate,
@@ -105,7 +123,7 @@ inline auto extractMetadata(cstr filePath) -> MetadataMap {
                 QString::number(stream->codecpar->ch_layout.nb_channels)
             );
 
-            QString formatName = formatContext->iformat->name;
+            const QString formatName = formatContext->iformat->name;
             metadata.emplace(Format, formatName.toUpper());
             break;
         }
@@ -120,20 +138,35 @@ inline auto extractCover(cstr path) -> vector<u8> {
 
     vector<u8> cover;
 
-    if (avformat_open_input(&formatContextPtr, path, nullptr, nullptr) < 0) {
+    i32 err;
+    array<char, AV_ERROR_MAX_STRING_SIZE> errBuf;
+
+    err = avformat_open_input(&formatContextPtr, path, nullptr, nullptr);
+    if (err < 0) {
+        qWarning() << av_make_error_string(
+            errBuf.data(),
+            AV_ERROR_MAX_STRING_SIZE,
+            err
+        );
         return cover;
     }
 
     formatContext.reset(formatContextPtr);
+    err = avformat_find_stream_info(formatContextPtr, nullptr);
 
-    if (avformat_find_stream_info(formatContextPtr, nullptr) < 0) {
+    if (err < 0) {
+        qWarning() << av_make_error_string(
+            errBuf.data(),
+            AV_ERROR_MAX_STRING_SIZE,
+            err
+        );
         return cover;
     }
 
-    const u8 streams = formatContext->nb_streams;
-    for (u8 i = 0; i < streams; i++) {
-        const AVStream* stream = formatContext->streams[i];
+    const u8 streamCount = formatContext->nb_streams;
+    const span<AVStream*> streams = span(formatContext->streams, streamCount);
 
+    for (const AVStream* stream : streams) {
         if ((stream->disposition & AV_DISPOSITION_ATTACHED_PIC) != 0) {
             cover.resize(stream->attached_pic.size);
             memcpy(
