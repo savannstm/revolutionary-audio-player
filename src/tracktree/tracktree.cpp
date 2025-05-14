@@ -50,7 +50,7 @@ void TrackTree::setCurrentIndex(const QModelIndex& newIndex) {
 auto TrackTree::rowMetadata(const u16 row) const -> MetadataMap {
     MetadataMap result;
 
-    for (u8 column = 1; column < TRACK_PROPERTY_COUNT; column++) {
+    for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
         const TrackProperty headerProperty = musicModel->trackProperty(column);
         const QModelIndex index = musicModel->index(row, column);
 
@@ -63,12 +63,15 @@ auto TrackTree::rowMetadata(const u16 row) const -> MetadataMap {
 }
 
 void TrackTree::addFile(const QString& filePath) {
-    const MetadataMap metadata =
-        extractMetadata(filePath.toStdString().c_str());
+    const MetadataMap metadata = extractMetadata(filePath);
+
+    if (metadata.empty()) {
+        return;
+    }
 
     const u16 row = musicModel->rowCount();
 
-    for (u8 column = 1; column < TRACK_PROPERTY_COUNT; column++) {
+    for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
         const auto headerProperty =
             as<TrackProperty>(musicModel->trackProperty(column));
         auto* item = new MusicItem();
@@ -150,7 +153,7 @@ void TrackTree::fillTable(QDirIterator& iterator) {
 };
 
 void TrackTree::resizeColumnsToContents() {
-    for (u8 column = 1; column < TRACK_PROPERTY_COUNT; column++) {
+    for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
         resizeColumnToContents(column);
     }
 }
