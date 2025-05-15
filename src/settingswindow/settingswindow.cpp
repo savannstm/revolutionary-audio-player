@@ -98,6 +98,11 @@ void SettingsWindow::addOpenDirectoryEntry() {
             QApplication::applicationFilePath().replace('/', '\\')
         ) + uR"( "%1")"_s
     );
+
+#elifdef Q_OS_LINUX
+    // TODO
+#elifdef Q_OS_MACOS
+    // TODO
 #endif
 }
 
@@ -122,6 +127,11 @@ void SettingsWindow::removeOpenDirectoryEntry() {
     );
 
     topEntry.remove("Open directory in RAP");
+#elifdef Q_OS_LINUX
+    // TODO
+#elifdef Q_OS_MACOS
+    // TODO
+
 #endif
 }
 
