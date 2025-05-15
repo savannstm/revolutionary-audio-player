@@ -41,13 +41,19 @@ void AudioWorker::start(const QString& path) {
     audioStreamer->start(path);
     audioSink = new QAudioSink(audioStreamer->format());
 
-    // TODO: Listen for audio device failures, try to reconnect if any
     connect(
         audioSink,
         &QAudioSink::stateChanged,
         this,
         [&](const QAudio::State state) {
-        if (state == QAudio::StoppedState) {}
+        // TODO: No idea if that works
+        if (audioSink->error() != QtAudio::NoError) {
+            const u16 duration = audioStreamer->duration();
+            audioSink = new QAudioSink(audioStreamer->format());
+            audioSink->setVolume(volumeGain);
+            audioSink->start(audioStreamer);
+            audioStreamer->seekSecond(duration);
+        }
     }
     );
 

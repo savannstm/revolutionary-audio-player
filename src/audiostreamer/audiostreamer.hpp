@@ -45,25 +45,18 @@ class AudioStreamer : public QIODevice {
         changedBands[band] = true;
     };
 
-    constexpr void setFrequency(const f32 frequency, const u8 band) {
-        frequencies[band] = frequency;
-        changedBands[band] = true;
-    }
-
     [[nodiscard]] constexpr auto gain(const u8 band) const -> i8 {
         return gains_[band];
     };
 
-    [[nodiscard]] constexpr auto gains() const
-        -> const array<i8, THIRTY_BANDS>& {
+    [[nodiscard]] constexpr auto gains() const -> const GainArray& {
         return gains_;
     };
 
     void setBandCount(u8 bands);
 
-    [[nodiscard]] constexpr auto bands() const
-        -> const array<f32, THIRTY_BANDS>& {
-        return frequencies;
+    [[nodiscard]] constexpr auto frequencies() const -> const FrequencyArray& {
+        return frequencies_;
     };
 
     [[nodiscard]] auto equalizerEnabled() const -> bool { return eqEnabled; };
@@ -105,8 +98,8 @@ class AudioStreamer : public QIODevice {
 
     u8 bandCount = TEN_BANDS;
 
-    array<f32, THIRTY_BANDS> frequencies;
-    array<i8, THIRTY_BANDS> gains_;
-    array<bool, THIRTY_BANDS> changedBands;
+    FrequencyArray frequencies_;
+    GainArray gains_;
+    array<bool, MAX_BANDS_COUNT> changedBands;
     vector<vector<IIRFilter>> filters;
 };

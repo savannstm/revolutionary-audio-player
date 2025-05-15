@@ -24,8 +24,11 @@ void AudioStreamer::start(const QString& path) {
     );
 
     if (err < 0) {
-        qWarning(
-        ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
+        qWarning() << av_make_error_string(
+            errBuf.data(),
+            AV_ERROR_MAX_STRING_SIZE,
+            err
+        );
         return;
     }
 
@@ -35,8 +38,11 @@ void AudioStreamer::start(const QString& path) {
     err = avformat_find_stream_info(formatContextPtr, nullptr);
 
     if (err < 0) {
-        qWarning(
-        ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
+        qWarning() << av_make_error_string(
+            errBuf.data(),
+            AV_ERROR_MAX_STRING_SIZE,
+            err
+        );
         return;
     }
 
@@ -53,8 +59,11 @@ void AudioStreamer::start(const QString& path) {
     err = audioStreamIndex;
 
     if (err < 0) {
-        qWarning(
-        ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
+        qWarning() << av_make_error_string(
+            errBuf.data(),
+            AV_ERROR_MAX_STRING_SIZE,
+            err
+        );
         return;
     }
 
@@ -67,8 +76,11 @@ void AudioStreamer::start(const QString& path) {
     err = avcodec_open2(codecContextPtr, codec, nullptr);
 
     if (err < 0) {
-        qWarning(
-        ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
+        qWarning() << av_make_error_string(
+            errBuf.data(),
+            AV_ERROR_MAX_STRING_SIZE,
+            err
+        );
         return;
     }
 
@@ -91,8 +103,11 @@ void AudioStreamer::start(const QString& path) {
     );
 
     if (err < 0) {
-        qWarning(
-        ) << av_make_error_string(errBuf.data(), AV_ERROR_MAX_STRING_SIZE, err);
+        qWarning() << av_make_error_string(
+            errBuf.data(),
+            AV_ERROR_MAX_STRING_SIZE,
+            err
+        );
         return;
     }
 
@@ -126,20 +141,21 @@ void AudioStreamer::equalizeBuffer(QByteArray& buf) {
     juce::AudioBuffer<f32> juceBuffer(channels, samplesNumber);
     const f32* f32samples = reinterpret_cast<const f32*>(buf.constData());
 
-    for (u8 channel = 0; channel < channels; channel++) {
+    for (const u8 channel : range(0, channels)) {
         f32* floatChannelData = juceBuffer.getWritePointer(channel);
 
-        for (i32 i = 0; i < samplesNumber; i++) {
-            floatChannelData[i] = f32samples[(i * channels) + channel];
+        for (const u32 sample : range(0, samplesNumber)) {
+            floatChannelData[sample] =
+                f32samples[(sample * channels) + channel];
         }
     }
 
-    for (u8 channel = 0; channel < channels; channel++) {
+    for (const u8 channel : range(0, channels)) {
         f32* writePtr = juceBuffer.getWritePointer(channel);
         juce::dsp::AudioBlock<f32> channelBlock(&writePtr, 1, samplesNumber);
         juce::dsp::ProcessContextReplacing<f32> context(channelBlock);
 
-        for (u8 band = 0; band < bandCount; band++) {
+        for (const u8 band : range(0, bandCount)) {
             if (gains_[band] != 0) {
                 filters[channel][band].process(context);
             }
@@ -148,11 +164,11 @@ void AudioStreamer::equalizeBuffer(QByteArray& buf) {
 
     f32* out = reinterpret_cast<f32*>(buf.data());
 
-    for (u8 channel = 0; channel < channels; channel++) {
+    for (const u8 channel : range(0, channels)) {
         const f32* floatChannelData = juceBuffer.getReadPointer(channel);
 
-        for (i32 i = 0; i < samplesNumber; i++) {
-            out[(i * channels) + channel] = floatChannelData[i];
+        for (const u32 sample : range(0, samplesNumber)) {
+            out[(sample * channels) + channel] = floatChannelData[sample];
         }
     }
 }
@@ -208,7 +224,7 @@ void AudioStreamer::prepareBuffer() {
             frame.reset(newFrame.release());
         }
 
-        u16 bufferSize;
+        i32 bufferSize;
 
         bufferSize = av_samples_get_buffer_size(
             nullptr,
@@ -247,7 +263,9 @@ auto AudioStreamer::readData(str data, const qi64 /* size */) -> qi64 {
 
     if (nextBufferSize == 0) {
         emit streamEnded();
-        return -1;
+        // No need to return -1 here, logic in mainwindow will automatically
+        // stop the playback if there's no tracks left or whatever.
+        return 0;
     }
 
     return bufferSize;
@@ -305,7 +323,7 @@ void AudioStreamer::initFilters() {
         if (changed) {
             const auto coeffs = IIRCoefficients::makePeakFilter(
                 codecContext->sample_rate,
-                frequencies[band],
+                frequencies_[band],
                 Q_FACTOR,
                 juce::Decibels::decibelsToGain(as<f32>(gains_[band]))
             );
@@ -326,35 +344,35 @@ void AudioStreamer::setBandCount(const u8 bands) {
     switch (bands) {
         case THREE_BANDS:
             memcpy(
-                frequencies.data(),
+                frequencies_.data(),
                 THREE_BAND_FREQUENCIES.data(),
                 THREE_BANDS * SAMPLE_SIZE
             );
             break;
         case FIVE_BANDS:
             memcpy(
-                frequencies.data(),
+                frequencies_.data(),
                 FIVE_BAND_FREQUENCIES.data(),
                 FIVE_BANDS * SAMPLE_SIZE
             );
             break;
         case TEN_BANDS:
             memcpy(
-                frequencies.data(),
+                frequencies_.data(),
                 TEN_BAND_FREQUENCIES.data(),
                 TEN_BANDS * SAMPLE_SIZE
             );
             break;
         case EIGHTEEN_BANDS:
             memcpy(
-                frequencies.data(),
+                frequencies_.data(),
                 EIGHTEEN_BAND_FREQUENCIES.data(),
                 EIGHTEEN_BANDS * SAMPLE_SIZE
             );
             break;
         case THIRTY_BANDS:
             memcpy(
-                frequencies.data(),
+                frequencies_.data(),
                 THIRTY_BAND_FREQUENCIES.data(),
                 THIRTY_BANDS * SAMPLE_SIZE
             );

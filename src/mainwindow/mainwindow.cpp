@@ -37,8 +37,7 @@ auto MainWindow::setupUi() -> Ui::MainWindow* {
 }
 
 MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
-    QMainWindow(parent),
-    equalizerMenu(new EqualizerMenu(equalizerButton, audioWorker)) {
+    QMainWindow(parent) {
     dockWidget->dockCoverLabel = dockCoverLabel;
     dockWidget->dockMetadataTree = dockMetadataTree;
 
@@ -282,6 +281,10 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     searchTrackInput->setFixedHeight(SEARCH_INPUT_HEIGHT);
 
     setupTrayIcon();
+    initializeSettings();
+
+    equalizerMenu = new EqualizerMenu(this, audioWorker, settings);
+
     loadSettings();
     processArgs(paths);
 }
@@ -426,11 +429,7 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
         }
     }
 
-    const EqualizerInfo equalizerInfo = equalizerMenu->equalizerInfo();
-    settings->equalizerSettings.enabled = equalizerInfo.enabled;
-    settings->equalizerSettings.bandIndex = equalizerInfo.bandIndex;
-    settings->equalizerSettings.gains = equalizerInfo.gains;
-    settings->equalizerSettings.frequencies = equalizerInfo.frequencies;
+    equalizerMenu->saveSettings();
 
     DockWidgetPosition dockWidgetPosition;
     Qt::Orientation mainAreaOrientation = mainArea->orientation();
@@ -492,10 +491,12 @@ void MainWindow::retranslate(const QLocale::Language language) {
         }
     }
 
+    equalizerMenu->retranslate();
+
     emit retranslated();
 }
 
-void MainWindow::loadSettings() {
+void MainWindow::initializeSettings() {
     if (!settingsFile.open(QIODevice::ReadOnly)) {
         settings = make_shared<Settings>();
     } else {
@@ -506,9 +507,9 @@ void MainWindow::loadSettings() {
             QJsonDocument::fromJson(jsonData, nullptr).object()
         );
     }
+}
 
-    retranslate(settings->language);
-
+void MainWindow::loadSettings() {
     volumeSlider->setValue(settings->volume);
     volumeSliderCloned->setValue(settings->volume);
 
@@ -540,13 +541,7 @@ void MainWindow::loadSettings() {
     }
 
     playlistView->setCurrentIndex(settings->currentTab);
-
-    equalizerMenu->setEqualizerInfo(
-        settings->equalizerSettings.enabled,
-        settings->equalizerSettings.bandIndex,
-        settings->equalizerSettings.gains,
-        settings->equalizerSettings.frequencies
-    );
+    equalizerMenu->loadSettings();
 
     const DockWidgetPosition dockWidgetPosition =
         settings->dockWidgetSettings.position;
@@ -554,6 +549,7 @@ void MainWindow::loadSettings() {
     moveDockWidget(dockWidgetPosition);
 
     mainArea->setSizes({ QWIDGETSIZE_MAX, settings->dockWidgetSettings.size });
+    retranslate(settings->language);
 }
 
 void MainWindow::moveDockWidget(const DockWidgetPosition dockWidgetPosition) {

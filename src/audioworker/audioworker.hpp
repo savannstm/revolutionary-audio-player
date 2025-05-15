@@ -48,16 +48,11 @@ class AudioWorker : public QObject {
         audioStreamer->setGain(dbGain, band);
     }
 
-    constexpr void setFrequency(const f32 frequency, const u8 band) {
-        audioStreamer->setFrequency(frequency, band);
-    }
-
     [[nodiscard]] constexpr auto gain(const u8 band) const -> i8 {
         return audioStreamer->gain(band);
     }
 
-    [[nodiscard]] constexpr auto gains() const
-        -> const array<i8, THIRTY_BANDS>& {
+    [[nodiscard]] constexpr auto gains() const -> const GainArray& {
         return audioStreamer->gains();
     }
 
@@ -79,9 +74,8 @@ class AudioWorker : public QObject {
 
     void setBandCount(const u8 count) { audioStreamer->setBandCount(count); }
 
-    [[nodiscard]] constexpr auto bands() const
-        -> const array<f32, THIRTY_BANDS>& {
-        return audioStreamer->bands();
+    [[nodiscard]] constexpr auto frequencies() const -> const FrequencyArray& {
+        return audioStreamer->frequencies();
     }
 
    signals:

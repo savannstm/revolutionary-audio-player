@@ -63,7 +63,7 @@ class MainWindow : public QMainWindow {
    signals:
     void trackDataReady(
         TrackTree* tree,
-        const metadata_array& metadata,
+        const MetadataArray& metadata,
         const QString& path
     );
     void trackDataProcessed(TrackTree* tree);
@@ -71,6 +71,7 @@ class MainWindow : public QMainWindow {
 
    private:
     inline auto saveSettings() -> result<bool, QString>;
+    inline void initializeSettings();
     inline void loadSettings();
     inline auto setupUi() -> Ui::MainWindow*;
     inline void advancePlaylist(Direction direction);
