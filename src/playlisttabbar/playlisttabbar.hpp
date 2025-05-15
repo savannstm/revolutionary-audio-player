@@ -18,25 +18,25 @@ class PlaylistTabBar : public QWidget {
     ~PlaylistTabBar() override;
 
     void addTab(const QString& label);
-    void insertTab(i8 index, QString label, bool closable);
-    void removeTab(i8 index);
+    void insertTab(u8 index, QString label, bool closable);
+    void removeTab(u8 index);
     void setCurrentIndex(i8 index);
     [[nodiscard]] auto currentIndex() const -> i8;
-    [[nodiscard]] auto tabCount() const -> i8;
-    [[nodiscard]] auto tabLabel(i8 index) const -> QString;
-    void setTabLabel(i8 index, const QString& label);
+    [[nodiscard]] auto tabCount() const -> u8;
+    [[nodiscard]] auto tabLabel(u8 index) const -> QString;
+    void setTabLabel(u8 index, const QString& label);
 
    signals:
     void indexChanged(i8 index);
-    void tabAdded(i8 index);
-    void tabRemoved(i8 index);
-    void addButtonClicked(i8 index);
-    void tabsRemoved(TabRemoveMode mode, i8 index);
-    void exportPlaylistRequested(i8 index, PlaylistFileType playlistType);
+    void tabAdded(u8 index);
+    void tabRemoved(u8 index);
+    void addButtonClicked(u8 index);
+    void tabsRemoved(TabRemoveMode mode, u8 index);
+    void exportPlaylistRequested(u8 index, PlaylistFileType playlistType);
     void importPlaylistRequested(PlaylistFileType playlistType);
 
    private:
-    [[nodiscard]] auto tabAt(i8 index) const -> PlaylistTab*;
+    [[nodiscard]] auto tabAt(u8 index) const -> PlaylistTab*;
     [[nodiscard]] auto tabIndex(const PlaylistTab* tab) const -> i8;
     void handleTabClicked(PlaylistTab* tab);
 

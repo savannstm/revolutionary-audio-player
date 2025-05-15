@@ -77,11 +77,11 @@ PlaylistView::PlaylistView(QWidget* parent) : QWidget(parent) {
     );
 }
 
-void PlaylistView::removeTabPages(const TabRemoveMode mode, const i8 index) {
+void PlaylistView::removeTabPages(const TabRemoveMode mode, const u8 index) {
     switch (mode) {
         case Other:
         case ToRight:
-            for (i8 i = as<i8>(tabCount() - 1); i > index; i--) {
+            for (u8 i = tabCount() - 1; i > index; i--) {
                 removeTabPage(i);
             }
 
@@ -89,7 +89,7 @@ void PlaylistView::removeTabPages(const TabRemoveMode mode, const i8 index) {
                 break;
             }
         case ToLeft:
-            for (i8 i = as<i8>(index - 1); i >= 0; i--) {
+            for (u8 i = index - 1; i >= 0; i--) {
                 removeTabPage(i);
             }
             break;
@@ -134,11 +134,11 @@ auto PlaylistView::createPage(
     } else {
         const QStringList propertyLabelMap = trackPropertiesLabels();
 
-        for (u8 i = 0; i < TRACK_PROPERTY_COUNT; i++) {
+        for (const u8 idx : range(0, TRACK_PROPERTY_COUNT)) {
             pageTreeModel->setHeaderData(
-                i,
+                idx,
                 Qt::Horizontal,
-                propertyLabelMap[as<TrackProperty>(columnProperties[i])]
+                propertyLabelMap[columnProperties[idx]]
             );
         }
     }
@@ -219,17 +219,17 @@ auto PlaylistView::createPage(
     return page;
 }
 
-auto PlaylistView::backgroundImagePath(const i8 index) const -> QString {
+auto PlaylistView::backgroundImagePath(const u8 index) const -> QString {
     const QLabel* centerLabel = backgroundImage(index);
     return centerLabel->property("path").toString();
 }
 
-auto PlaylistView::hasBackgroundImage(const i8 index) const -> bool {
+auto PlaylistView::hasBackgroundImage(const u8 index) const -> bool {
     const QLabel* centerLabel = backgroundImage(index);
     return centerLabel->property("path").isValid();
 }
 
-void PlaylistView::removeBackgroundImage(const i8 index) const {
+void PlaylistView::removeBackgroundImage(const u8 index) const {
     QLabel* centerLabel = backgroundImage(index);
 
     if (!hasBackgroundImage(index)) {
@@ -255,7 +255,7 @@ void PlaylistView::removeBackgroundImage(const i8 index) const {
 
 // TODO: When main window's dock widget is resized, background image isn't
 void PlaylistView::setBackgroundImage(
-    const i8 index,
+    const u8 index,
     const QString& path
 ) const {
     QLabel* centerLabel = backgroundImage(index);
@@ -349,7 +349,7 @@ auto PlaylistView::currentTree() const -> TrackTree* {
     return stackedWidget->currentWidget()->findChild<TrackTree*>("tree");
 }
 
-auto PlaylistView::tree(const i8 index) const -> TrackTree* {
+auto PlaylistView::tree(const u8 index) const -> TrackTree* {
     const auto* widget = stackedWidget->widget(index);
 
     if (widget == nullptr) {
@@ -363,7 +363,7 @@ auto PlaylistView::currentBackgroundImage() const -> QLabel* {
     return stackedWidget->currentWidget()->findChild<QLabel*>("centerLabel");
 }
 
-auto PlaylistView::backgroundImage(const i8 index) const -> QLabel* {
+auto PlaylistView::backgroundImage(const u8 index) const -> QLabel* {
     return stackedWidget->widget(index)->findChild<QLabel*>("centerLabel");
 }
 
@@ -371,11 +371,11 @@ auto PlaylistView::currentPage() const -> QWidget* {
     return stackedWidget->currentWidget();
 }
 
-auto PlaylistView::page(const i8 index) const -> QWidget* {
+auto PlaylistView::page(const u8 index) const -> QWidget* {
     return stackedWidget->widget(index);
 }
 
-void PlaylistView::createTabPage(const i8 index) {
+void PlaylistView::createTabPage(const u8 index) {
     if (stackedWidget->widget(index) != nullptr) {
         return;
     }
@@ -387,15 +387,15 @@ auto PlaylistView::addTab(
     const QString& label,
     const array<TrackProperty, TRACK_PROPERTY_COUNT>& columnProperties,
     const array<bool, TRACK_PROPERTY_COUNT>& columnStates
-) -> i8 {
-    const i8 index = as<i8>(
+) -> u8 {
+    const u8 index = as<u8>(
         stackedWidget->addWidget(createPage(columnProperties, columnStates))
     );
     tabBar->addTab(label);
     return index;
 }
 
-void PlaylistView::removeTabPage(const i8 index) {
+void PlaylistView::removeTabPage(const u8 index) {
     QWidget* widget = stackedWidget->widget(index);
     stackedWidget->removeWidget(widget);
     delete widget;
@@ -403,7 +403,7 @@ void PlaylistView::removeTabPage(const i8 index) {
     emit tabRemoved(index);
 }
 
-auto PlaylistView::tabCount() const -> i8 {
+auto PlaylistView::tabCount() const -> u8 {
     return tabBar->tabCount();
 }
 
@@ -420,17 +420,17 @@ void PlaylistView::changePage(const i8 index) {
     emit indexChanged(index);
 }
 
-auto PlaylistView::tabLabel(const i8 index) const -> QString {
+auto PlaylistView::tabLabel(const u8 index) const -> QString {
     return tabBar->tabLabel(index);
 }
 
-void PlaylistView::setTabLabel(const i8 index, const QString& label) {
+void PlaylistView::setTabLabel(const u8 index, const QString& label) {
     tabBar->setTabLabel(index, label);
 }
 
 auto PlaylistView::exportXSPF(
     const QString& outputPath,
-    const vector<MetadataMap>& metadataVector
+    const vector<HashMap<TrackProperty, QString>>& metadataVector
 ) -> result<bool, QString> {
     QFile file(outputPath);
 
@@ -453,7 +453,7 @@ auto PlaylistView::exportXSPF(
         output << '\n';
 
         for (const auto& [property, value] : views::drop(metadata, 1)) {
-            const QString tag = trackPropertyToTag(as<TrackProperty>(property));
+            const QString tag = getXSPFTag(property);
 
             QString content = value;
 
@@ -483,7 +483,7 @@ auto PlaylistView::exportXSPF(
 
 auto PlaylistView::exportM3U8(
     const QString& outputPath,
-    const vector<MetadataMap>& metadataVector
+    const vector<HashMap<TrackProperty, QString>>& metadataVector
 ) -> result<bool, QString> {
     QFile outputFile = QFile(outputPath);
 
@@ -526,7 +526,7 @@ auto PlaylistView::exportM3U8(
 }
 
 void PlaylistView::exportPlaylist(
-    const i8 index,
+    const u8 index,
     const PlaylistFileType playlistType
 ) {
     const auto* trackTree = tree(index);
@@ -557,10 +557,10 @@ void PlaylistView::exportPlaylist(
     }
 
     const u16 rowCount = trackTree->model()->rowCount();
-    vector<MetadataMap> properties;
+    vector<HashMap<TrackProperty, QString>> properties;
     properties.reserve(rowCount);
 
-    for (u16 row = 0; row < rowCount; row++) {
+    for (const u16 row : range(0, rowCount)) {
         properties.emplace_back(trackTree->rowMetadata(row));
     }
 
@@ -651,7 +651,7 @@ void PlaylistView::importPlaylist(const PlaylistFileType playlistType) {
     }
 
     const QString fileName = filePath.fileName();
-    const i8 index = addTab(fileName.sliced(0, fileName.lastIndexOf('.')));
+    const u8 index = addTab(fileName.sliced(0, fileName.lastIndexOf('.')));
     auto* trackTree = tree(index);
     trackTree->fillTable(filePaths);
 }

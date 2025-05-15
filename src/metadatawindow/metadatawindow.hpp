@@ -1,5 +1,6 @@
 #pragma once
 
+#include "enums.hpp"
 #include "rapidhasher.hpp"
 
 #include <QDialog>
@@ -12,7 +13,7 @@ class MetadataWindow : public QDialog {
 
    public:
     explicit MetadataWindow(
-        const MetadataMap& metadata,
+        const HashMap<TrackProperty, QString>& metadata,
         QWidget* parent = nullptr
     );
 

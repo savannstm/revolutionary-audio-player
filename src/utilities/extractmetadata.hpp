@@ -42,8 +42,9 @@ inline auto roundBitrate(const u32 bitrate) -> QString {
     return u"%1k"_s.arg(closest);
 }
 
-inline auto extractMetadata(const QString& filePath) -> MetadataMap {
-    MetadataMap metadata;
+inline auto extractMetadata(const QString& filePath)
+    -> HashMap<TrackProperty, QString> {
+    HashMap<TrackProperty, QString> metadata;
 
     FormatContextPtr formatContext;
     AVFormatContext* formatContextPtr = formatContext.get();

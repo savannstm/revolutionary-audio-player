@@ -24,53 +24,52 @@ class PlaylistView : public QWidget {
             TRACK_TREE_DEFAULT_COLUMN_PROPERTIES,
         const array<bool, TRACK_PROPERTY_COUNT>& columnStates =
             TRACK_TREE_DEFAULT_COLUMN_STATES
-    ) -> i8;
-    [[nodiscard]] auto tabCount() const -> i8;
+    ) -> u8;
+    [[nodiscard]] auto tabCount() const -> u8;
     void setCurrentIndex(i8 index);
     [[nodiscard]] auto currentIndex() const -> i8;
-    void createTabPage(i8 index);
+    void createTabPage(u8 index);
     [[nodiscard]] auto createPage(
         const array<TrackProperty, TRACK_PROPERTY_COUNT>& columnProperties =
             TRACK_TREE_DEFAULT_COLUMN_PROPERTIES,
         const array<bool, TRACK_PROPERTY_COUNT>& columnStates =
             TRACK_TREE_DEFAULT_COLUMN_STATES
     ) -> QWidget*;
-    void setBackgroundImage(i8 index, const QString& path) const;
-    [[nodiscard]] auto backgroundImage(i8 index) const -> QLabel*;
+    void setBackgroundImage(u8 index, const QString& path) const;
+    [[nodiscard]] auto backgroundImage(u8 index) const -> QLabel*;
     [[nodiscard]] auto currentBackgroundImage() const -> QLabel*;
-    [[nodiscard]] auto tree(i8 index) const -> TrackTree*;
+    [[nodiscard]] auto tree(u8 index) const -> TrackTree*;
     [[nodiscard]] auto currentTree() const -> TrackTree*;
-    [[nodiscard]] auto tabLabel(i8 index) const -> QString;
-    void setTabLabel(i8 index, const QString& label);
+    [[nodiscard]] auto tabLabel(u8 index) const -> QString;
+    void setTabLabel(u8 index, const QString& label);
     [[nodiscard]] auto currentPage() const -> QWidget*;
-    [[nodiscard]] auto page(i8 index) const -> QWidget*;
-    void removeBackgroundImage(i8 index) const;
-    [[nodiscard]] auto backgroundImagePath(i8 index) const -> QString;
-    [[nodiscard]] auto hasBackgroundImage(i8 index) const -> bool;
-    void removeTabPages(TabRemoveMode mode, i8 index);
-    void removeTabPage(i8 index);
+    [[nodiscard]] auto page(u8 index) const -> QWidget*;
+    void removeBackgroundImage(u8 index) const;
+    [[nodiscard]] auto backgroundImagePath(u8 index) const -> QString;
+    [[nodiscard]] auto hasBackgroundImage(u8 index) const -> bool;
+    void removeTabPages(TabRemoveMode mode, u8 index);
+    void removeTabPage(u8 index);
 
    signals:
-    void renameTabRequested(i8 index);
-    void closeTabRequested(i8 index);
+    void renameTabRequested(u8 index);
+    void closeTabRequested(u8 index);
     void indexChanged(i8 index);
-    void tabRemoved(i8 index);
+    void tabRemoved(u8 index);
 
    private:
     void changePage(i8 index);
     static inline auto exportXSPF(
         const QString& outputPath,
-        const vector<MetadataMap>& metadataVector
+        const vector<HashMap<TrackProperty, QString>>& metadataVector
     ) -> result<bool, QString>;
     static inline auto exportM3U8(
         const QString& outputPath,
-        const vector<MetadataMap>& metadataVector
+        const vector<HashMap<TrackProperty, QString>>& metadataVector
     ) -> result<bool, QString>;
-    inline void exportPlaylist(i8 index, PlaylistFileType playlistType);
+    inline void exportPlaylist(u8 index, PlaylistFileType playlistType);
     inline void importPlaylist(PlaylistFileType playlistType);
 
-    static constexpr auto trackPropertyToTag(TrackProperty property)
-        -> QString {
+    static constexpr auto getXSPFTag(TrackProperty property) -> QString {
         switch (property) {
             case TrackProperty::Title:
                 return "title";

@@ -18,7 +18,7 @@ void PlaylistTabBar::addTab(const QString& label) {
 }
 
 void PlaylistTabBar::insertTab(
-    const i8 index,
+    const u8 index,
     QString label,
     const bool closable
 ) {
@@ -48,7 +48,7 @@ void PlaylistTabBar::insertTab(
             switch (mode) {
                 case Other:
                 case ToRight:
-                    for (i8 i = as<i8>(tabCount() - 1); i > index; i--) {
+                    for (u8 i = tabCount() - 1; i > index; i--) {
                         removeTab(i);
                     }
 
@@ -56,7 +56,7 @@ void PlaylistTabBar::insertTab(
                         break;
                     }
                 case ToLeft:
-                    for (i8 i = as<i8>(index - 1); i >= 0; i--) {
+                    for (u8 i = index - 1; i >= 0; i--) {
                         removeTab(i);
                     }
                     break;
@@ -77,7 +77,7 @@ void PlaylistTabBar::insertTab(
 
     } else {
         connect(tab, &PlaylistTab::addButtonClicked, this, [=, this] {
-            const i8 tabs = tabCount();
+            const u8 tabs = tabCount();
             insertTab(tabs, QString(), true);
         });
 
@@ -89,7 +89,7 @@ void PlaylistTabBar::insertTab(
         );
     }
 
-    emit tabAdded(as<i8>(tabCount() - 1));
+    emit tabAdded(tabCount() - 1);
 
     if (tabCount() == 1) {
         previousIndex = 0;
@@ -97,7 +97,7 @@ void PlaylistTabBar::insertTab(
     }
 }
 
-void PlaylistTabBar::removeTab(const i8 index) {
+void PlaylistTabBar::removeTab(const u8 index) {
     PlaylistTab* tab = tabs.takeAt(index);
     layout->removeWidget(tab);
     delete tab;
@@ -140,11 +140,11 @@ auto PlaylistTabBar::currentIndex() const -> i8 {
     return currentIndex_;
 }
 
-auto PlaylistTabBar::tabCount() const -> i8 {
-    return as<i8>(tabs.size() - 1);  // ignore the add tab
+auto PlaylistTabBar::tabCount() const -> u8 {
+    return as<u8>(tabs.size() - 1);  // ignore the add tab
 }
 
-auto PlaylistTabBar::tabAt(const i8 index) const -> PlaylistTab* {
+auto PlaylistTabBar::tabAt(const u8 index) const -> PlaylistTab* {
     return tabs[index];
 }
 
@@ -156,10 +156,10 @@ void PlaylistTabBar::handleTabClicked(PlaylistTab* tab) {
     setCurrentIndex(tabIndex(tab));
 }
 
-auto PlaylistTabBar::tabLabel(const i8 index) const -> QString {
+auto PlaylistTabBar::tabLabel(const u8 index) const -> QString {
     return tabs[index]->label();
 }
 
-void PlaylistTabBar::setTabLabel(const i8 index, const QString& label) {
+void PlaylistTabBar::setTabLabel(const u8 index, const QString& label) {
     tabs[index]->setLabel(label);
 }

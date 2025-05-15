@@ -12,8 +12,8 @@ inline auto parseArgs(const i32 argCount, std::span<char*> args)
     if (argCount > 1) {
         paths.reserve(argCount);
 
-        for (i32 i = 1; i < argCount; i++) {
-            paths.append(args[i]);
+        for (const u32 idx : range(1, argCount)) {
+            paths.append(args[idx]);
         }
     }
 

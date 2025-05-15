@@ -28,7 +28,8 @@ class TrackTree : public QTreeView {
         return musicHeader;
     };
 
-    [[nodiscard]] auto rowMetadata(u16 row) const -> MetadataMap;
+    [[nodiscard]] auto rowMetadata(u16 row) const
+        -> HashMap<TrackProperty, QString>;
     void sortByPath();
     void fillTable(const QStringList& paths);
     void fillTable(QDirIterator& iterator);

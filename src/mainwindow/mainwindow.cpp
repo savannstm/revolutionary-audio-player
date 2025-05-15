@@ -309,11 +309,11 @@ void MainWindow::processArgs(const QStringList& args) {
                                              : firstPathInfo.dir().dirName();
         }
 
-        const i8 index = playlistView->addTab(tabLabel);
+        const u8 index = playlistView->addTab(tabLabel);
 
         TrackTree* tree = playlistView->tree(index);
         tree->fillTable(args);
-        changePlaylist(index);
+        changePlaylist(as<i8>(index));
     }
 }
 
@@ -361,7 +361,7 @@ void MainWindow::dropEvent(QDropEvent* event) {
             return;
         }
 
-        i8 index = playingPlaylist;
+        u8 index = playingPlaylist;
 
         if (tree == nullptr ||
             settings->flags.dragNDropMode == DragDropMode::CreateNewPlaylist) {
@@ -399,28 +399,28 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
         return err(settingsFile.errorString());
     }
 
-    const i8 tabCount = playlistView->tabCount();
+    const u8 tabCount = playlistView->tabCount();
 
     settings->currentTab = playlistView->currentIndex();
     settings->volume = volumeSlider->value();
     settings->tabs = vector<TabObject>(tabCount);
 
-    for (i8 i = 0; i < tabCount; i++) {
-        auto* tree = playlistView->tree(i);
+    for (const u8 tab : range(0, tabCount)) {
+        auto* tree = playlistView->tree(tab);
         auto* model = tree->model();
 
         const u16 rowCount = model->rowCount();
 
-        TabObject& tabObject = settings->tabs[i];
-        tabObject.label = playlistView->tabLabel(i);
-        tabObject.backgroundImagePath = playlistView->backgroundImagePath(i);
+        TabObject& tabObject = settings->tabs[tab];
+        tabObject.label = playlistView->tabLabel(tab);
+        tabObject.backgroundImagePath = playlistView->backgroundImagePath(tab);
         tabObject.tracks = QStringList(rowCount);
 
-        for (u16 row = 0; row < rowCount; row++) {
+        for (const u16 row : range(0, rowCount)) {
             tabObject.tracks[row] = tree->rowMetadata(row)[Path];
         }
 
-        for (u8 column = 0; column < TRACK_PROPERTY_COUNT; column++) {
+        for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
             tabObject.columnProperties[column] = as<TrackProperty>(
                 model->headerData(column, Qt::Horizontal, PROPERTY_ROLE)
                     .toUInt()
@@ -465,10 +465,10 @@ void MainWindow::retranslate(const QLocale::Language language) {
 
     ui->retranslateUi(this);
 
-    const i8 tabCount = playlistView->tabCount();
+    const u8 tabCount = playlistView->tabCount();
     const QStringList propertyLabelMap = trackPropertiesLabels();
 
-    for (i8 tab = 0; tab < tabCount; tab++) {
+    for (const u8 tab : range(0, tabCount)) {
         auto* tree = playlistView->tree(tab);
         auto* model = tree->model();
 
@@ -482,7 +482,7 @@ void MainWindow::retranslate(const QLocale::Language language) {
                               : label
         );
 
-        for (u8 column = 0; column < TRACK_PROPERTY_COUNT; column++) {
+        for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
             model->setHeaderData(
                 column,
                 Qt::Horizontal,
@@ -519,7 +519,7 @@ void MainWindow::loadSettings() {
 
     if (!settings->tabs.empty()) {
         for (const auto& tabObject : settings->tabs) {
-            const i8 index = playlistView->addTab(
+            const u8 index = playlistView->addTab(
                 tabObject.label,
                 tabObject.columnProperties,
                 tabObject.columnStates
@@ -623,7 +623,8 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
 
             const QAction* removePlaylistBackground = nullptr;
 
-            if (playlistView->hasBackgroundImage(playlistView->currentIndex()
+            if (playlistView->hasBackgroundImage(
+                    playlistView->currentIndex()
                 )) {
                 removePlaylistBackground =
                     menu->addAction(tr("Remove Playlist Background"));
@@ -654,7 +655,7 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
                 metadataWindow->setAttribute(Qt::WA_DeleteOnClose);
                 metadataWindow->show();
             } else if (selectedAction == coverAction) {
-                const MetadataMap metadata =
+                const HashMap<TrackProperty, QString> metadata =
                     trackTree->rowMetadata(index.row());
 
                 auto* coverWindow =
@@ -694,7 +695,8 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
                     file
                 );
             } else if (selectedAction == removePlaylistBackground) {
-                playlistView->removeBackgroundImage(playlistView->currentIndex()
+                playlistView->removeBackgroundImage(
+                    playlistView->currentIndex()
                 );
             }
             break;
@@ -721,7 +723,7 @@ void MainWindow::handleHeaderPress(
 
             i8 columnIndex = -1;
 
-            for (u8 column = 1; column < TRACK_PROPERTY_COUNT; column++) {
+            for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
                 if (trackTreeModel
                         ->headerData(column, Qt::Orientation::Horizontal)
                         .toString() == label) {
@@ -791,8 +793,10 @@ void MainWindow::searchTrack() {
             }
         }
 
-        for (u16 row = 0; row < trackTreeModel->rowCount(); row++) {
-            const MetadataMap metadata = trackTree->rowMetadata(row);
+        const u16 rowCount = trackTreeModel->rowCount();
+        for (const u16 row : range(0, rowCount)) {
+            const HashMap<TrackProperty, QString> metadata =
+                trackTree->rowMetadata(row);
             QString fieldValue;
 
             if (hasPrefix) {
@@ -926,7 +930,8 @@ void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
             this,
             tr("Select File"),
             searchDirectory,
-            tr("Audio/Video Files (*.mp3 *.flac *.opus *.aac *.wav *.ogg *.m4a *.mp4 *.mkv)"
+            tr(
+                "Audio/Video Files (*.mp3 *.flac *.opus *.aac *.wav *.ogg *.m4a *.mp4 *.mkv)"
             )
         );
 
@@ -938,7 +943,7 @@ void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
     auto* tree = trackTree;
 
     if (createNewTab || tree == nullptr) {
-        const i8 index = playlistView->addTab(
+        const u8 index = playlistView->addTab(
             settings->flags.playlistNaming == DirectoryName
                 ? QFileInfo(path).fileName()
                 : QString()
@@ -1178,7 +1183,8 @@ void MainWindow::selectTrack(const i32 oldRow, const u16 newRow) {
 void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     playButton->setIcon(pauseIcon);
 
-    const MetadataMap metadata = tree->rowMetadata(index.row());
+    const HashMap<TrackProperty, QString> metadata =
+        tree->rowMetadata(index.row());
     togglePlayback(metadata[Path]);
 
     tree->model()->itemFromIndex(index)->setData(startIcon, Qt::DecorationRole);
@@ -1195,7 +1201,7 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
         );
 
         item->setText(0, label);
-        item->setText(1, metadata[idx]);
+        item->setText(1, metadata[as<TrackProperty>(idx)]);
     }
 
     QPixmap cover;
@@ -1349,9 +1355,9 @@ void MainWindow::stopPlayback() {
 
     dockCoverLabel->clear();
 
-    for (u8 i = 0; i < TRACK_PROPERTY_COUNT - 1; i++) {
+    for (const u8 idx : range(0, TRACK_PROPERTY_COUNT - 1)) {
         auto* item = dockMetadataTree->itemFromIndex(
-            dockMetadataTree->model()->index(as<i32>(i), 0)
+            dockMetadataTree->model()->index(idx, 0)
         );
         item->setText(0, QString());
         item->setText(1, QString());

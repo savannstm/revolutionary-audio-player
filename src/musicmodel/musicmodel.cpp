@@ -2,7 +2,6 @@
 
 #include "constants.hpp"
 #include "musicitem.hpp"
-#include "rapidhasher.hpp"
 
 #include <Qt>
 
@@ -30,8 +29,8 @@ auto MusicModel::removeRows(
     const i32 count,
     const QModelIndex& parent
 ) -> bool {
-    for (i32 i = 0; i < count; i++) {
-        tracks.erase(this->item(row + i, 0)->text());
+    for (const u16 idx : range(0, count)) {
+        tracks.erase(this->item(row + idx, 0)->text());
     }
 
     return QStandardItemModel::removeRows(row, count, parent);
