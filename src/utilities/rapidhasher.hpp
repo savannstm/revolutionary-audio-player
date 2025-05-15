@@ -23,9 +23,12 @@ using rapidhashmap = std::unordered_map<K, V, RapidHasher>;
 template <typename K>
 using rapidhashset = std::unordered_set<K, RapidHasher>;
 
-class MetadataMap : public rapidhashmap<u8, QString> {
+template <typename K, typename V>
+class HashMap : public rapidhashmap<K, V> {
    public:
-    [[nodiscard]] auto operator[](const u8 key) const -> const QString& {
-        return find(key)->second;
+    using rapidhashmap<K, V>::rapidhashmap;
+
+    [[nodiscard]] auto operator[](const K& key) const -> const V& {
+        return rapidhashmap<K, V>::find(key)->second;
     }
 };
