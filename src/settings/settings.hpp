@@ -28,8 +28,8 @@ inline auto fromJsonArray(const QJsonArray& jsonArray) -> array<T, N> {
     array<T, N> result;
     const u16 count = min<u16>(jsonArray.size(), N);
 
-    for (u16 i = 0; i < count; i++) {
-        result[i] = jsonArray[i].toVariant().value<T>();
+    for (const u16 idx : range(0, count)) {
+        result[idx] = jsonArray[idx].toVariant().value<T>();
     }
 
     return result;
@@ -67,7 +67,12 @@ class TabObject {
         json["label"] = label;
         json["backgroundImagePath"] = backgroundImagePath;
         json["tracks"] = QJsonArray::fromStringList(tracks);
-        json["columnProperties"] = toJsonArray(columnProperties);
+        json["columnProperties"] = toJsonArray(
+            span<const f32>(
+                reinterpret_cast<const f32*>(columnProperties.data()),
+                TRACK_PROPERTY_COUNT
+            )
+        );
         json["columnStates"] = toJsonArray(columnStates);
         return json;
     }
@@ -81,26 +86,39 @@ class TabObject {
 
 class EqualizerSettings {
    public:
-    explicit EqualizerSettings() {
-        gains.fill(0);
-        memcpy(
-            frequencies.data(),
-            TEN_BAND_FREQUENCIES.data(),
-            TEN_BANDS * SAMPLE_SIZE
-        );
-    };
+    EqualizerSettings() = default;
 
     explicit EqualizerSettings(const QJsonObject& obj) {
         enabled = obj["enabled"].toBool();
         bandIndex = obj["bandIndex"].toInt();
+        presetIndex = obj["presetIndex"].toInt();
 
-        if (obj.contains("gains")) {
-            gains = fromJsonArray<i8, THIRTY_BANDS>(obj["gains"].toArray());
-        }
+        if (obj.contains("presets")) {
+            const QJsonObject presetsObj = obj["presets"].toObject();
 
-        if (obj.contains("frequencies")) {
-            frequencies =
-                fromJsonArray<f32, THIRTY_BANDS>(obj["frequencies"].toArray());
+            for (const QString& bandKey : { "10", "18", "30" }) {
+                if (presetsObj.contains(bandKey)) {
+                    const QJsonObject bandPresetsObj =
+                        presetsObj[bandKey].toObject();
+                    QMap<QString, QVector<i8>> bandPresets;
+
+                    for (const QString& presetName : bandPresetsObj.keys()) {
+                        const auto gainsArray =
+                            bandPresetsObj[presetName].toArray();
+
+                        QVector<i8> gainsVec;
+                        gainsVec.reserve(gainsArray.size());
+
+                        for (const auto& val : gainsArray) {
+                            gainsVec.emplace_back(static_cast<i8>(val.toInt()));
+                        }
+
+                        bandPresets[presetName] = std::move(gainsVec);
+                    }
+
+                    presets[bandKey.toInt()] = std::move(bandPresets);
+                }
+            }
         }
     }
 
@@ -108,15 +126,36 @@ class EqualizerSettings {
         QJsonObject json;
         json["enabled"] = enabled;
         json["bandIndex"] = bandIndex;
-        json["gains"] = toJsonArray(gains);
-        json["frequencies"] = toJsonArray(frequencies);
+        json["presetIndex"] = presetIndex;
+
+        QJsonObject presetsObj;
+
+        for (const auto& [bandKey, bandPresets] : presets.toStdMap()) {
+            QJsonObject bandPresetsObj;
+
+            for (const auto& [presetName, gainsVec] : bandPresets.toStdMap()) {
+                QJsonArray gainsArray;
+
+                for (const auto& val : gainsVec) {
+                    gainsArray.append(val);
+                }
+
+                bandPresetsObj[presetName] = gainsArray;
+            }
+
+            presetsObj[QString::number(bandKey)] = bandPresetsObj;
+        }
+
+        json["presets"] = presetsObj;
         return json;
     }
 
     bool enabled = false;
     u8 bandIndex = 2;
-    array<i8, THIRTY_BANDS> gains;
-    array<f32, THIRTY_BANDS> frequencies;
+    u16 presetIndex = 0;
+    QMap<i32, QMap<QString, QVector<i8>>> presets = { { TEN_BANDS, {} },
+                                                      { EIGHTEEN_BANDS, {} },
+                                                      { THIRTY_BANDS, {} } };
 };
 
 class SettingsFlags {
@@ -147,12 +186,18 @@ class SettingsFlags {
         return json;
     }
 
-    // TODO: Automatically set the background from track cover
-    // TODO: Prioritize embedded/external
     Style applicationStyle;
     DragDropMode dragNDropMode = DragDropMode::CreateNewPlaylist;
     PlaylistNaming playlistNaming = PlaylistNaming::DirectoryName;
+
+    // Open in RAP context menu entry.
     bool contextMenuEntryEnabled = false;
+
+    // Automatically set the playlist background from the track cover.
+    bool autoSetBackground = false;
+
+    // Prioritize external (cover.jpg/cover.png) cover over embedded.
+    bool prioritizeExternal = false;
 };
 
 class DockWidgetSettings {
