@@ -86,34 +86,235 @@
 <context>
     <name>EqualizerMenu</name>
     <message>
-        <location filename="../src/equalizermenu/equalizermenu.cpp" line="36"/>
-        <location filename="../src/equalizermenu/equalizermenu.cpp" line="44"/>
         <source>Equalizer disabled</source>
-        <translation>Эквалайзер выключен</translation>
+        <translation type="vanished">Эквалайзер выключен</translation>
     </message>
     <message>
-        <location filename="../src/equalizermenu/equalizermenu.cpp" line="44"/>
         <source>Equalizer enabled</source>
-        <translation>Эквалайзер включен</translation>
+        <translation type="vanished">Эквалайзер включен</translation>
     </message>
     <message>
-        <location filename="../src/equalizermenu/equalizermenu.cpp" line="83"/>
+        <location filename="../src/equalizermenu/equalizermenu.cpp" line="144"/>
+        <location filename="../src/equalizermenu/equalizermenu.hpp" line="55"/>
+        <source>%1 Hz</source>
+        <translation>%1 Гц</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.cpp" line="363"/>
+        <source>Enabled</source>
+        <translation>Включено</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.cpp" line="375"/>
+        <source>New preset</source>
+        <translation>Новый пресет</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.cpp" line="129"/>
+        <location filename="../src/equalizermenu/equalizermenu.hpp" line="54"/>
         <source>dB</source>
         <translation>дБ</translation>
     </message>
     <message>
-        <location filename="../src/equalizermenu/equalizermenu.cpp" line="96"/>
         <source>Hz</source>
-        <translation>Гц</translation>
+        <translation type="vanished">Гц</translation>
     </message>
     <message>
         <source>%1Hz</source>
         <translation type="vanished">%1Гц</translation>
     </message>
     <message>
-        <location filename="../src/equalizermenu/equalizermenu.hpp" line="45"/>
         <source>Bands:</source>
-        <translation>Диапазон:</translation>
+        <translation type="vanished">Диапазон:</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="71"/>
+        <source>Reset Gains</source>
+        <translation>Сбросить ручки</translation>
+    </message>
+    <message>
+        <source>Reset Frequencies</source>
+        <translation type="vanished">Сбросить частоты</translation>
+    </message>
+    <message>
+        <source>Reset All</source>
+        <translation type="vanished">Сбросить всё</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="20"/>
+        <source>Equalizer Menu</source>
+        <translation>Меню эквалайзера</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="78"/>
+        <source>New Preset</source>
+        <translation>Новый пресет</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="91"/>
+        <source>Presets</source>
+        <translation>Пресеты</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="108"/>
+        <source>Select Preset</source>
+        <translation>Выбрать пресет</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="113"/>
+        <source>Hip-hop</source>
+        <translation>Хип-хоп</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="118"/>
+        <source>R&amp;B</source>
+        <translation>РнБ</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="123"/>
+        <source>Deep</source>
+        <translation>Глубина</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="128"/>
+        <source>Speech</source>
+        <translation>Речь</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="133"/>
+        <source>Vocal</source>
+        <translation>Вокал</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="138"/>
+        <source>Piano</source>
+        <translation>Пианино</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="143"/>
+        <source>Jazz</source>
+        <translation>Джаз</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="148"/>
+        <source>Rock</source>
+        <translation>Рок</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="153"/>
+        <source>Metal</source>
+        <translation>Метал</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="158"/>
+        <source>Classic</source>
+        <translation>Классика</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="163"/>
+        <source>Alternative</source>
+        <translation>Альтернатива</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="168"/>
+        <source>Techno</source>
+        <translation>Техно</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="173"/>
+        <source>Drum&apos;n&apos;Bass</source>
+        <translation>Драм&apos;н&apos;басс</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="178"/>
+        <source>Electronic</source>
+        <translation>Электроника</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="183"/>
+        <source>Bass Reducer</source>
+        <translation>Меньше баса</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="188"/>
+        <source>Bass Booster</source>
+        <translation>Больше баса</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="193"/>
+        <source>Full Treble</source>
+        <translation>Полный верх</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="198"/>
+        <source>Full Bass</source>
+        <translation>Полный бас</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="203"/>
+        <source>Loudness</source>
+        <translation>Громкость</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="208"/>
+        <source>Pop</source>
+        <translation>Поп</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="213"/>
+        <source>Indie</source>
+        <translation>Инди</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="218"/>
+        <source>Reggae</source>
+        <translation>Регги</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="223"/>
+        <source>Ska</source>
+        <translation>Ска</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="228"/>
+        <source>Full Bass &amp; Treble</source>
+        <translation>Полный бас и верха</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="248"/>
+        <source>Bands</source>
+        <translation>Ручки</translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="271"/>
+        <source>3</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="276"/>
+        <source>5</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="281"/>
+        <source>10</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="286"/>
+        <source>18</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="291"/>
+        <source>30</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="398"/>
+        <location filename="../src/equalizermenu/equalizermenu.cpp" line="363"/>
+        <source>Disabled</source>
+        <translation>Выключено</translation>
     </message>
 </context>
 <context>
@@ -248,23 +449,23 @@
     </message>
     <message>
         <location filename="../src/mainwindow/mainwindow.ui" line="747"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1213"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1021"/>
         <source>Repeat</source>
         <translation>Повторение</translation>
     </message>
     <message>
         <location filename="../src/mainwindow/mainwindow.ui" line="807"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="502"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1142"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1143"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1235"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1236"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1353"/>
         <source>Play</source>
         <translation>Проиграть</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1130"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1131"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1152"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1153"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1223"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1224"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1245"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1246"/>
         <source>Pause</source>
         <translation>Пауза</translation>
     </message>
@@ -318,17 +519,17 @@
         <translation type="vanished">Не удалось открыть настройки</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="766"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="606"/>
         <source>Remove Track</source>
         <translation>Удалить композицию</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="773"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="613"/>
         <source>Remove Selection</source>
         <translation>Удалить выбранное</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="777"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="617"/>
         <source>Clear All Tracks</source>
         <translation>Убрать все композиции</translation>
     </message>
@@ -341,12 +542,12 @@
         <translation type="vanished">Название композиции</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="280"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="279"/>
         <source>Track name/property</source>
         <translation>Название композиции/свойство</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="638"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="481"/>
         <source>Playlist %1</source>
         <translation>Плейлист %1</translation>
     </message>
@@ -360,7 +561,7 @@
         <translation type="vanished">Метаданные композиций</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="780"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="620"/>
         <source>Show Cover</source>
         <translation>Показать обложку</translation>
     </message>
@@ -385,78 +586,78 @@
         <translation type="vanished">Показывать метаданные</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="779"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="619"/>
         <source>Show Track Metadata</source>
         <translation>Показать метаданные композиции</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="782"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="622"/>
         <source>Set Playlist Background</source>
         <translation>Установить фон плейлиста</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="789"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="630"/>
         <source>Remove Playlist Background</source>
         <translation>Удалить фон плейлиста</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="843"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1087"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="684"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="931"/>
         <source>Select File</source>
         <translation>Выберите файл</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="845"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="686"/>
         <source>Image Files (*.png *.jpg *.jpeg)</source>
         <translation>Файлы изображений (*.png *.jpg *.jpeg)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="950"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="792"/>
         <source>Incorrect property!</source>
         <translation>Неверное свойство!</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1065"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="909"/>
         <source>Select Directory</source>
         <translation>Выбор папки</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1077"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="921"/>
         <source>Invalid Path</source>
         <translation>Неправильный путь</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1078"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="922"/>
         <source>Cannot search by root or home path.</source>
         <translation>Нельзя искать по корню или в домашней папке.</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1089"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="933"/>
         <source>Audio/Video Files (*.mp3 *.flac *.opus *.aac *.wav *.ogg *.m4a *.mp4 *.mkv)</source>
         <translation>Аудио/видео файлы (*.mp3 *.flac *.opus *.aac *.wav *.ogg *.m4a *.mp4 *.mkv)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1201"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1009"/>
         <source>Repeat (Playlist)</source>
         <translation>Повторение (Плейлист)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1206"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1014"/>
         <source>Repeat (Track)</source>
         <translation>Повторение (Композиция)</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1241"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1049"/>
         <source>Save Failed!</source>
         <translation>Сохранение не удалось!</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1246"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1054"/>
         <source>Try Again</source>
         <translation>Попробовать снова</translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1248"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1056"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
@@ -472,17 +673,17 @@
 <context>
     <name>MetadataWindow</name>
     <message>
-        <location filename="../src/metadatawindow/metadatawindow.cpp" line="8"/>
+        <location filename="../src/metadatawindow/metadatawindow.cpp" line="10"/>
         <source>%1: Metadata</source>
         <translation>%1: Метаданные</translation>
     </message>
     <message>
-        <location filename="../src/metadatawindow/metadatawindow.cpp" line="11"/>
+        <location filename="../src/metadatawindow/metadatawindow.cpp" line="13"/>
         <source>Property</source>
         <translation>Свойство</translation>
     </message>
     <message>
-        <location filename="../src/metadatawindow/metadatawindow.cpp" line="11"/>
+        <location filename="../src/metadatawindow/metadatawindow.cpp" line="13"/>
         <source>Value</source>
         <translation>Значение</translation>
     </message>
@@ -533,7 +734,7 @@
 <context>
     <name>PlaylistTabBar</name>
     <message>
-        <location filename="../src/playlisttabbar/playlisttabbar.cpp" line="28"/>
+        <location filename="../src/playlisttabbar/playlisttabbar.cpp" line="26"/>
         <source>Playlist %1</source>
         <translation>Плейлист %1</translation>
     </message>
@@ -541,12 +742,12 @@
 <context>
     <name>PlaylistView</name>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="529"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="535"/>
         <source>Select Output Directory</source>
         <translation>Выберите выходную директорию</translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="543"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="549"/>
         <source>Playlist already exists</source>
         <translation>Плейлист уже существует</translation>
     </message>
@@ -555,48 +756,48 @@
         <translation type="vanished">Переписать его?</translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="544"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="550"/>
         <source>Playlist already exists. Rewrite it?</source>
         <translation>Плейлист уже существует. Переписать его?</translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="568"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="574"/>
         <source>Unable to export playlist</source>
         <translation>Невозможно экспортировать плейлист</translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="569"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="575"/>
         <source>Error: %1</source>
         <translation>Ошибка: %1</translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="580"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="586"/>
         <source>XSPF Playlist (*.xspf)</source>
         <translation>Плейлист XSPF (*.xspf)</translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="581"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="587"/>
         <source>M3U8 Playlist (*.m3u8)</source>
         <translation>Плейлист M3U8 (*.m3u8)</translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="585"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="591"/>
         <source>Open Playlist File</source>
         <translation>Выберите файл плейлиста</translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="598"/>
-        <location filename="../src/playlistview/playlistview.cpp" line="619"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="604"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="625"/>
         <source>Error</source>
         <translation>Ошибка</translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="641"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="647"/>
         <source>No Files Found</source>
         <translation>Файлы не найдены</translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="642"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="648"/>
         <source>No valid tracks were found in the playlist.</source>
         <translation>В плейлисте не было обнаружено подходящих композиций.</translation>
     </message>

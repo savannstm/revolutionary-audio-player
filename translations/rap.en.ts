@@ -83,29 +83,206 @@
 <context>
     <name>EqualizerMenu</name>
     <message>
-        <location filename="../src/equalizermenu/equalizermenu.cpp" line="36"/>
-        <location filename="../src/equalizermenu/equalizermenu.cpp" line="44"/>
-        <source>Equalizer disabled</source>
+        <location filename="../src/equalizermenu/equalizermenu.cpp" line="144"/>
+        <location filename="../src/equalizermenu/equalizermenu.hpp" line="55"/>
+        <source>%1 Hz</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/equalizermenu/equalizermenu.cpp" line="44"/>
-        <source>Equalizer enabled</source>
+        <location filename="../src/equalizermenu/equalizermenu.cpp" line="363"/>
+        <source>Enabled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/equalizermenu/equalizermenu.cpp" line="83"/>
+        <location filename="../src/equalizermenu/equalizermenu.cpp" line="375"/>
+        <source>New preset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.cpp" line="129"/>
+        <location filename="../src/equalizermenu/equalizermenu.hpp" line="54"/>
         <source>dB</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/equalizermenu/equalizermenu.cpp" line="96"/>
-        <source>Hz</source>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="71"/>
+        <source>Reset Gains</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/equalizermenu/equalizermenu.hpp" line="45"/>
-        <source>Bands:</source>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="20"/>
+        <source>Equalizer Menu</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="78"/>
+        <source>New Preset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="91"/>
+        <source>Presets</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="108"/>
+        <source>Select Preset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="113"/>
+        <source>Hip-hop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="118"/>
+        <source>R&amp;B</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="123"/>
+        <source>Deep</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="128"/>
+        <source>Speech</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="133"/>
+        <source>Vocal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="138"/>
+        <source>Piano</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="143"/>
+        <source>Jazz</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="148"/>
+        <source>Rock</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="153"/>
+        <source>Metal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="158"/>
+        <source>Classic</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="163"/>
+        <source>Alternative</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="168"/>
+        <source>Techno</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="173"/>
+        <source>Drum&apos;n&apos;Bass</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="178"/>
+        <source>Electronic</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="183"/>
+        <source>Bass Reducer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="188"/>
+        <source>Bass Booster</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="193"/>
+        <source>Full Treble</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="198"/>
+        <source>Full Bass</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="203"/>
+        <source>Loudness</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="208"/>
+        <source>Pop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="213"/>
+        <source>Indie</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="218"/>
+        <source>Reggae</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="223"/>
+        <source>Ska</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="228"/>
+        <source>Full Bass &amp; Treble</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="248"/>
+        <source>Bands</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="271"/>
+        <source>3</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="276"/>
+        <source>5</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="281"/>
+        <source>10</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="286"/>
+        <source>18</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="291"/>
+        <source>30</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/equalizermenu/equalizermenu.ui" line="398"/>
+        <location filename="../src/equalizermenu/equalizermenu.cpp" line="363"/>
+        <source>Disabled</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -242,23 +419,23 @@
     </message>
     <message>
         <location filename="../src/mainwindow/mainwindow.ui" line="747"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1213"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1021"/>
         <source>Repeat</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/mainwindow/mainwindow.ui" line="807"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="502"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1142"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1143"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1235"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1236"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1353"/>
         <source>Play</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1130"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1131"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1152"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1153"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1223"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1224"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1245"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1246"/>
         <source>Pause</source>
         <translation type="unfinished"></translation>
     </message>
@@ -304,108 +481,108 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="766"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="606"/>
         <source>Remove Track</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="773"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="613"/>
         <source>Remove Selection</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="777"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="617"/>
         <source>Clear All Tracks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="280"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="279"/>
         <source>Track name/property</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="638"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="481"/>
         <source>Playlist %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="780"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="620"/>
         <source>Show Cover</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="779"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="619"/>
         <source>Show Track Metadata</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="782"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="622"/>
         <source>Set Playlist Background</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="789"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="630"/>
         <source>Remove Playlist Background</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="843"/>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1087"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="684"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="931"/>
         <source>Select File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="845"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="686"/>
         <source>Image Files (*.png *.jpg *.jpeg)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="950"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="792"/>
         <source>Incorrect property!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1065"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="909"/>
         <source>Select Directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1077"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="921"/>
         <source>Invalid Path</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1078"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="922"/>
         <source>Cannot search by root or home path.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1089"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="933"/>
         <source>Audio/Video Files (*.mp3 *.flac *.opus *.aac *.wav *.ogg *.m4a *.mp4 *.mkv)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1201"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1009"/>
         <source>Repeat (Playlist)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1206"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1014"/>
         <source>Repeat (Track)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1241"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1049"/>
         <source>Save Failed!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1246"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1054"/>
         <source>Try Again</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/mainwindow/mainwindow.cpp" line="1248"/>
+        <location filename="../src/mainwindow/mainwindow.cpp" line="1056"/>
         <source>Cancel</source>
         <translation type="unfinished"></translation>
     </message>
@@ -413,17 +590,17 @@
 <context>
     <name>MetadataWindow</name>
     <message>
-        <location filename="../src/metadatawindow/metadatawindow.cpp" line="8"/>
+        <location filename="../src/metadatawindow/metadatawindow.cpp" line="10"/>
         <source>%1: Metadata</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/metadatawindow/metadatawindow.cpp" line="11"/>
+        <location filename="../src/metadatawindow/metadatawindow.cpp" line="13"/>
         <source>Property</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/metadatawindow/metadatawindow.cpp" line="11"/>
+        <location filename="../src/metadatawindow/metadatawindow.cpp" line="13"/>
         <source>Value</source>
         <translation type="unfinished"></translation>
     </message>
@@ -474,7 +651,7 @@
 <context>
     <name>PlaylistTabBar</name>
     <message>
-        <location filename="../src/playlisttabbar/playlisttabbar.cpp" line="28"/>
+        <location filename="../src/playlisttabbar/playlisttabbar.cpp" line="26"/>
         <source>Playlist %1</source>
         <translation type="unfinished"></translation>
     </message>
@@ -482,58 +659,58 @@
 <context>
     <name>PlaylistView</name>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="529"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="535"/>
         <source>Select Output Directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="543"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="549"/>
         <source>Playlist already exists</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="544"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="550"/>
         <source>Playlist already exists. Rewrite it?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="568"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="574"/>
         <source>Unable to export playlist</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="569"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="575"/>
         <source>Error: %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="580"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="586"/>
         <source>XSPF Playlist (*.xspf)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="581"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="587"/>
         <source>M3U8 Playlist (*.m3u8)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="585"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="591"/>
         <source>Open Playlist File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="598"/>
-        <location filename="../src/playlistview/playlistview.cpp" line="619"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="604"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="625"/>
         <source>Error</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="641"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="647"/>
         <source>No Files Found</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/playlistview/playlistview.cpp" line="642"/>
+        <location filename="../src/playlistview/playlistview.cpp" line="648"/>
         <source>No valid tracks were found in the playlist.</source>
         <translation type="unfinished"></translation>
     </message>
