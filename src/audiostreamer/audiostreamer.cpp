@@ -118,6 +118,11 @@ void AudioStreamer::start(const QString& path) {
 }
 
 void AudioStreamer::equalizeBuffer(QByteArray& buf) {
+    if (!eqEnabled ||
+        ranges::all_of(gains_, [](const i8 gain) { return gain == 0; })) {
+        return;
+    }
+
     const u8 channels = codecContext->ch_layout.nb_channels;
     const u16 sampleRate = codecContext->sample_rate;
     const i32 samplesNumber = as<i32>(buf.size() / (SAMPLE_SIZE * channels));
@@ -181,11 +186,6 @@ auto AudioStreamer::processFrame() -> bool {
         frame->nb_samples * SAMPLE_SIZE * frame->ch_layout.nb_channels;
 
     buffer.append(ras<cstr>(frame->data[0]), bufferSize);
-
-    if (eqEnabled &&
-        !ranges::all_of(gains_, [](const i8 gain) { return gain == 0; })) {
-        equalizeBuffer(buffer);
-    }
 
     nextBufferSize = buffer.size();
     return nextBufferSize >= MIN_BUFFER_SIZE;
@@ -286,6 +286,7 @@ void AudioStreamer::prepareBuffer() {
 
     if (formatName.starts_with("pcm")) {
         decodeRaw();
+        equalizeBuffer(buffer);
         return;
     }
 
@@ -313,6 +314,7 @@ void AudioStreamer::prepareBuffer() {
             }
 
             if (processFrame()) {
+                equalizeBuffer(buffer);
                 av_frame_unref(frame.get());
                 return;
             }
