@@ -7,6 +7,7 @@
 #include <juce_dsp/juce_dsp.h>
 
 #include <QAudioFormat>
+#include <QDebug>
 #include <QIODevice>
 
 using namespace FFmpeg;
@@ -67,8 +68,8 @@ class AudioStreamer : public QIODevice {
         return playbackSecond;
     }
 
-    auto err2str(const i32 err) -> cstr {
-        return av_make_error_string(errBuf.data(), errBuf.size(), err);
+    void printErr(const i32 err) {
+        qWarning() << av_make_error_string(errBuf.data(), errBuf.size(), err);
     }
 
    signals:
@@ -87,7 +88,7 @@ class AudioStreamer : public QIODevice {
     inline void prepareBuffer();
     inline void initFilters();
     void decodeRaw();
-    auto processFrame(AVFrame* frame, AVCodecContext* codecContext) -> bool;
+    auto processFrame() -> bool;
     [[nodiscard]] inline auto second() const -> u16;
 
     FormatContextPtr formatContext;
@@ -106,6 +107,10 @@ class AudioStreamer : public QIODevice {
 
     // For raw formats
     u32 totalBytesRead = 0;
+    u8 inputSampleSize = 0;
+    u32 bytesPerSecond = 0;
+
+    string_view formatName;
 
     bool eqEnabled = false;
 

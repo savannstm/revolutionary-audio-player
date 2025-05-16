@@ -2,8 +2,6 @@
 
 #include <libavutil/avutil.h>
 
-#include <QDebug>
-
 constexpr i32 MIN_BUFFER_SIZE = 16384;
 
 AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
@@ -25,7 +23,7 @@ void AudioStreamer::start(const QString& path) {
     );
 
     if (err < 0) {
-        qWarning() << err2str(err);
+        printErr(err);
         return;
     }
 
@@ -34,7 +32,7 @@ void AudioStreamer::start(const QString& path) {
     err = avformat_find_stream_info(formatContextPtr, nullptr);
 
     if (err < 0) {
-        qWarning() << err2str(err);
+        printErr(err);
         return;
     }
 
@@ -51,7 +49,7 @@ void AudioStreamer::start(const QString& path) {
     err = audioStreamIndex;
 
     if (err < 0) {
-        qWarning() << err2str(err);
+        printErr(err);
         return;
     }
 
@@ -64,7 +62,7 @@ void AudioStreamer::start(const QString& path) {
     err = avcodec_open2(codecContextPtr, codec, nullptr);
 
     if (err < 0) {
-        qWarning() << err2str(err);
+        printErr(err);
         return;
     }
 
@@ -87,7 +85,7 @@ void AudioStreamer::start(const QString& path) {
     );
 
     if (err < 0) {
-        qWarning() << err2str(err);
+        printErr(err);
         return;
     }
 
@@ -107,6 +105,14 @@ void AudioStreamer::start(const QString& path) {
 
     initFilters();
     prepareBuffer();
+
+    formatName = codecContextPtr->codec->name;
+    u8 inputSampleSize = av_get_bytes_per_sample(codecContext->sample_fmt);
+    u32 bytesPerSecond =
+        as<u32>(
+            codecContext->sample_rate * codecContext->ch_layout.nb_channels
+        ) *
+        inputSampleSize;
 
     open(QIODevice::ReadOnly);
 }
@@ -151,8 +157,7 @@ void AudioStreamer::equalizeBuffer(QByteArray& buf) {
     }
 }
 
-auto AudioStreamer::processFrame(AVFrame* frame, AVCodecContext* codecContext)
-    -> bool {
+auto AudioStreamer::processFrame() -> bool {
     const f64 timestamp = as<f64>(
         (frame->pts != AV_NOPTS_VALUE) ? frame->pts
                                        : frame->best_effort_timestamp
@@ -168,20 +173,12 @@ auto AudioStreamer::processFrame(AVFrame* frame, AVCodecContext* codecContext)
         newFrame->sample_rate = codecContext->sample_rate;
         newFrame->format = AV_SAMPLE_FMT_FLT;
 
-        swr_convert_frame(swrContext.get(), newFrame, frame);
-        av_frame_unref(frame);
-        frame = newFrame;
+        swr_convert_frame(swrContext.get(), newFrame, frame.get());
+        frame.reset(newFrame);
     }
 
-    const i32 bufferSize =
-        frame->nb_samples *
-        av_get_bytes_per_sample(as<AVSampleFormat>(frame->format)) *
-        frame->ch_layout.nb_channels;
-
-    if (bufferSize < 0) {
-        qWarning() << err2str(bufferSize);
-        return true;
-    }
+    const u32 bufferSize =
+        frame->nb_samples * SAMPLE_SIZE * frame->ch_layout.nb_channels;
 
     buffer.append(ras<cstr>(frame->data[0]), bufferSize);
 
@@ -194,23 +191,17 @@ auto AudioStreamer::processFrame(AVFrame* frame, AVCodecContext* codecContext)
     return nextBufferSize >= MIN_BUFFER_SIZE;
 }
 
+// TODO: For some reason, skips a little of data at the start
 // Only handles pcm_i*le and pcm_f32
 void AudioStreamer::decodeRaw() {
-    auto* codecContextPtr = codecContext.get();
-    auto* formatContextPtr = formatContext.get();
-
-    const u8 sampleSize = av_get_bytes_per_sample(codecContextPtr->sample_fmt);
     buffer.resize(MIN_BUFFER_SIZE);
 
-    if (avio_feof(formatContextPtr->pb) < 0) {
+    if (avio_feof(formatContext->pb) < 0) {
         return;
     }
 
-    const i32 bytesRead = avio_read(
-        formatContextPtr->pb,
-        ras<u8*>(buffer.data()),
-        MIN_BUFFER_SIZE
-    );
+    const i32 bytesRead =
+        avio_read(formatContext->pb, ras<u8*>(buffer.data()), MIN_BUFFER_SIZE);
 
     if (bytesRead <= 0) {
         return;
@@ -218,22 +209,16 @@ void AudioStreamer::decodeRaw() {
 
     totalBytesRead += bytesRead;
 
-    const u32 bytesPerSecond = as<u32>(
-                                   codecContextPtr->sample_rate *
-                                   codecContextPtr->ch_layout.nb_channels
-                               ) *
-                               sampleSize;
-
     playbackSecond = as<u16>(totalBytesRead / bytesPerSecond);
 
-    const u32 sampleCount = bytesRead / sampleSize;
+    const u32 sampleCount = bytesRead / inputSampleSize;
 
     QByteArray tempBuffer;
     tempBuffer.resize(as<u32>(sampleCount * SAMPLE_SIZE));
 
     f32* floatSamples = ras<f32*>(tempBuffer.data());
 
-    switch (sampleSize) {
+    switch (inputSampleSize) {
         case sizeof(i8): {
             const i8* samples = ras<const i8*>(buffer.constData());
 
@@ -254,7 +239,7 @@ void AudioStreamer::decodeRaw() {
             const u8* samples = ras<const u8*>(buffer.constData());
 
             for (const u32 idx : range(0, sampleCount)) {
-                const u32 offset = idx * sampleSize;
+                const u32 offset = idx * inputSampleSize;
                 i32 value = (samples[offset]) |
                             (samples[offset + 1] << sizeof(i8)) |
                             (samples[offset + 2] << sizeof(i16));
@@ -278,6 +263,12 @@ void AudioStreamer::decodeRaw() {
                     floatSamples[idx] =
                         as<f32>(samples[idx]) / as<f32>(INT32_MAX);
                 }
+            } else {
+                memcpy(
+                    tempBuffer.data(),
+                    buffer.constData(),
+                    tempBuffer.size()
+                );
             }
             break;
         }
@@ -287,62 +278,45 @@ void AudioStreamer::decodeRaw() {
 
     buffer = std::move(tempBuffer);
     nextBufferSize = buffer.size();
-
-    // TODO: For some reason, skips a little of data at the start
 }
 
 void AudioStreamer::prepareBuffer() {
-    i32 err;
-
     nextBufferSize = 0;
     buffer.clear();
 
-    auto* codecContextPtr = codecContext.get();
-    auto* formatContextPtr = formatContext.get();
-    auto* packetPtr = packet.get();
-    auto* framePtr = frame.get();
-
-    const cstr format = codecContextPtr->codec->name;
-    const string_view view = format;
-
-    if (view.starts_with("pcm")) {
+    if (formatName.starts_with("pcm")) {
         decodeRaw();
         return;
     }
 
-    while (av_read_frame(formatContextPtr, packetPtr) >= 0) {
+    while (av_read_frame(formatContext.get(), packet.get()) >= 0) {
         if (packet->stream_index != audioStreamIndex) {
-            av_packet_unref(packetPtr);
+            av_packet_unref(packet.get());
             continue;
         }
 
-        err = avcodec_send_packet(codecContextPtr, packetPtr);
-        av_packet_unref(packetPtr);
+        i32 err = avcodec_send_packet(codecContext.get(), packet.get());
+        av_packet_unref(packet.get());
 
         if (err < 0) {
-            qWarning() << err2str(err);
+            printErr(err);
             continue;
         }
 
         while (true) {
-            err = avcodec_receive_frame(codecContextPtr, framePtr);
+            err = avcodec_receive_frame(codecContext.get(), frame.get());
 
             if (err < 0) {
-                qWarning() << err2str(err);
+                av_frame_unref(frame.get());
+                printErr(err);
                 break;
             }
 
-            const bool end = processFrame(framePtr, codecContextPtr);
-            av_frame_unref(framePtr);
-
-            if (end) {
+            if (processFrame()) {
+                av_frame_unref(frame.get());
                 return;
             }
         }
-    }
-
-    if (err < 0) {
-        qWarning() << err2str(err);
     }
 }
 
@@ -379,7 +353,13 @@ auto AudioStreamer::reset() -> bool {
     nextBufferSize = 0;
     audioStreamIndex = 0;
     secondsDuration = 0;
+    playbackSecond = 0;
+
     totalBytesRead = 0;
+    inputSampleSize = 0;
+    bytesPerSecond = 0;
+
+    formatName = "";
 
     return true;
 }
