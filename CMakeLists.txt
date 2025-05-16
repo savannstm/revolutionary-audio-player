@@ -24,7 +24,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 # Find required packages
-find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent LinguistTools Gui)
 find_package(JUCE REQUIRED)
 find_package(CImg CONFIG REQUIRED)
 
@@ -92,6 +92,7 @@ target_link_directories(${PROJECT_NAME} PRIVATE
 
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
+    Qt6::Gui
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::Concurrent
