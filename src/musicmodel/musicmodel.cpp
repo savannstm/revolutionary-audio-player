@@ -1,6 +1,7 @@
 #include "musicmodel.hpp"
 
 #include "constants.hpp"
+#include "enums.hpp"
 #include "musicitem.hpp"
 
 #include <Qt>
@@ -30,7 +31,11 @@ auto MusicModel::removeRows(
     const QModelIndex& parent
 ) -> bool {
     for (const u16 idx : range(0, count)) {
-        tracks.erase(this->item(row + idx, 0)->text());
+        for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
+            if (trackProperty(column) == Title) {
+                tracks.erase(this->item(row + idx, column)->text());
+            }
+        }
     }
 
     return QStandardItemModel::removeRows(row, count, parent);
