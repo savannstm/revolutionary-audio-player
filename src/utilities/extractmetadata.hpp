@@ -16,14 +16,10 @@ extern "C" {
 
 using namespace FFmpeg;
 
-// Maximum, is, I think, 510 kbps in Vorbis encoding, but ChatGPT said it can go
-// up to 530 kbps in AAC. So I just added this offset, just to be save.
-constexpr u16 MAX_LOSSY_BITRATE = 550;
-
 inline auto roundBitrate(const u32 bitrate) -> QString {
     const u32 kbps = bitrate / KB_BYTES;
 
-    if (kbps > MAX_LOSSY_BITRATE) {
+    if (kbps < MIN_LOSSY_BITRATE || kbps > MAX_LOSSY_BITRATE) {
         return u"%1k"_s.arg(kbps);
     }
 

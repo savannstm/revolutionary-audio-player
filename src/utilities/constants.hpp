@@ -51,9 +51,12 @@ constexpr array<f32, FIVE_BANDS> FIVE_BAND_FREQUENCIES = { 63,
 constexpr array<f32, THREE_BANDS> THREE_BAND_FREQUENCIES = { 100, 1000, 10000 };
 
 // Standard bitrates (in kbps)
-constexpr array<u16, 18> STANDARD_BITRATES = { 32,  40,  48,  56,  64,  80,
+constexpr array<u16, 17> STANDARD_BITRATES = { 32,  40,  48,  56,  64,  80,
                                                96,  112, 128, 160, 192, 224,
-                                               256, 320, 350, 384, 448, 510 };
+                                               256, 320, 350, 450, 510 };
+constexpr u16 MAX_LOSSY_BITRATE =
+    STANDARD_BITRATES[STANDARD_BITRATES.size() - 1];
+constexpr u16 MIN_LOSSY_BITRATE = STANDARD_BITRATES[0];
 
 // Volume limits
 constexpr u8 MAX_VOLUME = 100;
