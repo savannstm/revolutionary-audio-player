@@ -6,6 +6,40 @@
 #include <QMenu>
 #include <QPixmap>
 
+CoverWindow::CoverWindow(
+    const QString& coverPath,  // NOLINT
+    const QString& title,
+    QWidget* parent
+) :
+    QDialog(parent) {
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    setWindowTitle(tr("%1: Cover").arg(title));
+    setMinimumSize(MINIMUM_COVER_SIZE);
+
+    // TODO: Changes the appearance of children
+    setStyleSheet("background-color: #000000");
+
+    layout->setAlignment(Qt::AlignCenter);
+    layout->setContentsMargins({ 0, 0, 0, 0 });
+    layout->addWidget(coverLabel);
+
+    connect(
+        this,
+        &QDialog::customContextMenuRequested,
+        this,
+        &CoverWindow::showContextMenu
+    );
+
+    updateCover(coverPath);
+}
+
+void CoverWindow::updateCover(const QString& coverPath) {
+    const vector<u8> coverBytes = extractCover(coverPath.toUtf8().constData());
+    originalPixmap.loadFromData(coverBytes.data(), coverBytes.size());
+    coverLabel->setPixmap(originalPixmap);
+    resize(originalPixmap.size());
+}
+
 // TODO: Fix maximizing to fullscreen
 void CoverWindow::showContextMenu(const QPoint& pos) {
     auto* menu = new QMenu(this);
@@ -34,53 +68,33 @@ void CoverWindow::showContextMenu(const QPoint& pos) {
 
     if (selectedAction == maximizeAction) {
         if (isFullscreen) {
+            setWindowFlag(Qt::FramelessWindowHint, false);
             showNormal();
-            resize(image->pixmap().size());
-            setMaximumSize(image->pixmap().size());
-            image->setScaledContents(true);
+            resize(originalPixmap.size());
+
+            const QScreen* currentScreen = screen();
+
+            if (currentScreen == nullptr) {
+                currentScreen = QGuiApplication::primaryScreen();
+            }
+
+            const QRect screenGeometry = currentScreen->availableGeometry();
+            const QSize windowSize = size();
+
+            const i32 xPos =
+                screenGeometry.x() +
+                ((screenGeometry.width() - windowSize.width()) / 2);
+            const i32 yPos =
+                screenGeometry.y() +
+                ((screenGeometry.height() - windowSize.height()) / 2);
+
+            move(xPos, yPos);
         } else {
-            setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
-            image->setScaledContents(false);
-            image->resize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+            setWindowFlag(Qt::FramelessWindowHint, true);
             showFullScreen();
         }
     } else if (selectedAction == alwaysOnTopAction) {
         setWindowFlag(Qt::WindowStaysOnTopHint, !isOnTop);
         show();
     }
-}
-
-CoverWindow::CoverWindow(
-    const QString& coverPath,  // NOLINT
-    const QString& title,
-    QWidget* parent
-) :
-    QDialog(parent) {
-    setContextMenuPolicy(Qt::CustomContextMenu);
-    setWindowTitle(tr("%1: Cover").arg(title));
-    setMinimumSize(MINIMUM_COVER_SIZE);
-    layout->addWidget(image);
-
-    connect(
-        this,
-        &QDialog::customContextMenuRequested,
-        this,
-        &CoverWindow::showContextMenu
-    );
-
-    updateCover(coverPath);
-}
-
-void CoverWindow::updateCover(const QString& coverPath) {
-    const vector<u8> coverBytes = extractCover(coverPath.toUtf8().constData());
-
-    QPixmap pixmap;
-    pixmap.loadFromData(coverBytes.data(), coverBytes.size());
-
-    image->setPixmap(pixmap);
-    image->setScaledContents(true);
-    image->setAlignment(Qt::AlignCenter);
-
-    setMaximumSize(image->pixmap().size());
-    resize(image->pixmap().size());
 }
