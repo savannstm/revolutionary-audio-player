@@ -51,7 +51,7 @@ void CoverWindow::showContextMenu(const QPoint& pos) {
 }
 
 CoverWindow::CoverWindow(
-    const QString& coverPath,
+    const QString& coverPath,  // NOLINT
     const QString& title,
     QWidget* parent
 ) :
