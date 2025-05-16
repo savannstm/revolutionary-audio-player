@@ -4,6 +4,8 @@
 
 #include <QDebug>
 
+constexpr i32 MIN_BUFFER_SIZE = 16384;
+
 AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
     format_.setSampleFormat(QAudioFormat::Float);
 }
@@ -12,7 +14,6 @@ void AudioStreamer::start(const QString& path) {
     reset();
 
     i32 err;
-    array<char, AV_ERROR_MAX_STRING_SIZE> errBuf;
 
     AVFormatContext* formatContextPtr = formatContext.get();
 
@@ -24,25 +25,16 @@ void AudioStreamer::start(const QString& path) {
     );
 
     if (err < 0) {
-        qWarning() << av_make_error_string(
-            errBuf.data(),
-            AV_ERROR_MAX_STRING_SIZE,
-            err
-        );
+        qWarning() << err2str(err);
         return;
     }
 
     formatContext.reset(formatContextPtr);
-    formatContextPtr = formatContext.get();
 
     err = avformat_find_stream_info(formatContextPtr, nullptr);
 
     if (err < 0) {
-        qWarning() << av_make_error_string(
-            errBuf.data(),
-            AV_ERROR_MAX_STRING_SIZE,
-            err
-        );
+        qWarning() << err2str(err);
         return;
     }
 
@@ -59,11 +51,7 @@ void AudioStreamer::start(const QString& path) {
     err = audioStreamIndex;
 
     if (err < 0) {
-        qWarning() << av_make_error_string(
-            errBuf.data(),
-            AV_ERROR_MAX_STRING_SIZE,
-            err
-        );
+        qWarning() << err2str(err);
         return;
     }
 
@@ -76,11 +64,7 @@ void AudioStreamer::start(const QString& path) {
     err = avcodec_open2(codecContextPtr, codec, nullptr);
 
     if (err < 0) {
-        qWarning() << av_make_error_string(
-            errBuf.data(),
-            AV_ERROR_MAX_STRING_SIZE,
-            err
-        );
+        qWarning() << err2str(err);
         return;
     }
 
@@ -103,16 +87,11 @@ void AudioStreamer::start(const QString& path) {
     );
 
     if (err < 0) {
-        qWarning() << av_make_error_string(
-            errBuf.data(),
-            AV_ERROR_MAX_STRING_SIZE,
-            err
-        );
+        qWarning() << err2str(err);
         return;
     }
 
     swrContext.reset(swrContextPtr);
-    swrContextPtr = swrContext.get();
 
     swr_init(swrContextPtr);
 
@@ -135,11 +114,10 @@ void AudioStreamer::start(const QString& path) {
 void AudioStreamer::equalizeBuffer(QByteArray& buf) {
     const u8 channels = codecContext->ch_layout.nb_channels;
     const u16 sampleRate = codecContext->sample_rate;
-    const i32 samplesNumber =
-        as<i32>(buf.size() / as<i32>(SAMPLE_SIZE * channels));
+    const i32 samplesNumber = as<i32>(buf.size() / (SAMPLE_SIZE * channels));
 
     juce::AudioBuffer<f32> juceBuffer(channels, samplesNumber);
-    const f32* f32samples = reinterpret_cast<const f32*>(buf.constData());
+    const f32* f32samples = ras<const f32*>(buf.constData());
 
     for (const u8 channel : range(0, channels)) {
         f32* floatChannelData = juceBuffer.getWritePointer(channel);
@@ -162,7 +140,7 @@ void AudioStreamer::equalizeBuffer(QByteArray& buf) {
         }
     }
 
-    f32* out = reinterpret_cast<f32*>(buf.data());
+    f32* out = ras<f32*>(buf.data());
 
     for (const u8 channel : range(0, channels)) {
         const f32* floatChannelData = juceBuffer.getReadPointer(channel);
@@ -173,82 +151,198 @@ void AudioStreamer::equalizeBuffer(QByteArray& buf) {
     }
 }
 
-void AudioStreamer::prepareBuffer() {
-    while (true) {
-        if (av_read_frame(formatContext.get(), packet.get()) < 0) {
-            nextBufferSize = 0;
+auto AudioStreamer::processFrame(AVFrame* frame, AVCodecContext* codecContext)
+    -> bool {
+    const f64 timestamp = as<f64>(
+        (frame->pts != AV_NOPTS_VALUE) ? frame->pts
+                                       : frame->best_effort_timestamp
+    );
+
+    playbackSecond = as<u16>(
+        timestamp * av_q2d(formatContext->streams[audioStreamIndex]->time_base)
+    );
+
+    if (codecContext->sample_fmt != AV_SAMPLE_FMT_FLT) {
+        AVFrame* newFrame = av_frame_alloc();
+        newFrame->ch_layout = codecContext->ch_layout;
+        newFrame->sample_rate = codecContext->sample_rate;
+        newFrame->format = AV_SAMPLE_FMT_FLT;
+
+        swr_convert_frame(swrContext.get(), newFrame, frame);
+        av_frame_unref(frame);
+        frame = newFrame;
+    }
+
+    const i32 bufferSize =
+        frame->nb_samples *
+        av_get_bytes_per_sample(as<AVSampleFormat>(frame->format)) *
+        frame->ch_layout.nb_channels;
+
+    if (bufferSize < 0) {
+        qWarning() << err2str(bufferSize);
+        return true;
+    }
+
+    buffer.append(ras<cstr>(frame->data[0]), bufferSize);
+
+    if (eqEnabled &&
+        !ranges::all_of(gains_, [](const i8 gain) { return gain == 0; })) {
+        equalizeBuffer(buffer);
+    }
+
+    nextBufferSize = buffer.size();
+    return nextBufferSize >= MIN_BUFFER_SIZE;
+}
+
+// Only handles pcm_i*le and pcm_f32
+void AudioStreamer::decodeRaw() {
+    auto* codecContextPtr = codecContext.get();
+    auto* formatContextPtr = formatContext.get();
+
+    const u8 sampleSize = av_get_bytes_per_sample(codecContextPtr->sample_fmt);
+    buffer.resize(MIN_BUFFER_SIZE);
+
+    if (avio_feof(formatContextPtr->pb) < 0) {
+        return;
+    }
+
+    const i32 bytesRead = avio_read(
+        formatContextPtr->pb,
+        ras<u8*>(buffer.data()),
+        MIN_BUFFER_SIZE
+    );
+
+    if (bytesRead <= 0) {
+        return;
+    }
+
+    totalBytesRead += bytesRead;
+
+    const u32 bytesPerSecond = as<u32>(
+                                   codecContextPtr->sample_rate *
+                                   codecContextPtr->ch_layout.nb_channels
+                               ) *
+                               sampleSize;
+
+    playbackSecond = as<u16>(totalBytesRead / bytesPerSecond);
+
+    const u32 sampleCount = bytesRead / sampleSize;
+
+    QByteArray tempBuffer;
+    tempBuffer.resize(as<u32>(sampleCount * SAMPLE_SIZE));
+
+    f32* floatSamples = ras<f32*>(tempBuffer.data());
+
+    switch (sampleSize) {
+        case sizeof(i8): {
+            const i8* samples = ras<const i8*>(buffer.constData());
+
+            for (const u32 idx : range(0, sampleCount)) {
+                floatSamples[idx] = as<f32>(samples[idx]) / (INT8_MAX + 1.0F);
+            }
             break;
         }
+        case sizeof(i16): {
+            const i16* samples = ras<const i16*>(buffer.constData());
 
+            for (const u32 idx : range(0, sampleCount)) {
+                floatSamples[idx] = as<f32>(samples[idx]) / (INT16_MAX + 1.0F);
+            }
+            break;
+        }
+        case sizeof(i8) + sizeof(i16): {
+            const u8* samples = ras<const u8*>(buffer.constData());
+
+            for (const u32 idx : range(0, sampleCount)) {
+                const u32 offset = idx * sampleSize;
+                i32 value = (samples[offset]) |
+                            (samples[offset + 1] << sizeof(i8)) |
+                            (samples[offset + 2] << sizeof(i16));
+
+                if ((value & (as<i64>(INT32_MAX) + 1)) != 0) {
+                    constexpr i32 MAGIC_NUMBER = as<i32>(0xFF000000);
+                    value |= MAGIC_NUMBER;
+                }
+
+                floatSamples[idx] =
+                    as<f32>(value) /
+                    (as<f32>(1 << ((sizeof(i8) + sizeof(i16)) * CHAR_BIT - 1)));
+            }
+            break;
+        }
+        case sizeof(i32): {
+            if (codecContext->sample_fmt != AV_SAMPLE_FMT_FLT) {
+                const i32* samples = ras<const i32*>(buffer.constData());
+
+                for (const u32 idx : range(0, sampleCount)) {
+                    floatSamples[idx] =
+                        as<f32>(samples[idx]) / as<f32>(INT32_MAX);
+                }
+            }
+            break;
+        }
+        default:
+            break;
+    }
+
+    buffer = std::move(tempBuffer);
+    nextBufferSize = buffer.size();
+
+    // TODO: For some reason, skips a little of data at the start
+}
+
+void AudioStreamer::prepareBuffer() {
+    i32 err;
+
+    nextBufferSize = 0;
+    buffer.clear();
+
+    auto* codecContextPtr = codecContext.get();
+    auto* formatContextPtr = formatContext.get();
+    auto* packetPtr = packet.get();
+    auto* framePtr = frame.get();
+
+    const cstr format = codecContextPtr->codec->name;
+    const string_view view = format;
+
+    if (view.starts_with("pcm")) {
+        decodeRaw();
+        return;
+    }
+
+    while (av_read_frame(formatContextPtr, packetPtr) >= 0) {
         if (packet->stream_index != audioStreamIndex) {
-            av_packet_unref(packet.get());
+            av_packet_unref(packetPtr);
             continue;
         }
 
-        i32 err = avcodec_send_packet(codecContext.get(), packet.get());
-        av_packet_unref(packet.get());
+        err = avcodec_send_packet(codecContextPtr, packetPtr);
+        av_packet_unref(packetPtr);
 
         if (err < 0) {
-            nextBufferSize = 0;
-            break;
+            qWarning() << err2str(err);
+            continue;
         }
 
-        err = avcodec_receive_frame(codecContext.get(), frame.get());
+        while (true) {
+            err = avcodec_receive_frame(codecContextPtr, framePtr);
 
-        if (err == AVERROR(EAGAIN) || err == AVERROR_EOF || err < 0) {
-            if (err == AVERROR_EOF) {
-                nextBufferSize = 0;
+            if (err < 0) {
+                qWarning() << err2str(err);
+                break;
             }
 
-            av_frame_unref(frame.get());
-            break;
+            const bool end = processFrame(framePtr, codecContextPtr);
+            av_frame_unref(framePtr);
+
+            if (end) {
+                return;
+            }
         }
+    }
 
-        const i64 timestamp = (frame->pts != AV_NOPTS_VALUE)
-                                  ? frame->pts
-                                  : frame->best_effort_timestamp;
-
-        playbackSecond = as<u16>(
-            as<f64>(timestamp) *
-            av_q2d(formatContext->streams[audioStreamIndex]->time_base)
-        );
-
-        if (codecContext->sample_fmt != AV_SAMPLE_FMT_FLT) {
-            FramePtr newFrame = make_frame();
-            newFrame->ch_layout = codecContext->ch_layout;
-            newFrame->sample_rate = codecContext->sample_rate;
-            newFrame->format = AV_SAMPLE_FMT_FLT;
-
-            swr_convert_frame(swrContext.get(), newFrame.get(), frame.get());
-
-            frame.reset(newFrame.release());
-        }
-
-        i32 bufferSize;
-
-        bufferSize = av_samples_get_buffer_size(
-            nullptr,
-            codecContext->ch_layout.nb_channels,
-            frame->nb_samples,
-            AV_SAMPLE_FMT_FLT,
-            1
-        );
-
-        if (bufferSize <= 0) {
-            nextBufferSize = 0;
-        } else {
-            buffer.resize(bufferSize);
-            memcpy(buffer.data(), frame->data[0], bufferSize);
-            nextBufferSize = bufferSize;
-        }
-
-        if (eqEnabled &&
-            !ranges::all_of(gains_, [](const i8 gain) { return gain == 0; })) {
-            equalizeBuffer(buffer);
-        }
-
-        av_frame_unref(frame.get());
-        break;
+    if (err < 0) {
+        qWarning() << err2str(err);
     }
 }
 
@@ -285,6 +379,7 @@ auto AudioStreamer::reset() -> bool {
     nextBufferSize = 0;
     audioStreamIndex = 0;
     secondsDuration = 0;
+    totalBytesRead = 0;
 
     return true;
 }
@@ -306,6 +401,12 @@ void AudioStreamer::seekSecond(const u16 second) {
         timestamp,
         AVSEEK_FLAG_ANY
     );
+
+    if (formatContext &&
+        string_view(codecContext->codec->name).starts_with("pcm") &&
+        (formatContext->pb != nullptr)) {
+        totalBytesRead = avio_tell(formatContext->pb);
+    }
 
     initFilters();
     prepareBuffer();

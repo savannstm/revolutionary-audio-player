@@ -63,12 +63,20 @@ class AudioStreamer : public QIODevice {
 
     constexpr void toggleEqualizer(const bool enabled) { eqEnabled = enabled; };
 
+    [[nodiscard]] constexpr auto progress() const -> u16 {
+        return playbackSecond;
+    }
+
+    auto err2str(const i32 err) -> cstr {
+        return av_make_error_string(errBuf.data(), errBuf.size(), err);
+    }
+
    signals:
     void progressUpdate(u16 second);
     void streamEnded();
 
    protected:
-    auto readData(str data, qi64 /* size */) -> qi64 override;
+    auto readData(str data, qi64 maxSize) -> qi64 override;
 
     auto writeData(cstr /* data */, qi64 /* size */) -> qi64 override {
         return -1;
@@ -78,6 +86,8 @@ class AudioStreamer : public QIODevice {
     inline void equalizeBuffer(QByteArray& buf);
     inline void prepareBuffer();
     inline void initFilters();
+    void decodeRaw();
+    auto processFrame(AVFrame* frame, AVCodecContext* codecContext) -> bool;
     [[nodiscard]] inline auto second() const -> u16;
 
     FormatContextPtr formatContext;
@@ -94,9 +104,14 @@ class AudioStreamer : public QIODevice {
     u16 secondsDuration = 0;
     u16 playbackSecond = 0;
 
+    // For raw formats
+    u32 totalBytesRead = 0;
+
     bool eqEnabled = false;
 
     u8 bandCount = TEN_BANDS;
+
+    array<char, AV_ERROR_MAX_STRING_SIZE> errBuf;
 
     FrequencyArray frequencies_;
     GainArray gains_;
