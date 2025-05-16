@@ -118,9 +118,9 @@ constexpr array<TrackProperty, TRACK_PROPERTY_COUNT>
 
 // Allowed file extensions for tracks
 // Although ALAC uses MPEG containers, let it be here
-constexpr array<QStringView, 11> ALLOWED_FILE_EXTENSIONS = {
-    u"mp3", u"flac", u"opus", u"aac", u"wav", u"ogg",
-    u"m4a", u"mp4",  u"mkv",  u"mka", u"alac"
+constexpr array<QStringView, 12> ALLOWED_FILE_EXTENSIONS = {
+    u"mp3", u"flac", u"opus", u"aac", u"wav",  u"ogg",
+    u"m4a", u"mp4",  u"mkv",  u"mka", u"alac", u"mov"
 };
 
 // Searchable track property names
