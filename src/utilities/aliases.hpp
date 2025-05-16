@@ -21,6 +21,11 @@ template <typename O, typename T>
     return static_cast<O>(std::forward<T>(arg));
 }
 
+template <typename O, typename T>
+[[nodiscard]] constexpr auto ras(T&& arg) -> O {
+    return reinterpret_cast<O>(std::forward<T>(arg));
+}
+
 using namespace Qt::Literals::StringLiterals;
 using namespace std::literals::string_view_literals;
 
