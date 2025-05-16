@@ -9,8 +9,6 @@
 #include "settings.hpp"
 
 #include <QKeyEvent>
-#include <QLabel>
-#include <QPushButton>
 #include <QSlider>
 
 EqualizerMenu::EqualizerMenu(
@@ -55,6 +53,12 @@ EqualizerMenu::EqualizerMenu(
         this,
         &EqualizerMenu::createNewPreset
     );
+
+    connect(deletePresetButton, &QPushButton::pressed, this, [&] {
+        const u16 index = presetSelect->currentIndex();
+        presetSelect->setCurrentIndex(0);
+        presetSelect->removeItem(index);
+    });
 
     // Prevent inserting new entry on editingFinished
     presetSelect->setValidator(new Invalidator(presetSelect));
@@ -224,6 +228,18 @@ void EqualizerMenu::keyPressEvent(QKeyEvent* event) {
     event->ignore();
 }
 
+void EqualizerMenu::updateGain(
+    const QString& string,
+    QSlider* slider,
+    CustomInput* input,
+    const u8 band
+) const {
+    const i8 value = as<i8>(string.toInt());
+    slider->setValue(value);
+    audioWorker->setGain(value, band);
+    input->clearFocus();
+}
+
 void EqualizerMenu::onDbInputRejected(const u8 band) const {
     QSlider* slider = sliders[band].slider;
     CustomInput* input = sliders[band].dbInput;
@@ -239,19 +255,14 @@ void EqualizerMenu::onDbInputRejected(const u8 band) const {
     validator->fixup(string);
     input->setText(string);
 
-    const i8 value = as<i8>(string.toInt());
-    slider->setValue(value);
-    audioWorker->setGain(value, band);
+    updateGain(string, slider, input, band);
 }
 
 void EqualizerMenu::onDbInputEditingFinished(const u8 band) const {
     QSlider* slider = sliders[band].slider;
     CustomInput* input = sliders[band].dbInput;
 
-    const i8 value = as<i8>(input->text().toInt());
-    slider->setValue(value);
-    audioWorker->setGain(value, band);
-    input->clearFocus();
+    updateGain(input->text(), slider, input, band);
 }
 
 void EqualizerMenu::onDbInputUnfocused(const u8 band) const {
@@ -263,10 +274,7 @@ void EqualizerMenu::onDbInputUnfocused(const u8 band) const {
     validator->fixup(string);
     input->setText(string);
 
-    const i8 value = as<i8>(string.toInt());
-    slider->setValue(value);
-    audioWorker->setGain(value, band);
-    input->clearFocus();
+    updateGain(string, slider, input, band);
 }
 
 void EqualizerMenu::onSliderValueChanged(const i8 value, const u8 band) const {
@@ -285,12 +293,13 @@ void EqualizerMenu::changeBands(const QString& count) {
     switch (bandCount) {
         case THREE_BANDS:
         case FIVE_BANDS:
-            presetSelectLabel->hide();
-            presetSelect->hide();
+            presetSelect->setEnabled(false);
+            newPresetButton->setEnabled(false);
+            deletePresetButton->setEnabled(false);
             break;
         default:
-            presetSelectLabel->show();
-            presetSelect->show();
+            presetSelect->setEnabled(true);
+            newPresetButton->setEnabled(true);
 
             while (presetSelect->count() > DEFAULT_PRESET_COUNT) {
                 presetSelect->removeItem(presetSelect->count() - 1);
@@ -320,9 +329,11 @@ void EqualizerMenu::selectPreset(i32 index) {
 
     if (index < DEFAULT_PRESET_COUNT) {
         presetSelect->setEditable(false);
+        deletePresetButton->setEnabled(false);
     } else {
         presetSelect->setEditable(true);
         presetName = presetSelect->itemText(index);
+        deletePresetButton->setEnabled(true);
 
         if (!eqSettings.presets[bandCount].contains(presetName)) {
             eqSettings.presets[bandCount].insert(

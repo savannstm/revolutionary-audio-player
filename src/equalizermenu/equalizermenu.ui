@@ -80,6 +80,16 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="deletePresetButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Delete Preset</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QLabel" name="presetSelectLabel">
         <property name="maximumSize">
          <size>

@@ -66,6 +66,13 @@ class EqualizerMenu : public QDialog {
     }
 
    private:
+    inline void updateGain(
+        const QString& string,
+        QSlider* slider,
+        CustomInput* input,
+        u8 band
+    ) const;
+
     inline void onDbInputRejected(u8 band) const;
     inline void onDbInputEditingFinished(u8 band) const;
     inline void onDbInputUnfocused(u8 band) const;
@@ -119,6 +126,7 @@ class EqualizerMenu : public QDialog {
 
     QPushButton* resetGainsButton = ui->resetGainsButton;
     QPushButton* newPresetButton = ui->newPresetButton;
+    QPushButton* deletePresetButton = ui->deletePresetButton;
 
     QPushButton* enableEqualizerButton = ui->enableButton;
     array<SliderContainer, MAX_BANDS_COUNT> sliders;
