@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.0
+
+-   Fixed non-working repeat.
+-   Fixed cover window resize and fullscreen issues.
+-   Revamped equalizer menu to preset-based approach.
+-   Fixed non-working playing of variable-bitrate formats (ogg, opus) and wav format.
+-   Implemented changeable audio output device (also made audio device automatically change, when it's changed in the system).
+-   Fixed possible panic when removing playlist's tree rows.
+-   Fixed leading `/` or `\` symbols in tracks' titles, when title is not defined in the metadata.
+
 ## v0.2.2
 
 -   Another load of playback fixes.
