@@ -90,10 +90,10 @@ inline auto extractMetadata(const QString& filePath)
     const QString titleTag = getTag("title");
 
     if (titleTag.isEmpty()) {
-        isize lastIndex = filePath.lastIndexOf('/');
+        isize lastIndex = filePath.lastIndexOf('/') + 1;
 
         if (lastIndex == -1) {
-            lastIndex = filePath.lastIndexOf('\\');
+            lastIndex = filePath.lastIndexOf('\\') + 1;
         }
 
         metadata.emplace(Title, filePath.sliced(lastIndex));
