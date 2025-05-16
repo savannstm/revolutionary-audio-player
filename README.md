@@ -10,14 +10,14 @@ The Revolutionary Audio Player, abbreviated RAP (which initially was named Rusty
 
 ## Features
 
--   [x] `.mp3`, `.flac`, `.wav`, `.ogg`, `.opus`, `.m4a`, `.mp4`, `.mkv`, `.aac` support (other formats support with custom FFmpeg build).
--   [x] Native look and same capabilities on **any** platform.
+-   [x] `mp3`, `flac`, `wav`, `ogg`, `opus`, `m4a`, `mp4`, `mkv`, `aac`, `alac`, `mov`, `mka` audio default support.
+-   [x] `png`, `jpeg`, `bmp`, `webp` cover image support.
+-   [x] Native look and the same capabilities on **any** platform.
 -   [x] Interface, that keeps it simple.
--   [x] Completely portable. Leaves **no** traces in OS!
+-   [x] Completely portable. Leaves **no** traces in OS by default!
 -   [x] Default tray icon support, close button only hides the window.
     -   [x] Volume and progress sliders built **right inside** the tray icon menu!
--   [x] **partially** Built-in ready-to-use 3-, 5-, 10-, 18- and 30-band equalizers.
-    -   [ ] On top of that, you can change the **frequencies** of equalizer themselves.
+-   [x] Built-in ready-to-use 3-, 5-, 10-, 18- and 30-band equalizers with presets.
 -   [x] Playlist background images.
 -   [x] Flexible playlist system, `.xspf` and `.m3u8` import/export.
 -   [x] Playlist searching.
@@ -46,6 +46,8 @@ You need a C++23 compatible compiler: `clang`, `gcc`, `msvc`.
 The project uses CMake as build system.
 
 You'll need `Qt6`, `JUCE`, `FFmpeg`, `CImg` and `rapidhash` to build the project.
+
+Default builds of the program include FFmpeg built with the following configuration: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-zlib --enable-protocol=file`
 
 Path to the `rapidhash` headers can be passed as `-DRAPIDHASH_INCLUDE_DIRS`.
 
