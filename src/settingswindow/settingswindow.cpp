@@ -1,8 +1,9 @@
 #include "settingswindow.hpp"
 
+#include <QAudioDevice>
+#include <QMediaDevices>
 #include <QSettings>
 #include <QStyleFactory>
-#include <utility>
 
 auto SettingsWindow::setupUi() -> Ui::SettingsWindow* {
     auto* ui_ = new Ui::SettingsWindow();
@@ -70,6 +71,27 @@ SettingsWindow::SettingsWindow(
         } else {
             removeOpenDirectoryEntry();
         }
+    }
+    );
+
+    for (const QAudioDevice& device : devices) {
+        const QString description = device.description();
+        outputDeviceSelect->addItem(description);
+
+        if (description == settings->outputDevice.description()) {
+            outputDeviceSelect->setCurrentIndex(
+                outputDeviceSelect->count() - 1
+            );
+        }
+    }
+
+    connect(
+        outputDeviceSelect,
+        &QComboBox::currentIndexChanged,
+        this,
+        [&](const i32 index) {
+        settings->outputDevice = devices[index];
+        emit audioDeviceChanged(devices[index]);
     }
     );
 }

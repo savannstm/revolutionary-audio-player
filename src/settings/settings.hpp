@@ -5,11 +5,13 @@
 #include "enums.hpp"
 
 #include <QApplication>
+#include <QAudioDevice>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QMediaDevices>
 #include <QStyle>
 
 template <typename T>
@@ -67,12 +69,7 @@ class TabObject {
         json["label"] = label;
         json["backgroundImagePath"] = backgroundImagePath;
         json["tracks"] = QJsonArray::fromStringList(tracks);
-        json["columnProperties"] = toJsonArray(
-            span<const f32>(
-                reinterpret_cast<const f32*>(columnProperties.data()),
-                TRACK_PROPERTY_COUNT
-            )
-        );
+        json["columnProperties"] = toJsonArray(columnProperties);
         json["columnStates"] = toJsonArray(columnStates);
         return json;
     }
@@ -110,7 +107,7 @@ class EqualizerSettings {
                         gainsVec.reserve(gainsArray.size());
 
                         for (const auto& val : gainsArray) {
-                            gainsVec.emplace_back(static_cast<i8>(val.toInt()));
+                            gainsVec.emplace_back(as<i8>(val.toInt()));
                         }
 
                         bandPresets[presetName] = std::move(gainsVec);
@@ -266,6 +263,18 @@ class Settings {
             dockWidgetSettings =
                 DockWidgetSettings(settingsObject["dockWidget"].toObject());
         }
+
+        if (settingsObject.contains("outputDevice")) {
+            const auto outputDevices = QMediaDevices::audioOutputs();
+            const QString requiredName =
+                settingsObject["outputDevice"].toString();
+
+            for (const auto& device : outputDevices) {
+                if (device.description() == requiredName) {
+                    outputDevice = device;
+                }
+            }
+        }
     }
 
     [[nodiscard]] auto stringify() const -> QJsonObject {
@@ -284,6 +293,7 @@ class Settings {
         json["language"] = language;
         json["flags"] = flags.stringify();
         json["dockWidget"] = dockWidgetSettings.stringify();
+        json["outputDevice"] = outputDevice.description();
 
         return json;
     }
@@ -301,4 +311,5 @@ class Settings {
     QLocale::Language language = QLocale().language();
     SettingsFlags flags;
     DockWidgetSettings dockWidgetSettings;
+    QAudioDevice outputDevice = QMediaDevices::defaultAudioOutput();
 };

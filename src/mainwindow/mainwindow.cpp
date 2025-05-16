@@ -260,6 +260,26 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
         );
     });
 
+    connect(
+        new QMediaDevices(this),
+        &QMediaDevices::audioOutputsChanged,
+        this,
+        [&] {
+        if (settings->outputDevice == previousDefaultAudioDevice) {
+            settings->outputDevice = QMediaDevices::defaultAudioOutput();
+
+            QMetaObject::invokeMethod(
+                audioWorker,
+                &AudioWorker::changeAudioDevice,
+                Qt::QueuedConnection,
+                settings->outputDevice
+            );
+        }
+
+        previousDefaultAudioDevice = QMediaDevices::defaultAudioOutput();
+    }
+    );
+
     server->listen("revolutionary-audio-player-server");
 
     progressLabelCloned->setText(trackDuration);
@@ -542,6 +562,13 @@ void MainWindow::loadSettings() {
 
     playlistView->setCurrentIndex(settings->currentTab);
     equalizerMenu->loadSettings();
+
+    QMetaObject::invokeMethod(
+        audioWorker,
+        &AudioWorker::changeAudioDevice,
+        Qt::QueuedConnection,
+        settings->outputDevice
+    );
 
     const DockWidgetPosition dockWidgetPosition =
         settings->dockWidgetSettings.position;
@@ -887,6 +914,20 @@ void MainWindow::showSettingsWindow() {
     auto* settingsWindow = new SettingsWindow(settings, this);
     settingsWindow->setAttribute(Qt::WA_DeleteOnClose);
     settingsWindow->show();
+
+    connect(
+        settingsWindow,
+        &SettingsWindow::audioDeviceChanged,
+        this,
+        [&](QAudioDevice device) {
+        QMetaObject::invokeMethod(
+            audioWorker,
+            &AudioWorker::changeAudioDevice,
+            Qt::QueuedConnection,
+            device
+        );
+    }
+    );
 }
 
 void MainWindow::showHelpWindow() {

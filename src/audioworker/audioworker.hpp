@@ -78,6 +78,11 @@ class AudioWorker : public QObject {
         return audioStreamer->frequencies();
     }
 
+    void changeAudioDevice(QAudioDevice& device_) {
+        device = device_;
+        rebuildAudioSink(state());
+    }
+
    signals:
     void finished();
     void duration(u16 seconds);
@@ -86,8 +91,11 @@ class AudioWorker : public QObject {
     void volumeChanged(f64 gain);
 
    private:
+    void rebuildAudioSink(QtAudio::State state);
+
     QThread* workerThread = new QThread();
     AudioStreamer* audioStreamer = new AudioStreamer(this);
     QAudioSink* audioSink = nullptr;
     f64 volumeGain = 1.0;
+    QAudioDevice device;
 };

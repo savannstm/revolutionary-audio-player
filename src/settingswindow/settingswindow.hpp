@@ -26,20 +26,24 @@ class SettingsWindow : public QDialog {
     explicit SettingsWindow(shared_ptr<Settings> settings, QWidget* parent);
     ~SettingsWindow() override;
 
+   signals:
+    void audioDeviceChanged(const QAudioDevice& device);
+
    private:
     static void removeOpenDirectoryEntry();
     static void addOpenDirectoryEntry();
     static void associateFileTypes();
     auto setupUi() -> Ui::SettingsWindow*;
+
     Ui::SettingsWindow* ui = setupUi();
 
     shared_ptr<Settings> settings;
 
     QComboBox* styleSelect = ui->styleSelect;
-    QLabel* styleSelectLabel = ui->styleSelectLabel;
     QComboBox* playlistNamingSelect = ui->playlistNamingSelect;
-    QLabel* playlistNamingLabel = ui->playlistNamingLabel;
     QComboBox* dragDropSelect = ui->dragdropSelect;
-    QLabel* dragDropSelectLabel = ui->dragdropSelectLabel;
     QCheckBox* createMenuItemCheckbox = ui->createMenuItemCheckbox;
+    QComboBox* outputDeviceSelect = ui->outputDeviceSelect;
+
+    const QList<QAudioDevice> devices = QMediaDevices::audioOutputs();
 };

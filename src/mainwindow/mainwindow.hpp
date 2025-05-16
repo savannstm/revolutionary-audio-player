@@ -209,4 +209,6 @@ class MainWindow : public QMainWindow {
     u8 sortIndicatorCleared;
     std::random_device rng;
     QLocalServer* server = new QLocalServer(this);
+    QAudioDevice previousDefaultAudioDevice =
+        QMediaDevices::defaultAudioOutput();
 };
