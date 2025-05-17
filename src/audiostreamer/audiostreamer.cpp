@@ -333,9 +333,7 @@ auto AudioStreamer::readData(str data, const qi64 /* size */) -> qi64 {
 
     if (nextBufferSize == 0) {
         emit streamEnded();
-        // No need to return -1 here, logic in mainwindow will automatically
-        // stop the playback if there's no tracks left or whatever.
-        return 0;
+        // Fuck it, just don't return anything
     }
 
     return bufferSize;
@@ -367,11 +365,14 @@ auto AudioStreamer::reset() -> bool {
 }
 
 void AudioStreamer::seekSecond(const u16 second) {
-    const i64 timestamp = av_rescale(
-        second,
-        formatContext->streams[audioStreamIndex]->time_base.den,
-        formatContext->streams[audioStreamIndex]->time_base.num
-    );
+    const i64 timestamp =
+        second == 0
+            ? 0
+            : av_rescale(
+                  second,
+                  formatContext->streams[audioStreamIndex]->time_base.den,
+                  formatContext->streams[audioStreamIndex]->time_base.num
+              );
 
     avcodec_flush_buffers(codecContext.get());
 
@@ -384,8 +385,7 @@ void AudioStreamer::seekSecond(const u16 second) {
         AVSEEK_FLAG_ANY
     );
 
-    if (formatContext &&
-        string_view(codecContext->codec->name).starts_with("pcm") &&
+    if (string_view(codecContext->codec->name).starts_with("pcm") &&
         (formatContext->pb != nullptr)) {
         totalBytesRead = avio_tell(formatContext->pb);
     }
