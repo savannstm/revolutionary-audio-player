@@ -1235,14 +1235,11 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     trackLabel->setText(artistAndTrack);
     setWindowTitle(u"RAP: %1"_s.arg(artistAndTrack));
 
-    for (const auto& [idx, label] :
-         views::drop(views::enumerate(trackPropertiesLabels()), 1)) {
-        auto* item = dockMetadataTree->itemFromIndex(
-            dockMetadataTree->model()->index(as<i32>(idx - 1), 0)
-        );
-
-        item->setText(0, label);
-        item->setText(1, metadata[as<TrackProperty>(idx)]);
+    for (const TrackProperty property :
+         views::drop(DEFAULT_COLUMN_PROPERTIES, 1)) {
+        dockMetadataTree
+            ->itemFromIndex(dockMetadataTree->model()->index(property - 1, 0))
+            ->setText(1, metadata[property]);
     }
 
     QPixmap cover;
@@ -1396,12 +1393,11 @@ void MainWindow::stopPlayback() {
 
     dockCoverLabel->clear();
 
-    for (const u8 idx : range(0, TRACK_PROPERTY_COUNT - 1)) {
-        auto* item = dockMetadataTree->itemFromIndex(
-            dockMetadataTree->model()->index(idx, 0)
-        );
-        item->setText(0, QString());
-        item->setText(1, QString());
+    for (const TrackProperty property :
+         views::drop(DEFAULT_COLUMN_PROPERTIES, 1)) {
+        dockMetadataTree
+            ->itemFromIndex(dockMetadataTree->model()->index(property - 1, 0))
+            ->setText(1, QString());
     }
 }
 

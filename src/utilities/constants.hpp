@@ -103,19 +103,26 @@ constexpr u8 TRACK_TREE_ROW_HEIGHT = 18;
 constexpr u16 PROPERTY_ROLE = Qt::UserRole + 1;
 
 // Default visible columns in track tree (true = visible)
-constexpr array<bool, TRACK_PROPERTY_COUNT> TRACK_TREE_DEFAULT_COLUMN_STATES = {
+constexpr array<bool, TRACK_PROPERTY_COUNT> DEFAULT_COLUMN_STATES = {
     false, false, false, false, true, true, true, true, true, true,
     true,  true,  true,  true,  true, true, true, true, true, true
 };
 
+// Prevent mismatch fuckup
+consteval auto constructProperties()
+    -> array<TrackProperty, TRACK_PROPERTY_COUNT> {
+    array<TrackProperty, TRACK_PROPERTY_COUNT> properties;
+
+    for (const u8 property : range(0, TRACK_PROPERTY_COUNT)) {
+        properties[property] = as<TrackProperty>(property);
+    }
+
+    return properties;
+}
+
 // Default property ordering for track tree columns
-constexpr array<TrackProperty, TRACK_PROPERTY_COUNT>
-    TRACK_TREE_DEFAULT_COLUMN_PROPERTIES = {
-        Play,        Title,      Artist,   TrackNumber, Album,
-        AlbumArtist, Genre,      Year,     Composer,    BPM,
-        Language,    DiscNumber, Comment,  Publisher,   Duration,
-        Bitrate,     SampleRate, Channels, Format,      Path
-    };
+constexpr array<TrackProperty, TRACK_PROPERTY_COUNT> DEFAULT_COLUMN_PROPERTIES =
+    constructProperties();
 
 // Metadata / Search Config
 

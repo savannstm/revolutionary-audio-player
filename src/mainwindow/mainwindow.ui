@@ -539,97 +539,100 @@
         </column>
         <item>
          <property name="text">
-          <string/>
+          <string>Title</string>
          </property>
         </item>
         <item>
+         <property name="text">
+          <string>Artist</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Track Number</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Album</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Album Artist</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Genre</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Year</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Duration</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Composer</string>
+         </property>
          <property name="text">
           <string/>
          </property>
         </item>
         <item>
          <property name="text">
-          <string/>
+          <string>BPM</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string/>
+          <string>Language</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string/>
+          <string>Disc Number</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string/>
+          <string>Comment</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string/>
+          <string>Publisher</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string/>
+          <string>Bitrate</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string/>
+          <string>Sample Rate</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string/>
+          <string>Channels</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string/>
+          <string>Format</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string/>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string/>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string/>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string/>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string/>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string/>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string/>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string/>
+          <string>Path</string>
          </property>
         </item>
        </widget>
