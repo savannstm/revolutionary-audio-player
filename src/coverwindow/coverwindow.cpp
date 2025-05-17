@@ -40,7 +40,6 @@ void CoverWindow::updateCover(const QString& coverPath) {
     resize(originalPixmap.size());
 }
 
-// TODO: Fix maximizing to fullscreen
 void CoverWindow::showContextMenu(const QPoint& pos) {
     auto* menu = new QMenu(this);
 
