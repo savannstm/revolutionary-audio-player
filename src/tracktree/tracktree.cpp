@@ -3,7 +3,9 @@
 #include "extractmetadata.hpp"
 #include "rapidhasher.hpp"
 
+#include <QDirIterator>
 #include <QMouseEvent>
+#include <QThreadPool>
 
 TrackTree::TrackTree(QWidget* parent) : QTreeView(parent) {
     setHeader(musicHeader);
@@ -12,22 +14,28 @@ TrackTree::TrackTree(QWidget* parent) : QTreeView(parent) {
     setIndentation(1);
     setSortingEnabled(true);
 
-    auto* sModel = selectionModel();
-
     connect(
-        sModel,
+        selectionModel(),
         &QItemSelectionModel::selectionChanged,
-        [=, this](const QItemSelection&, const QItemSelection& deselected) {
-        const QModelIndex requiredIndex = currentIndex();
-
-        if (deselected.contains(requiredIndex)) {
-            sModel->select(
-                requiredIndex,
-                QItemSelectionModel::Select | QItemSelectionModel::Rows
-            );
-        }
-    }
+        this,
+        &TrackTree::reselectCurrentElement
     );
+    connect(this, &TrackTree::finishedFilling, this, &TrackTree::postFill);
+    connect(this, &TrackTree::metadataReceived, this, &TrackTree::addFile);
+}
+
+void TrackTree::reselectCurrentElement(
+    const QItemSelection& /*unused*/,
+    const QItemSelection& deselected
+) {
+    const QModelIndex requiredIndex = currentIndex();
+
+    if (deselected.contains(requiredIndex)) {
+        selectionModel()->select(
+            requiredIndex,
+            QItemSelectionModel::Select | QItemSelectionModel::Rows
+        );
+    }
 }
 
 void TrackTree::mouseDoubleClickEvent(QMouseEvent* event) {
@@ -63,13 +71,10 @@ auto TrackTree::rowMetadata(const u16 row) const
     return result;
 }
 
-void TrackTree::addFile(const QString& filePath) {
-    const HashMap<TrackProperty, QString> metadata = extractMetadata(filePath);
-
-    if (metadata.empty()) {
-        return;
-    }
-
+void TrackTree::addFile(
+    const QString& filePath,
+    const HashMap<TrackProperty, QString>& metadata
+) {
     const u16 row = musicModel->rowCount();
 
     for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
@@ -111,46 +116,47 @@ void TrackTree::sortByPath() {
 }
 
 void TrackTree::fillTable(const QStringList& paths) {
-    for (const QString& path : paths) {
-        const QFileInfo info(path);
+    QThreadPool::globalInstance()->start([=, this] {
+        for (const QString& path : paths) {
+            QFileInfo info(path);
 
-        if (info.isDir()) {
-            QDirIterator iterator(path);
-            fillTable(iterator);
-            continue;
+            if (info.isDir()) {
+                QDirIterator iterator(
+                    path,
+                    QDir::Files | QDir::NoDotAndDotDot,
+                    QDirIterator::Subdirectories
+                );
+                QStringList filePaths;
+
+                while (iterator.hasNext()) {
+                    iterator.next();
+                    filePaths.append(iterator.fileInfo().filePath());
+                }
+
+                fillTable(filePaths);
+                continue;
+            }
+
+            if (musicModel->contains(path)) {
+                continue;
+            }
+
+            const auto metadata = extractMetadata(path);
+            if (metadata.empty()) {
+                continue;
+            }
+
+            emit metadataReceived(path, metadata);
         }
 
-        if (musicModel->contains(path)) {
-            continue;
-        }
+        emit finishedFilling();
+    });
+}
 
-        addFile(path);
-    }
-
+void TrackTree::postFill() {
     resizeColumnsToContents();
     sortByPath();
 }
-
-void TrackTree::fillTable(QDirIterator& iterator) {
-    while (iterator.hasNext()) {
-        iterator.next();
-        const QFileInfo entry = iterator.fileInfo();
-        const QString path = entry.filePath();
-
-        if (musicModel->contains(path)) {
-            continue;
-        }
-
-        for (const QStringView extension : ALLOWED_FILE_EXTENSIONS) {
-            if (path.endsWith(extension)) {
-                addFile(path);
-            }
-        }
-    }
-
-    resizeColumnsToContents();
-    sortByPath();
-};
 
 void TrackTree::resizeColumnsToContents() {
     for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {

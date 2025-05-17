@@ -3,10 +3,7 @@
 #include "musicheader.hpp"
 #include "musicmodel.hpp"
 
-#include <QDirIterator>
 #include <QTreeView>
-
-// TODO: Add files on a separate thread
 
 class TrackTree : public QTreeView {
     Q_OBJECT
@@ -32,18 +29,30 @@ class TrackTree : public QTreeView {
         -> HashMap<TrackProperty, QString>;
     void sortByPath();
     void fillTable(const QStringList& paths);
-    void fillTable(QDirIterator& iterator);
     auto deselect(i32 index = -1) -> QModelIndex;
 
    signals:
+    void metadataReceived(
+        const QString& filePath,
+        const HashMap<TrackProperty, QString>& metadata
+    );
+    void finishedFilling();
     void trackSelected(u32 oldIndex, u32 newIndex);
 
    protected:
     void mouseDoubleClickEvent(QMouseEvent* event) override;
 
    private:
+    inline void reselectCurrentElement(
+        const QItemSelection& /*unused*/,
+        const QItemSelection& deselected
+    );
+    inline void postFill();
     inline void resizeColumnsToContents();
-    inline void addFile(const QString& filePath);
+    inline void addFile(
+        const QString& filePath,
+        const HashMap<TrackProperty, QString>& metadata
+    );
 
     QModelIndex index;
     MusicHeader* musicHeader =

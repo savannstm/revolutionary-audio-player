@@ -628,7 +628,7 @@ void MainWindow::loadSettings() {
             tree->fillTable(tabObject.tracks);
 
             if (!tabObject.backgroundImagePath.isEmpty()) {
-                QTimer::singleShot(1000, [=, this] {
+                QTimer::singleShot(SECOND_MS, [=, this] {
                     playlistView->setBackgroundImage(
                         index,
                         mainArea->height(),
@@ -1077,16 +1077,7 @@ void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
         tree = playlistView->tree(index);
     }
 
-    if (isFolder) {
-        QDirIterator entries(
-            path,
-            QDir::NoDotAndDotDot | QDir::Files,
-            QDirIterator::Subdirectories
-        );
-        tree->fillTable(entries);
-    } else {
-        tree->fillTable({ path });
-    }
+    tree->fillTable({ path });
 }
 
 void MainWindow::showAboutWindow() {
