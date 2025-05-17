@@ -3,6 +3,7 @@
 #include "enums.hpp"
 
 #include <QLabel>
+#include <QResizeEvent>
 #include <QSplitter>
 #include <QTreeWidget>
 
@@ -14,6 +15,12 @@ class DockWidget : public QSplitter {
     QTreeWidget* dockMetadataTree;
     QLabel* dockCoverLabel;
 
+    void resizeEvent(QResizeEvent* event) override {
+        QSplitter::resizeEvent(event);
+        emit resized();
+    }
+
    signals:
+    void resized();
     void repositioned(DockWidgetPosition);
 };

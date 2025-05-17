@@ -280,6 +280,84 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     }
     );
 
+    connect(dockWidget, &DockWidget::resized, this, [&] {
+        DockWidgetPosition dockWidgetPosition;
+        const Qt::Orientation mainAreaOrientation = mainArea->orientation();
+        const u8 dockWidgetIndex = mainArea->indexOf(dockWidget);
+
+        if (mainAreaOrientation == Qt::Horizontal) {
+            dockWidgetPosition = dockWidgetIndex == 0 ? Left : Right;
+        } else {
+            dockWidgetPosition = dockWidgetIndex == 0 ? Top : Bottom;
+        }
+
+        const u16 width = mainArea->size().width();
+        const u16 height = mainArea->size().height();
+        u16 dockWidgetX = dockWidget->x();
+        u16 dockWidgetY = dockWidget->y();
+
+        if (dockWidgetX == UINT16_MAX) {
+            dockWidgetX = width;
+        }
+
+        if (dockWidgetY == UINT16_MAX) {
+            dockWidgetY = height;
+        }
+
+        u16 dockWidgetWidth = dockWidget->width();
+        u16 dockWidgetHeight = dockWidget->height();
+
+        if (!playlistView->hasBackgroundImage(playlistView->currentIndex())) {
+            return;
+        }
+
+        const QWidget* pageWidget =
+            playlistView->page(playlistView->currentIndex());
+        auto* leftLabel = pageWidget->findChild<QLabel*>("leftLabel");
+        auto* centerLabel = pageWidget->findChild<QLabel*>("centerLabel");
+        auto* rightLabel = pageWidget->findChild<QLabel*>("rightLabel");
+
+        const u16 yPos = playlistView->y();
+        const u16 centerLabelHalfWidth = centerLabel->width() / 2;
+
+        const u16 rightLabelWidth = rightLabel->width();
+
+        const u16 halfWidth = width / 2;
+
+        const u16 availableWidthLeft = width - dockWidgetWidth;
+        const u16 halfAvailableWidthLeft = availableWidthLeft / 2;
+
+        const u16 availableWidthRight = dockWidgetX;
+        const u16 halfAvailableWidthRight = availableWidthRight / 2;
+
+        switch (dockWidgetPosition) {
+            case Right:
+                leftLabel->move(0, yPos);
+                centerLabel->move(
+                    halfAvailableWidthRight - centerLabelHalfWidth,
+                    yPos
+                );
+                rightLabel->move(availableWidthRight - rightLabelWidth, yPos);
+                break;
+            case Left:
+                leftLabel->move(0, yPos);
+                centerLabel->move(
+                    halfAvailableWidthLeft - centerLabelHalfWidth,
+                    yPos
+                );
+                rightLabel->move(availableWidthLeft - rightLabelWidth, yPos);
+                break;
+            case Top:
+            case Bottom:
+                leftLabel->move(0, 0);
+                centerLabel->move(halfWidth - centerLabelHalfWidth, 0);
+                rightLabel->move(width - rightLabelWidth, 0);
+                break;
+            default:
+                break;
+        }
+    });
+
     server->listen("revolutionary-audio-player-server");
 
     progressLabelCloned->setText(trackDuration);
@@ -550,13 +628,13 @@ void MainWindow::loadSettings() {
             tree->fillTable(tabObject.tracks);
 
             if (!tabObject.backgroundImagePath.isEmpty()) {
-                // TODO: Sets incorrectly, because layout isn't loaded
-                // SOLUTION: Load the first layout, zoom into it, and get
-                // dimensions.
-                playlistView->setBackgroundImage(
-                    index,
-                    tabObject.backgroundImagePath
-                );
+                QTimer::singleShot(1000, [=, this] {
+                    playlistView->setBackgroundImage(
+                        index,
+                        mainArea->height(),
+                        tabObject.backgroundImagePath
+                    );
+                });
             }
         }
     }
@@ -577,6 +655,7 @@ void MainWindow::loadSettings() {
     moveDockWidget(dockWidgetPosition);
 
     mainArea->setSizes({ QWIDGETSIZE_MAX, settings->dockWidgetSettings.size });
+
     retranslate(settings->language);
 }
 
@@ -720,6 +799,7 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
 
                 playlistView->setBackgroundImage(
                     playlistView->currentIndex(),
+                    mainArea->height(),
                     file
                 );
             } else if (selectedAction == removePlaylistBackground) {

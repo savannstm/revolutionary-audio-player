@@ -253,16 +253,15 @@ void PlaylistView::removeBackgroundImage(const u8 index) const {
     rightLabel->setObjectName("rightLabel");
 }
 
-// TODO: When main window's dock widget is resized, background image isn't
 void PlaylistView::setBackgroundImage(
     const u8 index,
+    const u16 height,
     const QString& path
 ) const {
     QLabel* centerLabel = backgroundImage(index);
     QWidget* pageWidget = page(index);
 
-    const i32 layoutWidth = pageWidget->width();
-    const i32 layoutHeight = pageWidget->height();
+    const u16 layoutWidth = screen()->size().width();
 
     CImg<u8> img = CImg(path.toStdString().c_str());
     CImg<u8> interleaved = img.get_permute_axes("cxyz").unroll('x');
@@ -271,13 +270,17 @@ void PlaylistView::setBackgroundImage(
         interleaved.data(),
         img.width(),
         img.height(),
-        as<i32>(img.width() * img.spectrum()),
+        as<u32>(img.width() * img.spectrum()),
         QImage::Format_RGB888
     );
 
-    QPixmap centerPixmap = QPixmap::fromImage(normalImage);
-    centerPixmap =
-        centerPixmap.scaledToHeight(layoutHeight, Qt::SmoothTransformation);
+    const QPixmap centerPixmap = QPixmap::fromImage(normalImage)
+                                     .scaled(
+                                         layoutWidth,
+                                         height,
+                                         Qt::KeepAspectRatio,
+                                         Qt::SmoothTransformation
+                                     );
 
     centerLabel->setPixmap(centerPixmap);
     centerLabel->setFixedSize(centerPixmap.size());
@@ -292,55 +295,48 @@ void PlaylistView::setBackgroundImage(
     auto* leftLabel = pageWidget->findChild<QLabel*>("leftLabel");
     auto* rightLabel = pageWidget->findChild<QLabel*>("rightLabel");
 
-    if (centerPixmap.width() < layoutWidth) {
-        const i32 sideWidth = (layoutWidth - centerPixmap.width()) / 2;
+    const u16 sideWidth = (layoutWidth - centerPixmap.width()) / 2;
 
-        img.blur(BLUR_SIGMA);
-        interleaved = img.get_permute_axes("cxyz").unroll('x');
+    img.blur(BLUR_SIGMA);
+    interleaved = img.get_permute_axes("cxyz").unroll('x');
 
-        const QImage blurredImage = QImage(
-            interleaved.data(),
-            img.width(),
-            img.height(),
-            as<i32>(img.width() * img.spectrum()),
-            QImage::Format_RGB888
-        );
+    const QImage blurredImage = QImage(
+        interleaved.data(),
+        img.width(),
+        img.height(),
+        as<u32>(img.width() * img.spectrum()),
+        QImage::Format_RGB888
+    );
 
-        QPixmap blurredPixmap = QPixmap::fromImage(blurredImage);
-        blurredPixmap = blurredPixmap.scaled(
-            centerPixmap.size(),
-            Qt::IgnoreAspectRatio,
-            Qt::SmoothTransformation
-        );
+    const QPixmap blurredPixmap = QPixmap::fromImage(blurredImage)
+                                      .scaled(
+                                          centerPixmap.size(),
+                                          Qt::IgnoreAspectRatio,
+                                          Qt::SmoothTransformation
+                                      );
 
-        const QPixmap leftSide =
-            blurredPixmap.copy(0, 0, sideWidth, layoutHeight);
-        const QPixmap rightSide = blurredPixmap.copy(
-            blurredPixmap.width() - sideWidth,
-            0,
-            sideWidth,
-            layoutHeight
-        );
+    const QPixmap leftSide =
+        blurredPixmap.copy(0, 0, sideWidth, centerPixmap.height());
+    const QPixmap rightSide = blurredPixmap.copy(
+        blurredPixmap.width() - sideWidth,
+        0,
+        sideWidth,
+        centerPixmap.height()
+    );
 
-        leftLabel->setPixmap(leftSide);
-        leftLabel->setFixedSize(leftSide.size());
+    leftLabel->setPixmap(leftSide);
+    leftLabel->setFixedSize(leftSide.size());
+    leftLabel->lower();
+    leftLabel->show();
 
-        leftLabel->lower();
-        leftLabel->show();
-
-        rightLabel->setPixmap(rightSide);
-        rightLabel->setFixedSize(rightSide.size());
-        rightLabel->move(
-            centerLabel->geometry().right(),
-            centerLabel->geometry().top()
-        );
-
-        rightLabel->lower();
-        rightLabel->show();
-    } else {
-        leftLabel->hide();
-        rightLabel->hide();
-    }
+    rightLabel->setPixmap(rightSide);
+    rightLabel->setFixedSize(rightSide.size());
+    rightLabel->move(
+        centerLabel->geometry().right(),
+        centerLabel->geometry().top()
+    );
+    rightLabel->lower();
+    rightLabel->show();
 
     centerLabel->setProperty("path", path);
 }

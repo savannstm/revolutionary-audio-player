@@ -21,9 +21,9 @@ class PlaylistView : public QWidget {
     [[nodiscard]] auto addTab(
         const QString& label = QString(),
         const array<TrackProperty, TRACK_PROPERTY_COUNT>& columnProperties =
-            TRACK_TREE_DEFAULT_COLUMN_PROPERTIES,
+            DEFAULT_COLUMN_PROPERTIES,
         const array<bool, TRACK_PROPERTY_COUNT>& columnStates =
-            TRACK_TREE_DEFAULT_COLUMN_STATES
+            DEFAULT_COLUMN_STATES
     ) -> u8;
     [[nodiscard]] auto tabCount() const -> u8;
     void setCurrentIndex(i8 index);
@@ -31,11 +31,11 @@ class PlaylistView : public QWidget {
     void createTabPage(u8 index);
     [[nodiscard]] auto createPage(
         const array<TrackProperty, TRACK_PROPERTY_COUNT>& columnProperties =
-            TRACK_TREE_DEFAULT_COLUMN_PROPERTIES,
+            DEFAULT_COLUMN_PROPERTIES,
         const array<bool, TRACK_PROPERTY_COUNT>& columnStates =
-            TRACK_TREE_DEFAULT_COLUMN_STATES
+            DEFAULT_COLUMN_STATES
     ) -> QWidget*;
-    void setBackgroundImage(u8 index, const QString& path) const;
+    void setBackgroundImage(u8 index, u16 height, const QString& path) const;
     [[nodiscard]] auto backgroundImage(u8 index) const -> QLabel*;
     [[nodiscard]] auto currentBackgroundImage() const -> QLabel*;
     [[nodiscard]] auto tree(u8 index) const -> TrackTree*;
