@@ -254,10 +254,14 @@ void PlaylistView::removeBackgroundImage(const u8 index) const {
 }
 
 void PlaylistView::setBackgroundImage(
-    const u8 index,
+    const u8 index,  // NOLINT
     const u16 height,
     const QString& path
 ) const {
+    if (!QFile(path).exists()) {
+        return;
+    }
+
     QLabel* centerLabel = backgroundImage(index);
     QWidget* pageWidget = page(index);
 
