@@ -502,12 +502,13 @@ void MainWindow::retranslate(const QLocale::Language language) {
                               : label
         );
 
-        for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
+        for (const TrackProperty column : DEFAULT_COLUMN_PROPERTIES) {
             model->setHeaderData(
                 column,
                 Qt::Horizontal,
-                propertyLabelMap[as<TrackProperty>(column)]
+                propertyLabelMap[column]
             );
+            tree->resizeColumnToContents(column);
         }
     }
 
@@ -770,6 +771,10 @@ void MainWindow::handleHeaderPress(
                     const bool currentlyHidden =
                         trackTree->isColumnHidden(columnIndex);
                     trackTree->setColumnHidden(columnIndex, !currentlyHidden);
+
+                    if (currentlyHidden) {
+                        trackTree->resizeColumnToContents(columnIndex);
+                    }
                 }
             });
 
