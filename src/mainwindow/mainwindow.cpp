@@ -452,8 +452,8 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
     equalizerMenu->saveSettings();
 
     DockWidgetPosition dockWidgetPosition;
-    Qt::Orientation mainAreaOrientation = mainArea->orientation();
-    u8 dockWidgetIndex = mainArea->children().indexOf(dockMetadataTree);
+    const Qt::Orientation mainAreaOrientation = mainArea->orientation();
+    const u8 dockWidgetIndex = mainArea->indexOf(dockWidget);
 
     if (mainAreaOrientation == Qt::Horizontal) {
         dockWidgetPosition = dockWidgetIndex == 0 ? Left : Right;
