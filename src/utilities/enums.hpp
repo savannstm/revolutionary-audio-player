@@ -68,6 +68,7 @@ enum PlaylistFileType : u8 {
 };
 
 enum TabRemoveMode : u8 {
+    Single,
     ToLeft,
     ToRight,
     Other

@@ -22,9 +22,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QCloseEvent>
-#include <QDir>
 #include <QLabel>
-#include <QLineEdit>
 #include <QLocalServer>
 #include <QMainWindow>
 #include <QPushButton>

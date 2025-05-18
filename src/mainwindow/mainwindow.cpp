@@ -219,12 +219,17 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
         &MainWindow::changePlaylist
     );
 
-    connect(playlistView, &PlaylistView::tabRemoved, this, [&](const i8 index) {
+    connect(
+        playlistView,
+        &PlaylistView::tabsRemoved,
+        this,
+        [&](const TabRemoveMode mode, const u8 index, const u8 count) {
         if (playingPlaylist >= index) {
-            playingPlaylist -= 1;
+            playingPlaylist -= count;
             changePlaylist(playingPlaylist);
         }
-    });
+    }
+    );
 
     connect(actionRussian, &QAction::triggered, this, [&] {
         retranslate(QLocale::Russian);
@@ -1322,8 +1327,9 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
             ->setText(1, metadata[property]);
     }
 
-    QPixmap cover;
     const vector<u8> coverBytes = extractCover(metadata[Path].toUtf8().data());
+
+    QPixmap cover;
     cover.loadFromData(coverBytes.data(), coverBytes.size());
     dockCoverLabel->setPixmap(cover);
     dockCoverLabel->setMinimumSize(MINIMUM_COVER_SIZE);

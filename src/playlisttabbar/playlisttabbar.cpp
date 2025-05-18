@@ -37,33 +37,14 @@ void PlaylistTabBar::insertTab(
         });
 
         connect(tab, &PlaylistTab::clicked, this, [=, this] {
-            handleTabClicked(tab);
+            setCurrentIndex(tabIndex(tab));
         });
 
         connect(
             tab,
             &PlaylistTab::removeTabsRequested,
             this,
-            [=, this](const TabRemoveMode mode) {
-            switch (mode) {
-                case Other:
-                case ToRight:
-                    for (u8 i = tabCount() - 1; i > index; i--) {
-                        removeTab(i);
-                    }
-
-                    if (mode == ToRight) {
-                        break;
-                    }
-                case ToLeft:
-                    for (u8 i = index - 1; i >= 0; i--) {
-                        removeTab(i);
-                    }
-                    break;
-            }
-
-            emit tabsRemoved(mode, tabIndex(tab));
-        }
+            [&, index](const TabRemoveMode mode) { removeTabs(mode, index); }
         );
 
         connect(
@@ -105,8 +86,6 @@ void PlaylistTabBar::removeTab(const u8 index) {
     if (previousIndex >= index) {
         previousIndex--;
     }
-
-    emit tabRemoved(index);
 
     i8 nextIndex = currentIndex_;
 
@@ -152,14 +131,34 @@ auto PlaylistTabBar::tabIndex(const PlaylistTab* tab) const -> i8 {
     return as<i8>(tabs.indexOf(tab));
 }
 
-void PlaylistTabBar::handleTabClicked(PlaylistTab* tab) {
-    setCurrentIndex(tabIndex(tab));
-}
-
 auto PlaylistTabBar::tabLabel(const u8 index) const -> QString {
     return tabs[index]->label();
 }
 
 void PlaylistTabBar::setTabLabel(const u8 index, const QString& label) {
     tabs[index]->setLabel(label);
+}
+
+void PlaylistTabBar::removeTabs(const TabRemoveMode mode, const u8 index) {
+    switch (mode) {
+        case Single:
+            removeTab(index);
+            break;
+        case Other:
+        case ToRight:
+            for (i8 i = as<i8>(tabCount() - 1); i > index; i--) {
+                removeTab(i);
+            }
+
+            if (mode == ToRight) {
+                break;
+            }
+        case ToLeft:
+            for (i8 i = as<i8>(index - 1); i >= 0; i--) {
+                removeTab(i);
+            }
+            break;
+    }
+
+    emit tabsRemoved(mode, index);
 }

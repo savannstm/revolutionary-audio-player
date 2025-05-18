@@ -43,13 +43,6 @@ PlaylistView::PlaylistView(QWidget* parent) : QWidget(parent) {
 
     connect(
         tabBar,
-        &PlaylistTabBar::tabRemoved,
-        this,
-        &PlaylistView::removeTabPage
-    );
-
-    connect(
-        tabBar,
         &PlaylistTabBar::tabAdded,
         this,
         &PlaylistView::createTabPage
@@ -78,10 +71,17 @@ PlaylistView::PlaylistView(QWidget* parent) : QWidget(parent) {
 }
 
 void PlaylistView::removeTabPages(const TabRemoveMode mode, const u8 index) {
+    u8 count = 0;
+
     switch (mode) {
+        case Single:
+            count += 1;
+            removeTabPage(index);
+            break;
         case Other:
         case ToRight:
-            for (u8 i = tabCount() - 1; i > index; i--) {
+            for (i8 i = as<i8>(tabCount() - 1); i > index; i--) {
+                count += 1;
                 removeTabPage(i);
             }
 
@@ -89,11 +89,14 @@ void PlaylistView::removeTabPages(const TabRemoveMode mode, const u8 index) {
                 break;
             }
         case ToLeft:
-            for (u8 i = index - 1; i >= 0; i--) {
+            for (i8 i = as<i8>(index - 1); i >= 0; i--) {
+                count += 1;
                 removeTabPage(i);
             }
             break;
     }
+
+    emit tabsRemoved(mode, index, count);
 }
 
 auto PlaylistView::createPage(
@@ -399,8 +402,6 @@ void PlaylistView::removeTabPage(const u8 index) {
     QWidget* widget = stackedWidget->widget(index);
     stackedWidget->removeWidget(widget);
     delete widget;
-
-    emit tabRemoved(index);
 }
 
 auto PlaylistView::tabCount() const -> u8 {

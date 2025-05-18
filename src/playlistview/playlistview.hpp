@@ -54,7 +54,7 @@ class PlaylistView : public QWidget {
     void renameTabRequested(u8 index);
     void closeTabRequested(u8 index);
     void indexChanged(i8 index);
-    void tabRemoved(u8 index);
+    void tabsRemoved(TabRemoveMode mode, u8 index, u8 count);
 
    private:
     void changePage(i8 index);
