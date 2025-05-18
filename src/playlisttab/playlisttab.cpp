@@ -165,10 +165,12 @@ void PlaylistTab::createContextMenu() {
             selectedAction == exportXSPFAction ? XSPF : M3U8
         );
     } else {
+        // NOLINTBEGIN Code is kinda understanable
         emit removeTabsRequested(
             selectedAction == removeToLeftAction    ? TabRemoveMode::ToLeft
             : selectedAction == removeToRightAction ? TabRemoveMode::ToRight
                                                     : TabRemoveMode::Other
         );
+        // NOLINTEND
     }
 }

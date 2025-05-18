@@ -80,7 +80,7 @@ void PlaylistView::removeTabPages(const TabRemoveMode mode, const u8 index) {
             break;
         case Other:
         case ToRight:
-            for (i8 i = as<i8>(tabCount() - 1); i > index; i--) {
+            for (i8 i = as<i8>(stackedWidget->count() - 1); i > index; i--) {
                 count += 1;
                 removeTabPage(i);
             }
@@ -261,7 +261,7 @@ void PlaylistView::setBackgroundImage(
     const u16 height,
     const QString& path
 ) const {
-    if (!QFile(path).exists()) {
+    if (!QFile::exists(path)) {
         return;
     }
 
