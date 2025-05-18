@@ -29,7 +29,8 @@ class SettingsWindow : public QDialog {
    private:
     static void removeOpenDirectoryEntry();
     static void addOpenDirectoryEntry();
-    static void associateFileTypes();
+    static void createFileAssociations();
+    static void removeFileAssociations();
     auto setupUi() -> Ui::SettingsWindow*;
 
     Ui::SettingsWindow* ui = setupUi();
@@ -40,6 +41,7 @@ class SettingsWindow : public QDialog {
     QComboBox* playlistNamingSelect = ui->playlistNamingSelect;
     QComboBox* dragDropSelect = ui->dragdropSelect;
     QCheckBox* createMenuItemCheckbox = ui->createMenuItemCheckbox;
+    QCheckBox* setAssociationsCheckbox = ui->setAssociationsCheckbox;
     QComboBox* outputDeviceSelect = ui->outputDeviceSelect;
 
     const QList<QAudioDevice> devices = QMediaDevices::audioOutputs();

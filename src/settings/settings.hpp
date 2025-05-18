@@ -150,7 +150,7 @@ class EqualizerSettings {
     bool enabled = false;
     u8 bandIndex = 2;
     u16 presetIndex = 0;
-    QMap<i32, QMap<QString, QVector<i8>>> presets = { { TEN_BANDS, {} },
+    QMap<u16, QMap<QString, QVector<i8>>> presets = { { TEN_BANDS, {} },
                                                       { EIGHTEEN_BANDS, {} },
                                                       { THIRTY_BANDS, {} } };
 };
@@ -172,6 +172,7 @@ class SettingsFlags {
         dragNDropMode = as<DragDropMode>(obj["dragNDropMode"].toInt());
         playlistNaming = as<PlaylistNaming>(obj["playlistNaming"].toInt());
         contextMenuEntryEnabled = obj["contextMenuEntryEnabled"].toBool();
+        fileAssociationsEnabled = obj["fileAssociationsEnabled"].toBool();
     }
 
     [[nodiscard]] auto stringify() const -> QJsonObject {
@@ -180,12 +181,16 @@ class SettingsFlags {
         json["dragNDropMode"] = dragNDropMode;
         json["playlistNaming"] = playlistNaming;
         json["contextMenuEntryEnabled"] = contextMenuEntryEnabled;
+        json["fileAssociationsEnabled"] = fileAssociationsEnabled;
         return json;
     }
 
     Style applicationStyle;
     DragDropMode dragNDropMode = DragDropMode::CreateNewPlaylist;
     PlaylistNaming playlistNaming = PlaylistNaming::DirectoryName;
+
+    // Self-explanatory.
+    bool fileAssociationsEnabled = false;
 
     // Open in RAP context menu entry.
     bool contextMenuEntryEnabled = false;

@@ -1,7 +1,8 @@
 #include "settingswindow.hpp"
 
+#include "associationswindows.hpp"
+
 #include <QAudioDevice>
-#include <QMediaDevices>
 #include <QSettings>
 #include <QStyleFactory>
 
@@ -26,6 +27,10 @@ SettingsWindow::SettingsWindow(
     );
     dragDropSelect->setCurrentIndex(settings->flags.dragNDropMode);
     playlistNamingSelect->setCurrentIndex(settings->flags.playlistNaming);
+    createMenuItemCheckbox->setChecked(settings->flags.contextMenuEntryEnabled);
+    setAssociationsCheckbox->setChecked(
+        settings->flags.fileAssociationsEnabled
+    );
 
     connect(
         styleSelect,
@@ -71,6 +76,23 @@ SettingsWindow::SettingsWindow(
         } else {
             removeOpenDirectoryEntry();
         }
+
+        settings->flags.contextMenuEntryEnabled = checked;
+    }
+    );
+
+    connect(
+        setAssociationsCheckbox,
+        &QCheckBox::toggled,
+        this,
+        [&](const bool checked) {
+        if (checked) {
+            createFileAssociations();
+        } else {
+            removeFileAssociations();
+        }
+
+        settings->flags.fileAssociationsEnabled = checked;
     }
     );
 
@@ -89,7 +111,7 @@ SettingsWindow::SettingsWindow(
         outputDeviceSelect,
         &QComboBox::currentIndexChanged,
         this,
-        [&](const i32 index) {
+        [&](const u8 index) {
         settings->outputDevice = devices[index];
         emit audioDeviceChanged(devices[index]);
     }
@@ -101,25 +123,13 @@ SettingsWindow::~SettingsWindow() {
 }
 
 void SettingsWindow::addOpenDirectoryEntry() {
+    QString appPath = QApplication::applicationFilePath();
+
 #ifdef Q_OS_WINDOWS
-    QSettings directoryEntry(
-        uR"(HKEY_CURRENT_USER\SOFTWARE\Classes\Directory\shell\Open directory in RAP)"_s,
-        QSettings::NativeFormat
-    );
-
-    directoryEntry.setValue("Default", "Open directory in RAP");
-
-    QSettings commandEntry(
-        uR"(HKEY_CURRENT_USER\SOFTWARE\Classes\Directory\shell\Open directory in RAP\command)"_s,
-        QSettings::NativeFormat
-    );
-
-    commandEntry.setValue(
-        "Default",
-        uR"("%1")"_s.arg(
-            QApplication::applicationFilePath().replace('/', '\\')
-        ) + uR"( "%1")"_s
-    );
+    createContextMenuDirectoryEntryWindows(wstring(
+        ras<const wchar*>(appPath.replace('/', '\\').utf16()),
+        appPath.length()
+    ));
 
 #elifdef Q_OS_LINUX
     // TODO
@@ -130,131 +140,42 @@ void SettingsWindow::addOpenDirectoryEntry() {
 
 void SettingsWindow::removeOpenDirectoryEntry() {
 #ifdef Q_OS_WINDOWS
-    QSettings directoryEntry(
-        uR"(HKEY_CURRENT_USER\SOFTWARE\Classes\Directory\shell\Open directory in RAP)"_s,
-        QSettings::NativeFormat
-    );
-    directoryEntry.setValue("Default", "");
+    removeContextMenuDirectoryEntryWindows();
 
-    QSettings commandEntry(
-        uR"(HKEY_CURRENT_USER\SOFTWARE\Classes\Directory\shell\Open directory in RAP\command)"_s,
-        QSettings::NativeFormat
-    );
-
-    commandEntry.setValue("Default", "");
-
-    QSettings topEntry(
-        uR"(HKEY_CURRENT_USER\SOFTWARE\Classes\Directory\shell)"_s,
-        QSettings::NativeFormat
-    );
-
-    topEntry.remove("Open directory in RAP");
 #elifdef Q_OS_LINUX
     // TODO
 #elifdef Q_OS_MACOS
     // TODO
-
 #endif
 }
 
-void SettingsWindow::associateFileTypes() {
+void SettingsWindow::createFileAssociations() {
     QString appDir = QApplication::applicationDirPath();
     QString iconPath = appDir + "/icons/rap-logo.ico";
     QString appPath = QApplication::applicationFilePath();
 
 #ifdef Q_OS_WINDOWS
-
     appDir = appDir.replace('/', '\\');
     iconPath = iconPath.replace('/', '\\');
     appPath = appPath.replace('/', '\\');
 
-    for (const QStringView extension : ALLOWED_FILE_EXTENSIONS) {
-        QSettings extensionEntry(
-            uR"(HKEY_CURRENT_USER\SOFTWARE\Classes\rap.%1)"_s.arg(extension),
-            QSettings::NativeFormat
-        );
-        extensionEntry.setValue("Default", extension.toString());
+    createFileAssociationsWindows(
+        wstring(ras<const wchar*>(appPath.utf16()), appPath.length()),
+        wstring(ras<const wchar*>(iconPath.utf16()), iconPath.length())
+    );
+#elifdef Q_OS_LINUX
+    // TODO
+#elifdef Q_OS_MACOS
+    // TODO
+#endif
+}
 
-        QSettings defaultIconEntry(
-            uR"(HKEY_CURRENT_USER\SOFTWARE\Classes\rap.%1\DefaultIcon)"_s.arg(
-                extension
-            ),
-            QSettings::NativeFormat
-        );
-        defaultIconEntry.setValue("Default", uR"("%1")"_s.arg(iconPath));
-
-        QSettings shellEntry(
-            uR"(HKEY_CURRENT_USER\SOFTWARE\Classes\rap.%1\shell)"_s.arg(
-                extension
-            ),
-            QSettings::NativeFormat
-        );
-        shellEntry.setValue("Default", "open");
-
-        QSettings openEntry(
-            uR"(HKEY_CURRENT_USER\SOFTWARE\Classes\rap.%1\shell\open)"_s.arg(
-                extension
-            ),
-            QSettings::NativeFormat
-        );
-        openEntry.setValue("Default", "Open in RAP");
-
-        QSettings commandEntry(
-            uR"(HKEY_CURRENT_USER\SOFTWARE\Classes\rap.%1\shell\open\command)"_s
-                .arg(extension),
-            QSettings::NativeFormat
-        );
-
-        commandEntry.setValue(
-            "Default",
-            uR"("%1")"_s.arg(appPath) + uR"( "%1")"_s
-        );
-
-        QSettings associationEntry(
-            uR"(HKEY_CURRENT_USER\SOFTWARE\Classes\.%1)"_s.arg(extension)
-        );
-
-        associationEntry.setValue("Default", u"rap.%1"_s.arg(extension));
-    }
+void SettingsWindow::removeFileAssociations() {
+#ifdef Q_OS_WINDOWS
+    removeFileAssociationsWindows();
 
 #elifdef Q_OS_LINUX
-
-    iconPath = iconPath.replace(".ico", ".png");
-
-    QString desktopEntryPath =
-        QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation) +
-        "/rap.desktop";
-    QFile desktopFile(desktopEntryPath);
-    if (desktopFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&desktopFile);
-        out << "[Desktop Entry]\n";
-        out << "Name=RAP\n";
-        out << "Exec=" << appPath << " %f\n";
-        out << "Type=Application\n";
-        out << "Icon=" << iconPath << '\n';
-        out << "Categories=AudioVideo;\n";
-
-        QString mimeTypes;
-
-        for (const QStringView extension : ALLOWED_FILE_EXTENSIONS) {
-            const QString mimeType = "audio/x-" + extension.toString();
-            mimeTypes += mimeType + ";";
-        }
-
-        out << "MimeType=" << mimeTypes << '\n';
-        desktopFile.close();
-    }
-
-    QProcess::execute(
-        "update-desktop-database " +
-        QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)
-    );
-
-    for (const QStringView extension : ALLOWED_FILE_EXTENSIONS) {
-        const QString mimeType = "audio/x-" + extension.toString();
-        QProcess::execute("xdg-mime default rap.desktop " + mimeType);
-    }
-
+    // TODO
 #elifdef Q_OS_MACOS
     // TODO
 #endif

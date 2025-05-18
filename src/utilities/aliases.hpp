@@ -51,6 +51,7 @@ using f32 = float;
 using f64 = double;
 using str = char*;
 using cstr = const char*;
+using wchar = wchar_t;
 
 using fs::path;
 using std::abs;
@@ -76,6 +77,7 @@ using std::toupper;
 using std::tuple;
 using std::unique_ptr;
 using std::vector;
+using std::wstring;
 
 using panic = std::runtime_error;
 template <typename T, typename E>

@@ -128,10 +128,32 @@ constexpr array<TrackProperty, TRACK_PROPERTY_COUNT> DEFAULT_COLUMN_PROPERTIES =
 
 // Allowed file extensions for tracks
 // Although ALAC uses MPEG containers, let it be here
+constexpr QStringView EXT_MP3 = u"mp3";
+constexpr QStringView EXT_FLAC = u"flac";
+constexpr QStringView EXT_OPUS = u"opus";
+constexpr QStringView EXT_AAC = u"aac";
+constexpr QStringView EXT_WAV = u"wav";
+constexpr QStringView EXT_OGG = u"ogg";
+constexpr QStringView EXT_M4A = u"m4a";
+constexpr QStringView EXT_MP4 = u"mp4";
+constexpr QStringView EXT_MKV = u"mkv";
+constexpr QStringView EXT_MKA = u"mka";
+constexpr QStringView EXT_ALAC = u"alac";
+constexpr QStringView EXT_MOV = u"mov";
+
 constexpr array<QStringView, 12> ALLOWED_FILE_EXTENSIONS = {
-    u"mp3", u"flac", u"opus", u"aac", u"wav",  u"ogg",
-    u"m4a", u"mp4",  u"mkv",  u"mka", u"alac", u"mov"
+    EXT_MP3, EXT_FLAC, EXT_OPUS, EXT_AAC, EXT_WAV,  EXT_OGG,
+    EXT_M4A, EXT_MP4,  EXT_MKV,  EXT_MKA, EXT_ALAC, EXT_MOV,
 };
+
+constexpr array<QStringView, 9> ALLOWED_MUSIC_FILE_EXTENSIONS = {
+    EXT_MP3, EXT_FLAC, EXT_OPUS, EXT_AAC,  EXT_WAV,
+    EXT_OGG, EXT_M4A,  EXT_MKA,  EXT_ALAC,
+};
+
+constexpr array<QStringView, 3> ALLOWED_VIDEO_FILE_EXTENSIONS = { EXT_MP4,
+                                                                  EXT_MKV,
+                                                                  EXT_MOV };
 
 // Searchable track property names
 constexpr array<QStringView, TRACK_PROPERTY_COUNT> SEARCH_PROPERTIES = {

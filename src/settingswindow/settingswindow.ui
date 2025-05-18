@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>331</width>
-    <height>242</height>
+    <height>284</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -144,6 +144,34 @@
        <widget class="QCheckBox" name="createMenuItemCheckbox">
         <property name="text">
          <string>Create &quot;Open in RAP&quot; directory context menu item</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="setAssociationsContainer" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
+      <property name="spacing">
+       <number>16</number>
+      </property>
+      <property name="leftMargin">
+       <number>8</number>
+      </property>
+      <property name="topMargin">
+       <number>8</number>
+      </property>
+      <property name="rightMargin">
+       <number>8</number>
+      </property>
+      <property name="bottomMargin">
+       <number>8</number>
+      </property>
+      <item>
+       <widget class="QCheckBox" name="setAssociationsCheckbox">
+        <property name="text">
+         <string>Set file associations for audio files</string>
         </property>
        </widget>
       </item>
