@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 
 # Project definition
 set(PROJECT_NAME rap)
-set(PROJECT_VERSION "0.3.0")
+set(PROJECT_VERSION "0.3.1")
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES C CXX)
 
 # Set standards for C and C++
