@@ -307,12 +307,16 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
         u16 dockWidgetWidth = dockWidget->width();
         u16 dockWidgetHeight = dockWidget->height();
 
-        if (!playlistView->hasBackgroundImage(playlistView->currentIndex())) {
+        const i8 currentIndex = playlistView->currentIndex();
+        if (currentIndex == -1) {
             return;
         }
 
-        const QWidget* pageWidget =
-            playlistView->page(playlistView->currentIndex());
+        if (!playlistView->hasBackgroundImage(currentIndex)) {
+            return;
+        }
+
+        const QWidget* pageWidget = playlistView->page(currentIndex);
         auto* leftLabel = pageWidget->findChild<QLabel*>("leftLabel");
         auto* centerLabel = pageWidget->findChild<QLabel*>("centerLabel");
         auto* rightLabel = pageWidget->findChild<QLabel*>("rightLabel");
