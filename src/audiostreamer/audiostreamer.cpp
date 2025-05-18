@@ -2,7 +2,7 @@
 
 #include <libavutil/avutil.h>
 
-constexpr i32 MIN_BUFFER_SIZE = 16384;
+constexpr u16 MIN_BUFFER_SIZE = 4096;
 
 AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
     format_.setSampleFormat(QAudioFormat::Float);
