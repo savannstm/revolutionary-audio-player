@@ -670,21 +670,16 @@
     </property>
     <addaction name="actionOpenFile"/>
     <addaction name="actionOpenFolder"/>
+    <addaction name="actionOpenPlaylist"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
-   <widget class="QMenu" name="menuEdit">
-    <property name="title">
-     <string>Edit</string>
-    </property>
-    <addaction name="actionSettings"/>
-   </widget>
    <widget class="QMenu" name="menuAbout">
     <property name="title">
-     <string>About</string>
+     <string>Help</string>
     </property>
     <addaction name="actionAbout"/>
-    <addaction name="actionHelp"/>
+    <addaction name="actionDocumentation"/>
    </widget>
    <widget class="QMenu" name="menuPlaylist">
     <property name="title">
@@ -692,6 +687,10 @@
     </property>
     <addaction name="actionAddFile"/>
     <addaction name="actionAddFolder"/>
+    <addaction name="actionAddPlaylist"/>
+    <addaction name="separator"/>
+    <addaction name="actionExportXSPFPlaylist"/>
+    <addaction name="actionExportM3U8Playlist"/>
    </widget>
    <widget class="QMenu" name="menuLanguage">
     <property name="title">
@@ -700,11 +699,17 @@
     <addaction name="actionRussian"/>
     <addaction name="actionEnglish"/>
    </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionSettings"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuPlaylist"/>
-   <addaction name="menuEdit"/>
-   <addaction name="menuAbout"/>
+   <addaction name="menuSettings"/>
    <addaction name="menuLanguage"/>
+   <addaction name="menuAbout"/>
   </widget>
   <action name="actionOpenFile">
    <property name="text">
@@ -723,7 +728,7 @@
   </action>
   <action name="actionAbout">
    <property name="text">
-    <string>About</string>
+    <string>About RAP</string>
    </property>
   </action>
   <action name="actionForward">
@@ -780,9 +785,9 @@
     <string>Settings</string>
    </property>
   </action>
-  <action name="actionHelp">
+  <action name="actionDocumentation">
    <property name="text">
-    <string>Help</string>
+    <string>Usage Documentation</string>
    </property>
   </action>
   <action name="actionAddFile">
@@ -797,7 +802,7 @@
   </action>
   <action name="actionRussian">
    <property name="text">
-    <string>Russian</string>
+    <string>Русский</string>
    </property>
   </action>
   <action name="actionEnglish">
@@ -811,6 +816,26 @@
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="actionAddPlaylist">
+   <property name="text">
+    <string>Add Playlist</string>
+   </property>
+  </action>
+  <action name="actionOpenPlaylist">
+   <property name="text">
+    <string>Open Playlist</string>
+   </property>
+  </action>
+  <action name="actionExportXSPFPlaylist">
+   <property name="text">
+    <string>Export XSPF Playlist</string>
+   </property>
+  </action>
+  <action name="actionExportM3U8Playlist">
+   <property name="text">
+    <string>Export M3U8 Playlist</string>
    </property>
   </action>
  </widget>

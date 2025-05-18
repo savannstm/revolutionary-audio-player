@@ -64,7 +64,8 @@ enum Style : u8 {
 
 enum PlaylistFileType : u8 {
     XSPF,
-    M3U8
+    M3U,
+    CUE
 };
 
 enum TabRemoveMode : u8 {

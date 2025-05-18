@@ -31,8 +31,6 @@ class PlaylistTab : public QPushButton {
     void removeTabRequested();
     void addButtonClicked();
     void removeTabsRequested(TabRemoveMode mode);
-    void exportPlaylistRequested(PlaylistFileType playlistType);
-    void importPlaylistRequested(PlaylistFileType playlistType);
 
    protected:
     void mousePressEvent(QMouseEvent* event) override;

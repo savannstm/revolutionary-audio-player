@@ -31,8 +31,6 @@ class PlaylistTabBar : public QWidget {
     void tabAdded(u8 index);
     void addButtonClicked(u8 index);
     void tabsRemoved(TabRemoveMode mode, u8 index);
-    void exportPlaylistRequested(u8 index, PlaylistFileType playlistType);
-    void importPlaylistRequested(PlaylistFileType playlistType);
 
    private:
     void removeTabs(TabRemoveMode mode, u8 index);

@@ -60,32 +60,6 @@ PlaylistTab::PlaylistTab(const QString& text, bool closable, QWidget* parent) :
 
         connect(
             tabButton,
-            &QToolButton::customContextMenuRequested,
-            this,
-            [=, this] {
-            auto* menu = new QMenu(this);
-
-            const QAction* importXSPFAction =
-                menu->addAction(tr("Import .xspf"));
-            const QAction* importM3U8Action =
-                menu->addAction(tr("Import .m3u8"));
-
-            const QAction* selectedAction =
-                menu->exec(mapToGlobal(QPoint(0, this->height())));
-            delete menu;
-
-            if (selectedAction == nullptr) {
-                return;
-            }
-
-            emit importPlaylistRequested(
-                selectedAction == importXSPFAction ? XSPF : M3U8
-            );
-        }
-        );
-
-        connect(
-            tabButton,
             &QToolButton::clicked,
             this,
             &PlaylistTab::addButtonClicked
@@ -143,8 +117,6 @@ void PlaylistTab::createContextMenu() {
         menu->addAction(tr("Remove All Other Tabs"));
     const QAction* removeToRightAction =
         menu->addAction(tr("Remove All Tabs To Right"));
-    const QAction* exportXSPFAction = menu->addAction(tr("Export .xspf"));
-    const QAction* exportM3U8Action = menu->addAction(tr("Export .m3u8"));
 
     const QAction* selectedAction =
         menu->exec(mapToGlobal(QPoint(0, this->height())));
@@ -159,11 +131,6 @@ void PlaylistTab::createContextMenu() {
         label_->setStyleSheet(QString());
         label_->setFocus();
         label_->selectAll();
-    } else if (selectedAction == exportXSPFAction ||
-               selectedAction == exportM3U8Action) {
-        emit exportPlaylistRequested(
-            selectedAction == exportXSPFAction ? XSPF : M3U8
-        );
     } else {
         // NOLINTBEGIN Code is kinda understanable
         emit removeTabsRequested(

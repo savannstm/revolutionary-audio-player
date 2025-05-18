@@ -29,6 +29,7 @@
 #include <QMimeData>
 #include <QShortcut>
 #include <QWidgetAction>
+#include <QXmlStreamReader>
 
 auto MainWindow::setupUi() -> Ui::MainWindow* {
     auto* ui_ = new Ui::MainWindow();
@@ -210,7 +211,28 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
         &MainWindow::showSettingsWindow
     );
 
-    connect(actionHelp, &QAction::triggered, this, &MainWindow::showHelpWindow);
+    connect(
+        actionDocumentation,
+        &QAction::triggered,
+        this,
+        &MainWindow::showHelpWindow
+    );
+
+    connect(actionOpenPlaylist, &QAction::triggered, this, [&] {
+        importPlaylist(true);
+    });
+
+    connect(actionAddPlaylist, &QAction::triggered, this, [&] {
+        importPlaylist(false);
+    });
+
+    connect(actionExportM3U8Playlist, &QAction::triggered, this, [&] {
+        exportPlaylist(M3U);
+    });
+
+    connect(actionExportXSPFPlaylist, &QAction::triggered, this, [&] {
+        exportPlaylist(XSPF);
+    });
 
     connect(
         playlistView,
@@ -223,9 +245,10 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
         playlistView,
         &PlaylistView::tabsRemoved,
         this,
-        [&](const TabRemoveMode mode, const u8 index, const u8 count) {
+        [&](const TabRemoveMode mode, const u8 index, const u8 count)  // NOLINT
+    {
         if (playingPlaylist >= index) {
-            playingPlaylist -= count;
+            playingPlaylist = as<i8>(playingPlaylist - count);
             changePlaylist(playingPlaylist);
         }
     }
@@ -1033,7 +1056,7 @@ void MainWindow::showHelpWindow() {
 void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
     const QString searchDirectory =
         settings->lastOpenedDirectory.isEmpty() ||
-                !QDir(settings->lastOpenedDirectory).exists()
+                !QFile::exists(settings->lastOpenedDirectory)
             ? QDir::rootPath()
             : settings->lastOpenedDirectory;
     QString path;
@@ -1495,3 +1518,285 @@ void MainWindow::resetSorting(
         trackTree->sortByPath();
     }
 };
+
+void MainWindow::importPlaylist(const bool createNewTab) {
+    const QString filter =
+        tr("XSPF/M3U/CUE Playlist (*.xspf *.m3u8 *.m3u *.cue)");
+    const QUrl fileUrl = QFileDialog::getOpenFileUrl(
+        this,
+        tr("Open Playlist File"),
+        QString(),
+        filter
+    );
+
+    if (fileUrl.isEmpty()) {
+        return;
+    }
+
+    const QString filePath = fileUrl.toLocalFile();
+    const QFileInfo filePathInfo = QFileInfo(filePath);
+    const QString dirPath = filePathInfo.absolutePath() + '/';
+    const QString extension = filePathInfo.suffix().toLower();
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, tr("Error"), file.errorString());
+        return;
+    }
+
+    QStringList filePaths;
+
+    auto appendIfExists = [&](const QString& relativePath) {
+        const QString localFilePath = dirPath + relativePath;
+
+        if (QFile::exists(localFilePath)) {
+            filePaths.append(localFilePath);
+        }
+    };
+
+    if (extension == "xspf") {
+        QXmlStreamReader xml(&file);
+
+        while (!xml.atEnd()) {
+            if (xml.readNext() == QXmlStreamReader::StartElement &&
+                xml.name() == "location") {
+                appendIfExists(xml.readElementText());
+            }
+        }
+
+        if (xml.hasError()) {
+            QMessageBox::warning(this, tr("Error"), xml.errorString());
+            return;
+        }
+    } else if (extension == "m3u" || extension == "m3u8") {
+        QTextStream input(&file);
+
+        while (!input.atEnd()) {
+            const QString line = input.readLine().trimmed();
+
+            if (!line.isEmpty() && !line.startsWith('#')) {
+                appendIfExists(line);
+            }
+        }
+    } else if (extension == "cue") {
+        // TODO
+    }
+
+    if (filePaths.isEmpty()) {
+        QMessageBox::information(
+            this,
+            tr("No Files Found"),
+            tr("No valid tracks were found in the playlist.")
+        );
+        return;
+    }
+
+    const i8 currentIndex = playlistView->currentIndex();
+    const u8 index = (createNewTab || currentIndex == -1)
+                         ? playlistView->addTab(filePathInfo.fileName())
+                         : currentIndex;
+
+    playlistView->tree(index)->fillTable(filePaths);
+}
+
+void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
+    const i8 index = playlistView->currentIndex();
+    if (index == -1) {
+        return;
+    }
+
+    const auto* trackTree = playlistView->tree(index);
+
+    QString outputPath =
+        QFileDialog::getExistingDirectory(this, tr("Select Output Directory"));
+
+    if (outputPath.isEmpty()) {
+        return;
+    }
+
+    outputPath += u"/%1.%2"_s.arg(
+        playlistView->tabLabel(index),
+        playlistType == XSPF ? "xspf" : "m3u8"
+    );
+
+    if (QFile::exists(outputPath)) {
+        const auto pressedButton = QMessageBox::warning(
+            this,
+            tr("Playlist already exists"),
+            tr("Playlist already exists. Rewrite it?"),
+            QMessageBox::Yes | QMessageBox::No
+        );
+
+        if (pressedButton != QMessageBox::Yes) {
+            return;
+        }
+    }
+
+    const u16 rowCount = trackTree->model()->rowCount();
+    vector<HashMap<TrackProperty, QString>> properties;
+    properties.reserve(rowCount);
+
+    for (const u16 row : range(0, rowCount)) {
+        properties.emplace_back(trackTree->rowMetadata(row));
+    }
+
+    const auto result = playlistType == XSPF
+                            ? exportXSPF(outputPath, properties)
+                            : exportM3U8(outputPath, properties);
+
+    if (!result) {
+        const auto pressedButton = QMessageBox::warning(
+            this,
+            tr("Unable to export playlist"),
+            tr("Error: %1").arg(result.error()),
+            QMessageBox::Retry
+        );
+
+        if (pressedButton == QMessageBox::Retry) {
+            exportPlaylist(playlistType);
+        }
+    }
+}
+
+static constexpr auto getXSPFTag(TrackProperty property) -> QString {
+    switch (property) {
+        case TrackProperty::Title:
+            return "title";
+        case TrackProperty::Artist:
+            return "creator";
+        case TrackProperty::Album:
+            return "album";
+        case TrackProperty::AlbumArtist:
+            return "albumArtist";
+        case TrackProperty::Genre:
+            return "genre";
+        case TrackProperty::Duration:
+            return "duration";
+        case TrackProperty::TrackNumber:
+            return "trackNum";
+        case TrackProperty::Comment:
+            return "annotation";
+        case TrackProperty::Path:
+            return "location";
+        case TrackProperty::Composer:
+            return "composer";
+        case TrackProperty::Publisher:
+            return "publisher";
+        case TrackProperty::Year:
+            return "year";
+        case TrackProperty::BPM:
+            return "bpm";
+        case TrackProperty::Language:
+            return "language";
+        case TrackProperty::DiscNumber:
+            return "disc";
+        case TrackProperty::Bitrate:
+            return "bitrate";
+        case TrackProperty::SampleRate:
+            return "samplerate";
+        case TrackProperty::Channels:
+            return "channels";
+        case TrackProperty::Format:
+            return "format";
+        default:
+            return {};
+            break;
+    }
+}
+
+auto MainWindow::exportXSPF(
+    const QString& outputPath,
+    const vector<HashMap<TrackProperty, QString>>& metadataVector
+) -> result<bool, QString> {
+    QFile file(outputPath);
+
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return err(file.errorString());
+    }
+
+    QTextStream output(&file);
+    output.setEncoding(QStringConverter::Utf8);
+
+    output << R"(<?xml version="1.0" encoding="UTF-8"?>)";
+    output << '\n';
+    output << R"(<playlist version="1" xmlns="http://xspf.org/ns/0/">)";
+    output << '\n';
+    output << "<trackList>";
+    output << '\n';
+
+    for (const auto& metadata : metadataVector) {
+        output << "<track>";
+        output << '\n';
+
+        for (const auto& [property, value] : views::drop(metadata, 1)) {
+            const QString tag = getXSPFTag(property);
+
+            QString content = value;
+
+            if (property == TrackProperty::Path) {
+                content =
+                    QDir(outputPath.sliced(0, outputPath.lastIndexOf('/')))
+                        .relativeFilePath(value);
+            }
+
+            output << '<' << tag << '>' << content.toHtmlEscaped() << "</"
+                   << tag << '>';
+            output << '\n';
+        }
+
+        output << "</track>";
+        output << '\n';
+    }
+
+    output << "</trackList>";
+    output << '\n';
+    output << "</playlist>";
+    output << '\n';
+
+    file.close();
+    return true;
+}
+
+auto MainWindow::exportM3U8(
+    const QString& outputPath,
+    const vector<HashMap<TrackProperty, QString>>& metadataVector
+) -> result<bool, QString> {
+    QFile outputFile = QFile(outputPath);
+
+    if (!outputFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return err(outputFile.errorString());
+    }
+
+    QTextStream output(&outputFile);
+    output.setEncoding(QStringConverter::Utf8);
+
+    output << "#EXTM3U";
+    output << '\n';
+
+    for (const auto& metadata : metadataVector) {
+        const QString title = metadata.find(Title)->second;
+        const QString artist = metadata.find(Artist)->second;
+        const QString path = metadata.find(Path)->second;
+        const QString durationStr = metadata.find(Duration)->second;
+
+        u16 duration = 0;
+
+        const QStringList strings = durationStr.split(':');
+        const QString& minutes = strings[0];
+        const QString& seconds = strings[1];
+
+        duration += minutes.toUInt() * MINUTE_SECONDS;
+        duration += seconds.toUInt();
+
+        output << "#EXTINF:";
+        output << duration << ',' << artist << " - " << title;
+        output << '\n';
+
+        output << QDir(outputPath.sliced(0, outputPath.lastIndexOf('/')))
+                      .relativeFilePath(path);
+        output << '\n';
+    }
+
+    outputFile.close();
+    return true;
+}

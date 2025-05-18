@@ -47,32 +47,15 @@ void PlaylistTabBar::insertTab(
             [&, index](const TabRemoveMode mode) { removeTabs(mode, index); }
         );
 
-        connect(
-            tab,
-            &PlaylistTab::exportPlaylistRequested,
-            this,
-            [=, this](const PlaylistFileType playlistType) {
-            emit exportPlaylistRequested(tabIndex(tab), playlistType);
-        }
-        );
-
     } else {
         connect(tab, &PlaylistTab::addButtonClicked, this, [=, this] {
             insertTab(tabCount(), QString(), true);
         });
-
-        connect(
-            tab,
-            &PlaylistTab::importPlaylistRequested,
-            this,
-            &PlaylistTabBar::importPlaylistRequested
-        );
     }
 
     emit tabAdded(tabCount() - 1);
 
     if (tabCount() == 1) {
-        previousIndex = 0;
         setCurrentIndex(0);
     }
 }

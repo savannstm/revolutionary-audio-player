@@ -58,62 +58,6 @@ class PlaylistView : public QWidget {
 
    private:
     void changePage(i8 index);
-    static inline auto exportXSPF(
-        const QString& outputPath,
-        const vector<HashMap<TrackProperty, QString>>& metadataVector
-    ) -> result<bool, QString>;
-    static inline auto exportM3U8(
-        const QString& outputPath,
-        const vector<HashMap<TrackProperty, QString>>& metadataVector
-    ) -> result<bool, QString>;
-    inline void exportPlaylist(u8 index, PlaylistFileType playlistType);
-    inline void importPlaylist(PlaylistFileType playlistType);
-
-    static constexpr auto getXSPFTag(TrackProperty property) -> QString {
-        switch (property) {
-            case TrackProperty::Title:
-                return "title";
-            case TrackProperty::Artist:
-                return "creator";
-            case TrackProperty::Album:
-                return "album";
-            case TrackProperty::AlbumArtist:
-                return "albumArtist";
-            case TrackProperty::Genre:
-                return "genre";
-            case TrackProperty::Duration:
-                return "duration";
-            case TrackProperty::TrackNumber:
-                return "trackNum";
-            case TrackProperty::Comment:
-                return "annotation";
-            case TrackProperty::Path:
-                return "location";
-            case TrackProperty::Composer:
-                return "composer";
-            case TrackProperty::Publisher:
-                return "publisher";
-            case TrackProperty::Year:
-                return "year";
-            case TrackProperty::BPM:
-                return "bpm";
-            case TrackProperty::Language:
-                return "language";
-            case TrackProperty::DiscNumber:
-                return "disc";
-            case TrackProperty::Bitrate:
-                return "bitrate";
-            case TrackProperty::SampleRate:
-                return "samplerate";
-            case TrackProperty::Channels:
-                return "channels";
-            case TrackProperty::Format:
-                return "format";
-            default:
-                return {};
-                break;
-        }
-    };
 
     PlaylistTabBar* tabBar = new PlaylistTabBar(this);
     QStackedWidget* stackedWidget = new QStackedWidget(this);

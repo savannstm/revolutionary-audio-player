@@ -106,6 +106,18 @@ class MainWindow : public QMainWindow {
     inline void moveDockWidget(DockWidgetPosition dockWidgetPosition);
     inline void processArgs(const QStringList& args);
     inline void focus();
+    inline void importPlaylist(bool createNewTab);
+    inline void exportPlaylist();
+
+    inline void exportPlaylist(PlaylistFileType playlistType);
+    static inline auto exportXSPF(
+        const QString& outputPath,
+        const vector<HashMap<TrackProperty, QString>>& metadataVector
+    ) -> result<bool, QString>;
+    static inline auto exportM3U8(
+        const QString& outputPath,
+        const vector<HashMap<TrackProperty, QString>>& metadataVector
+    ) -> result<bool, QString>;
 
     // UI - Widgets
     Ui::MainWindow* ui = setupUi();
@@ -149,22 +161,32 @@ class MainWindow : public QMainWindow {
     QIcon startIcon = QIcon::fromTheme("media-playback-start");
 
     // Actions & Menus
-    QAction* actionExit = ui->actionExit;
     QAction* actionOpenFile = ui->actionOpenFile;
     QAction* actionOpenFolder = ui->actionOpenFolder;
+    QAction* actionOpenPlaylist = ui->actionOpenPlaylist;
+    QAction* actionExit = ui->actionExit;
+
+    QAction* actionAddFile = ui->actionAddFile;
+    QAction* actionAddFolder = ui->actionAddFolder;
+    QAction* actionAddPlaylist = ui->actionAddPlaylist;
+
+    QAction* actionExportXSPFPlaylist = ui->actionExportXSPFPlaylist;
+    QAction* actionExportM3U8Playlist = ui->actionExportM3U8Playlist;
+
+    QAction* actionSettings = ui->actionSettings;
+
+    QAction* actionRussian = ui->actionRussian;
+    QAction* actionEnglish = ui->actionEnglish;
+
     QAction* actionAbout = ui->actionAbout;
+    QAction* actionDocumentation = ui->actionDocumentation;
+
     QAction* actionForward = ui->actionForward;
     QAction* actionBackward = ui->actionBackward;
     QAction* actionRepeat = ui->actionRepeat;
     QAction* actionTogglePlayback = ui->actionTogglePlayback;
     QAction* actionStop = ui->actionStop;
     QAction* actionRandom = ui->actionRandom;
-    QAction* actionSettings = ui->actionSettings;
-    QAction* actionHelp = ui->actionHelp;
-    QAction* actionAddFile = ui->actionAddFile;
-    QAction* actionAddFolder = ui->actionAddFolder;
-    QAction* actionRussian = ui->actionRussian;
-    QAction* actionEnglish = ui->actionEnglish;
 
     // Settings
     shared_ptr<Settings> settings;
