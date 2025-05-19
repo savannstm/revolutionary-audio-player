@@ -5,28 +5,13 @@
 #include <QLocalSocket>
 #include <QSharedMemory>
 
-inline auto parseArgs(const i32 argCount, std::span<char*> args)
-    -> QStringList {
-    QStringList paths;
-
-    if (argCount > 1) {
-        paths.reserve(argCount);
-
-        for (const u32 idx : range(1, argCount)) {
-            paths.append(args[idx]);
-        }
-    }
-
-    return paths;
-}
-
 auto main(i32 argCount, char* args[]) -> i32 {
     const auto app = QApplication(argCount, args);
 
     QSharedMemory sharedMemory;
     sharedMemory.setKey("revolutionary-audio-player");
 
-    QStringList paths = parseArgs(argCount, std::span(args, argCount));
+    const QStringList paths = QApplication::arguments().mid(1);
 
     if (!sharedMemory.create(1)) {
         QLocalSocket socket;
