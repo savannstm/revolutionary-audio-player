@@ -43,7 +43,6 @@ QT_END_NAMESPACE
 
 // TODO: Support .cue
 // TODO: Wave visualizer
-// TODO: More Playlist / File menu sections buttons
 // TODO: Add "play slice" thing
 
 class MainWindow : public QMainWindow {
