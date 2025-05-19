@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.4.0
+
+-   FIXED NON-WORKING REPEAT.
+-   Fix mismatching track properties/values.
+-   Made playlist table's columns resize on selecting new language, or when adding new column.
+-   Fixed saving incorrect dock position.
+-   Fixed panic when background image for a playlist from settings doesn't exist.
+-   Made opening directories kinda visible in the table.
+-   Fixed panic when resizing dock widget, but no playlist tab is selected.
+-   Made tab removal less error-prone.
+-   Correctly implemented context menu entry and file associations for Windows.
+-   Probably fixed messed up application icon for Windows?
+-   Fixed non-working playlist importing.
+-   Fixed opening files/directories when file associations are enabled and opened entries contained Unicode.
+-   Removed retranslating tab labels when selecting new language.
+-   Implemented tab bar scrolling and tab dragging.
+
 ## v0.3.0
 
 -   Fixed non-working repeat.
