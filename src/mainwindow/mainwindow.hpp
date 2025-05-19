@@ -108,6 +108,13 @@ class MainWindow : public QMainWindow {
     inline void focus();
     inline void importPlaylist(bool createNewTab);
     inline void exportPlaylist();
+    inline void adjustPlaylistView();
+    inline void adjustPlaylistTabBar(
+        DockWidgetPosition dockWidgetPosition,
+        u8 currentIndex
+    );
+    inline void
+    adjustPlaylistImage(DockWidgetPosition dockWidgetPosition, u8 currentIndex);
 
     inline void exportPlaylist(PlaylistFileType playlistType);
     static inline auto exportXSPF(
@@ -139,6 +146,7 @@ class MainWindow : public QMainWindow {
 
     // Playlist
     PlaylistView* playlistView = ui->playlistView;
+    PlaylistTabBar* playlistTabBar = playlistView->tabBar();
     TrackTree* trackTree = nullptr;
     MusicHeader* trackTreeHeader = nullptr;
     MusicModel* trackTreeModel = nullptr;

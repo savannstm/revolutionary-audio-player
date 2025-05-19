@@ -308,87 +308,12 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     }
     );
 
-    connect(dockWidget, &DockWidget::resized, this, [&] {
-        DockWidgetPosition dockWidgetPosition;
-        const Qt::Orientation mainAreaOrientation = mainArea->orientation();
-        const u8 dockWidgetIndex = mainArea->indexOf(dockWidget);
-
-        if (mainAreaOrientation == Qt::Horizontal) {
-            dockWidgetPosition = dockWidgetIndex == 0 ? Left : Right;
-        } else {
-            dockWidgetPosition = dockWidgetIndex == 0 ? Top : Bottom;
-        }
-
-        const u16 width = mainArea->size().width();
-        const u16 height = mainArea->size().height();
-        u16 dockWidgetX = dockWidget->x();
-        u16 dockWidgetY = dockWidget->y();
-
-        if (dockWidgetX == UINT16_MAX) {
-            dockWidgetX = width;
-        }
-
-        if (dockWidgetY == UINT16_MAX) {
-            dockWidgetY = height;
-        }
-
-        u16 dockWidgetWidth = dockWidget->width();
-        u16 dockWidgetHeight = dockWidget->height();
-
-        const i8 currentIndex = playlistView->currentIndex();
-        if (currentIndex == -1) {
-            return;
-        }
-
-        if (!playlistView->hasBackgroundImage(currentIndex)) {
-            return;
-        }
-
-        const QWidget* pageWidget = playlistView->page(currentIndex);
-        auto* leftLabel = pageWidget->findChild<QLabel*>("leftLabel");
-        auto* centerLabel = pageWidget->findChild<QLabel*>("centerLabel");
-        auto* rightLabel = pageWidget->findChild<QLabel*>("rightLabel");
-
-        const u16 yPos = playlistView->y();
-        const u16 centerLabelHalfWidth = centerLabel->width() / 2;
-
-        const u16 rightLabelWidth = rightLabel->width();
-
-        const u16 halfWidth = width / 2;
-
-        const u16 availableWidthLeft = width - dockWidgetWidth;
-        const u16 halfAvailableWidthLeft = availableWidthLeft / 2;
-
-        const u16 availableWidthRight = dockWidgetX;
-        const u16 halfAvailableWidthRight = availableWidthRight / 2;
-
-        switch (dockWidgetPosition) {
-            case Right:
-                leftLabel->move(0, yPos);
-                centerLabel->move(
-                    halfAvailableWidthRight - centerLabelHalfWidth,
-                    yPos
-                );
-                rightLabel->move(availableWidthRight - rightLabelWidth, yPos);
-                break;
-            case Left:
-                leftLabel->move(0, yPos);
-                centerLabel->move(
-                    halfAvailableWidthLeft - centerLabelHalfWidth,
-                    yPos
-                );
-                rightLabel->move(availableWidthLeft - rightLabelWidth, yPos);
-                break;
-            case Top:
-            case Bottom:
-                leftLabel->move(0, 0);
-                centerLabel->move(halfWidth - centerLabelHalfWidth, 0);
-                rightLabel->move(width - rightLabelWidth, 0);
-                break;
-            default:
-                break;
-        }
-    });
+    connect(
+        dockWidget,
+        &DockWidget::resized,
+        this,
+        &MainWindow::adjustPlaylistView
+    );
 
     server->listen("revolutionary-audio-player-server");
 
@@ -1650,46 +1575,46 @@ void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
     }
 }
 
-static constexpr auto getXSPFTag(TrackProperty property) -> QString {
+static constexpr auto getXSPFTag(TrackProperty property) -> QStringView {
     switch (property) {
         case TrackProperty::Title:
-            return "title";
+            return u"title";
         case TrackProperty::Artist:
-            return "creator";
+            return u"creator";
         case TrackProperty::Album:
-            return "album";
+            return u"album";
         case TrackProperty::AlbumArtist:
-            return "albumArtist";
+            return u"albumArtist";
         case TrackProperty::Genre:
-            return "genre";
+            return u"genre";
         case TrackProperty::Duration:
-            return "duration";
+            return u"duration";
         case TrackProperty::TrackNumber:
-            return "trackNum";
+            return u"trackNum";
         case TrackProperty::Comment:
-            return "annotation";
+            return u"annotation";
         case TrackProperty::Path:
-            return "location";
+            return u"location";
         case TrackProperty::Composer:
-            return "composer";
+            return u"composer";
         case TrackProperty::Publisher:
-            return "publisher";
+            return u"publisher";
         case TrackProperty::Year:
-            return "year";
+            return u"year";
         case TrackProperty::BPM:
-            return "bpm";
+            return u"bpm";
         case TrackProperty::Language:
-            return "language";
+            return u"language";
         case TrackProperty::DiscNumber:
-            return "disc";
+            return u"disc";
         case TrackProperty::Bitrate:
-            return "bitrate";
+            return u"bitrate";
         case TrackProperty::SampleRate:
-            return "samplerate";
+            return u"samplerate";
         case TrackProperty::Channels:
-            return "channels";
+            return u"channels";
         case TrackProperty::Format:
-            return "format";
+            return u"format";
         default:
             return {};
             break;
@@ -1721,7 +1646,7 @@ auto MainWindow::exportXSPF(
         output << '\n';
 
         for (const auto& [property, value] : views::drop(metadata, 1)) {
-            const QString tag = getXSPFTag(property);
+            const QStringView tag = getXSPFTag(property);
 
             QString content = value;
 
@@ -1791,4 +1716,108 @@ auto MainWindow::exportM3U8(
 
     outputFile.close();
     return true;
+}
+
+void MainWindow::adjustPlaylistView() {
+    DockWidgetPosition dockWidgetPosition;
+    const Qt::Orientation mainAreaOrientation = mainArea->orientation();
+    const u8 dockWidgetIndex = mainArea->indexOf(dockWidget);
+
+    if (mainAreaOrientation == Qt::Horizontal) {
+        dockWidgetPosition = dockWidgetIndex == 0 ? Left : Right;
+    } else {
+        dockWidgetPosition = dockWidgetIndex == 0 ? Top : Bottom;
+    }
+
+    const i8 currentIndex = playlistView->currentIndex();
+
+    if (currentIndex == -1) {
+        return;
+    }
+
+    adjustPlaylistTabBar(dockWidgetPosition, currentIndex);
+
+    if (!playlistView->hasBackgroundImage(currentIndex)) {
+        return;
+    }
+
+    adjustPlaylistImage(dockWidgetPosition, currentIndex);
+}
+
+void MainWindow::adjustPlaylistTabBar(
+    const DockWidgetPosition dockWidgetPosition,
+    const u8 currentIndex
+) {
+    switch (dockWidgetPosition) {
+        case Right:
+            playlistTabBar->setScrollAreaWidth(dockWidget->x());
+            break;
+        case Left:
+        case Top:
+        case Bottom:
+            playlistTabBar->setScrollAreaWidth(mainArea->width());
+            break;
+    }
+}
+
+void MainWindow::adjustPlaylistImage(
+    const DockWidgetPosition dockWidgetPosition,
+    const u8 currentIndex
+) {
+    const u16 width = mainArea->size().width();
+    const u16 height = mainArea->size().height();
+
+    u16 dockWidgetX = dockWidget->x();
+    u16 dockWidgetY = dockWidget->y();
+
+    if (dockWidgetX == UINT16_MAX) {
+        dockWidgetX = width;
+    }
+    if (dockWidgetY == UINT16_MAX) {
+        dockWidgetY = height;
+    }
+
+    const u16 dockWidgetWidth = dockWidget->width();
+    const u16 dockWidgetHeight = dockWidget->height();
+
+    const QWidget* pageWidget = playlistView->page(currentIndex);
+    auto* leftLabel = pageWidget->findChild<QLabel*>("leftLabel");
+    auto* centerLabel = pageWidget->findChild<QLabel*>("centerLabel");
+    auto* rightLabel = pageWidget->findChild<QLabel*>("rightLabel");
+
+    const u16 yPos = playlistView->y();
+    const u16 centerLabelHalfWidth = centerLabel->width() / 2;
+    const u16 rightLabelWidth = rightLabel->width();
+    const u16 halfWidth = width / 2;
+
+    const u16 availableWidthLeft = width - dockWidgetWidth;
+    const u16 halfAvailableWidthLeft = availableWidthLeft / 2;
+
+    const u16 availableWidthRight = dockWidgetX;
+    const u16 halfAvailableWidthRight = availableWidthRight / 2;
+
+    switch (dockWidgetPosition) {
+        case Right:
+            leftLabel->move(0, yPos);
+            centerLabel->move(
+                halfAvailableWidthRight - centerLabelHalfWidth,
+                yPos
+            );
+            rightLabel->move(availableWidthRight - rightLabelWidth, yPos);
+            break;
+        case Left:
+            leftLabel->move(0, yPos);
+            centerLabel->move(
+                halfAvailableWidthLeft - centerLabelHalfWidth,
+                yPos
+            );
+            rightLabel->move(availableWidthLeft - rightLabelWidth, yPos);
+            break;
+        case Top:
+        case Bottom:
+            leftLabel->move(0, 0);
+            centerLabel->move(halfWidth - centerLabelHalfWidth, 0);
+            rightLabel->move(width - rightLabelWidth, 0);
+            break;
+    }
 }
