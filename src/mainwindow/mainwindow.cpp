@@ -602,16 +602,6 @@ void MainWindow::retranslate(const QLocale::Language language) {
         auto* tree = playlistView->tree(tab);
         auto* model = tree->model();
 
-        const QString label = playlistView->tabLabel(tab);
-        const bool numeratedPlaylist =
-            label.contains(QRegularExpression(u"^Playlist \\d+$"_s));
-
-        playlistView->setTabLabel(
-            tab,
-            numeratedPlaylist ? tr("Playlist %1").arg(label.split(' ').last())
-                              : label
-        );
-
         for (const TrackProperty column : DEFAULT_COLUMN_PROPERTIES) {
             model->setHeaderData(
                 column,
