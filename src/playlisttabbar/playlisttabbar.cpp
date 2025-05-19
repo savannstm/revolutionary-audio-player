@@ -3,9 +3,36 @@
 #include "enums.hpp"
 #include "playlisttab.hpp"
 
+#include <QMimeData>
+
 PlaylistTabBar::PlaylistTabBar(QWidget* parent) : QWidget(parent) {
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(4);
+    setAcceptDrops(true);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+
+    tabContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+    tabContainerLayout->setContentsMargins(0, 0, 0, 0);
+    tabContainerLayout->setSpacing(4);
+    tabContainerLayout->setAlignment(Qt::AlignLeft);
+
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setContentsMargins(0, 0, 0, 0);
+    scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+    scrollArea->setMinimumWidth(screen()->size().width());
+    scrollArea->setWidget(tabContainer);
+    mainLayout->addWidget(scrollArea);
+
+    indicatorLine->setFrameShape(QFrame::VLine);
+    indicatorLine->setFrameShadow(QFrame::Plain);
+    indicatorLine->setLineWidth(2);
+    indicatorLine->hide();
+
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+
     insertTab(0, QString(), false);  // insert add tab
 }
 
@@ -29,7 +56,7 @@ void PlaylistTabBar::insertTab(
     auto* tab = new PlaylistTab(label, closable, this);
 
     tabs.insert(index, tab);
-    layout->insertWidget(index, tab);
+    tabContainerLayout->insertWidget(index, tab);
 
     if (closable) {
         connect(tab, &PlaylistTab::removeTabRequested, this, [&, tab] {
@@ -64,7 +91,7 @@ void PlaylistTabBar::insertTab(
 
 void PlaylistTabBar::removeTab(const u8 index) {
     PlaylistTab* tab = tabs.takeAt(index);
-    layout->removeWidget(tab);
+    tabContainerLayout->removeWidget(tab);
     delete tab;
 
     if (previousIndex >= index) {
@@ -149,4 +176,65 @@ void PlaylistTabBar::removeTabs(const TabRemoveMode mode, const u8 index) {
     }
 
     emit tabsRemoved(mode, index);
+}
+
+void PlaylistTabBar::dropEvent(QDropEvent* event) {
+    const QPoint position = event->position().toPoint();
+    const QString name = event->mimeData()->text();
+
+    auto* dragged = findChild<QWidget*>(name);
+
+    const u8 oldIndex = tabContainerLayout->indexOf(dragged);
+    tabContainerLayout->removeWidget(dragged);
+
+    u8 insertIndex = tabContainerLayout->count();
+
+    for (const auto idx : range(0, tabContainerLayout->count())) {
+        QWidget* widget = tabContainerLayout->itemAt(as<u8>(idx))->widget();
+
+        if (position.x() < widget->x() + widget->width() / 2) {
+            insertIndex = idx;
+            break;
+        }
+    }
+
+    indicatorLine->hide();
+    tabContainerLayout->insertWidget(insertIndex, dragged);
+
+    event->acceptProposedAction();
+}
+
+void PlaylistTabBar::dragMoveEvent(QDragMoveEvent* event) {
+    const QPoint position = event->position().toPoint();
+    u8 index = UINT8_MAX;
+
+    for (const u8 idx : range(0, tabContainerLayout->count())) {
+        const QWidget* widget = tabContainerLayout->itemAt(idx)->widget();
+
+        if (position.x() < widget->x() + widget->width() / 2) {
+            index = idx;
+            break;
+        }
+    }
+
+    if (index != UINT8_MAX) {
+        if (index < tabContainerLayout->count()) {
+            const QWidget* widget = tabContainerLayout->itemAt(index)->widget();
+            const QPoint pos = widget->pos();
+
+            indicatorLine->move(
+                pos.x() - (indicatorLine->width() / 2),
+                indicatorLine->height() / 2
+            );
+        } else {
+            const u16 endPosX = tabContainerLayout->geometry().right();
+            indicatorLine->move(endPosX, 0);
+        }
+
+        indicatorLine->show();
+    } else {
+        indicatorLine->hide();
+    }
+
+    event->acceptProposedAction();
 }

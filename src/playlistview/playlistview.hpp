@@ -8,7 +8,6 @@
 
 #include <QLabel>
 #include <QStackedWidget>
-#include <QTabBar>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -50,6 +49,8 @@ class PlaylistView : public QWidget {
     void removeTabPages(TabRemoveMode mode, u8 index);
     void removeTabPage(u8 index);
 
+    constexpr auto tabBar() -> PlaylistTabBar* { return tabBar_; }
+
    signals:
     void renameTabRequested(u8 index);
     void closeTabRequested(u8 index);
@@ -59,7 +60,7 @@ class PlaylistView : public QWidget {
    private:
     void changePage(i8 index);
 
-    PlaylistTabBar* tabBar = new PlaylistTabBar(this);
+    PlaylistTabBar* tabBar_ = new PlaylistTabBar(this);
     QStackedWidget* stackedWidget = new QStackedWidget(this);
     QVBoxLayout* layout = new QVBoxLayout(this);
 };

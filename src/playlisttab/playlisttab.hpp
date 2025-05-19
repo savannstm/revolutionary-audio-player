@@ -27,18 +27,20 @@ class PlaylistTab : public QPushButton {
 
    signals:
     void clicked();
-    void rightClicked();
     void removeTabRequested();
     void addButtonClicked();
     void removeTabsRequested(TabRemoveMode mode);
 
    protected:
-    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    auto eventFilter(QObject* obj, QEvent* event) -> bool override;
 
    private:
     inline auto labelTextWidth() -> i32;
-    void handleMousePress();
-    void createContextMenu();
+    inline void selectTab();
+    inline void createContextMenu();
+    inline void deselectLabel();
+    inline void grab();
 
     bool addTab = false;
     PlaylistTabLabel* label_;

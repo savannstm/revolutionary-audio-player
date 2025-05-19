@@ -31,25 +31,25 @@ class CustomDelegate : public QStyledItemDelegate {
 
 PlaylistView::PlaylistView(QWidget* parent) : QWidget(parent) {
     layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(tabBar, 0, Qt::AlignLeft);
+    layout->addWidget(tabBar_, 0, Qt::AlignLeft);
     layout->addWidget(stackedWidget);
 
     connect(
-        tabBar,
+        tabBar_,
         &PlaylistTabBar::indexChanged,
         this,
         &PlaylistView::changePage
     );
 
     connect(
-        tabBar,
+        tabBar_,
         &PlaylistTabBar::tabAdded,
         this,
         &PlaylistView::createTabPage
     );
 
     connect(
-        tabBar,
+        tabBar_,
         &PlaylistTabBar::tabsRemoved,
         this,
         &PlaylistView::removeTabPages
@@ -380,7 +380,7 @@ auto PlaylistView::addTab(
     const u8 index = as<u8>(
         stackedWidget->addWidget(createPage(columnProperties, columnStates))
     );
-    tabBar->addTab(label);
+    tabBar_->addTab(label);
     return index;
 }
 
@@ -391,15 +391,15 @@ void PlaylistView::removeTabPage(const u8 index) {
 }
 
 auto PlaylistView::tabCount() const -> u8 {
-    return tabBar->tabCount();
+    return tabBar_->tabCount();
 }
 
 void PlaylistView::setCurrentIndex(const i8 index) {
-    tabBar->setCurrentIndex(index);
+    tabBar_->setCurrentIndex(index);
 }
 
 auto PlaylistView::currentIndex() const -> i8 {
-    return tabBar->currentIndex();
+    return tabBar_->currentIndex();
 }
 
 void PlaylistView::changePage(const i8 index) {
@@ -408,9 +408,9 @@ void PlaylistView::changePage(const i8 index) {
 }
 
 auto PlaylistView::tabLabel(const u8 index) const -> QString {
-    return tabBar->tabLabel(index);
+    return tabBar_->tabLabel(index);
 }
 
 void PlaylistView::setTabLabel(const u8 index, const QString& label) {
-    tabBar->setTabLabel(index, label);
+    tabBar_->setTabLabel(index, label);
 }
