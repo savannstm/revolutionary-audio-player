@@ -1534,6 +1534,7 @@ void MainWindow::importPlaylist(const bool createNewTab) {
     }
 
     const QString filePath = fileUrl.toLocalFile();
+
     const QFileInfo filePathInfo = QFileInfo(filePath);
     const QString dirPath = filePathInfo.absolutePath() + '/';
     const QString extension = filePathInfo.suffix().toLower();
@@ -1545,8 +1546,9 @@ void MainWindow::importPlaylist(const bool createNewTab) {
     }
 
     QStringList filePaths;
+    filePaths.reserve(MINIMUM_TRACK_COUNT);
 
-    auto appendIfExists = [&](const QString& relativePath) {
+    const auto appendIfExists = [&](const QString& relativePath) {
         const QString localFilePath = dirPath + relativePath;
 
         if (QFile::exists(localFilePath)) {

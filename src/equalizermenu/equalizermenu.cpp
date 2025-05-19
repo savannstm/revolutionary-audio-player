@@ -353,6 +353,7 @@ void EqualizerMenu::selectPreset(i32 index) {
                     gain = PRESETS_10[index][idx];
                     break;
                 case EIGHTEEN_BANDS:
+                    // TODO
                     break;
                 case THIRTY_BANDS:
                     break;

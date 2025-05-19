@@ -90,8 +90,8 @@ constexpr u8 FREQUENCY_INPUT_FIXED_WIDTH = 48;
 
 // Playlist / Track Tree Config
 
-// Minimum number of tracks for model to be considered valid
-constexpr u8 MINIMUM_MUSIC_MODEL_TRACK_COUNT = 128;
+// Minimum number of tracks to reserve for collections that hold tracks
+constexpr u8 MINIMUM_TRACK_COUNT = 128;
 
 // Minimum column section size in track tree (px)
 constexpr u8 MINIMUM_TRACK_TREE_COLUMN_SECTION_SIZE = 26;

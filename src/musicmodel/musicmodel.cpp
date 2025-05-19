@@ -7,7 +7,7 @@
 #include <Qt>
 
 MusicModel::MusicModel(QObject* parent) : QStandardItemModel(parent) {
-    tracks.reserve(MINIMUM_MUSIC_MODEL_TRACK_COUNT);
+    tracks.reserve(MINIMUM_TRACK_COUNT);
 }
 
 void MusicModel::setItem(const u16 row, const u16 col, MusicItem* item) {

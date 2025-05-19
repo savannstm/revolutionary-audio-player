@@ -126,7 +126,9 @@ void TrackTree::fillTable(const QStringList& paths) {
                     QDir::Files | QDir::NoDotAndDotDot,
                     QDirIterator::Subdirectories
                 );
+
                 QStringList filePaths;
+                filePaths.reserve(MINIMUM_TRACK_COUNT);
 
                 while (iterator.hasNext()) {
                     iterator.next();
