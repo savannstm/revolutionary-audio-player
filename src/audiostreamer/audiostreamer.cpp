@@ -111,6 +111,12 @@ void AudioStreamer::start(const QString& path) {
         ) *
         inputSampleSize;
 
+    // Ensure that we are at the very start of the data,
+    // when reading raw PCM
+    if (formatName.starts_with("pcm")) {
+        avio_seek(formatContext->pb, 0, SEEK_SET);
+    }
+
     initFilters();
     prepareBuffer();
 
@@ -196,7 +202,7 @@ auto AudioStreamer::processFrame() -> bool {
 void AudioStreamer::decodeRaw() {
     buffer.resize(MIN_BUFFER_SIZE);
 
-    if (avio_feof(formatContext->pb) < 0) {
+    if (avio_feof(formatContext->pb) != 0) {
         return;
     }
 
