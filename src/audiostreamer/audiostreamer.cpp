@@ -103,16 +103,16 @@ void AudioStreamer::start(const QString& path) {
 
     filters.resize(channelNumber);
 
-    initFilters();
-    prepareBuffer();
-
     formatName = codecContextPtr->codec->name;
-    u8 inputSampleSize = av_get_bytes_per_sample(codecContext->sample_fmt);
-    u32 bytesPerSecond =
+    inputSampleSize = av_get_bytes_per_sample(codecContext->sample_fmt);
+    bytesPerSecond =
         as<u32>(
             codecContext->sample_rate * codecContext->ch_layout.nb_channels
         ) *
         inputSampleSize;
+
+    initFilters();
+    prepareBuffer();
 
     open(QIODevice::ReadOnly);
 }
