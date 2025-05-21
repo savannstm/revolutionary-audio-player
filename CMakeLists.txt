@@ -21,12 +21,40 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 # Configure MSVC runtime linkage (static runtime, Debug/Release aware)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
 # Find required packages
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent LinguistTools Gui)
 find_package(JUCE REQUIRED)
-find_package(CImg CONFIG REQUIRED)
+
+find_path(FFMPEG_INCLUDE_DIR "avcodec.h" PATH_SUFFIXES ffmpeg)
+
+find_library(AVCODEC_LIBRARY avcodec)
+find_library(AVFORMAT_LIBRARY avformat)
+find_library(AVUTIL_LIBRARY avutil)
+find_library(SWRESAMPLE_LIBRARY swresample)
+
+if(NOT (AVCODEC_LIBRARY AND AVFORMAT_LIBRARY AND AVUTIL_LIBRARY AND SWRESAMPLE_LIBRARY))
+    message(FATAL_ERROR "FFmpeg libraries not found, specify path to them using `-DFFMPEG_INCLUDE_DIR=...`")
+endif()
+
+find_path(CIMG_INCLUDE_DIR "CImg.h")
+if(NOT CIMG_INCLUDE_DIR)
+    message(FATAL_ERROR "CImg.h not found, specify path to it using `-DCIMG_INCLUDE_DIR=...`")
+endif()
+
+find_path(RAPIDHASH_INCLUDE_DIRS "rapidhash.h")
+if(NOT RAPIDHASH_INCLUDE_DIRS)
+    message(FATAL_ERROR "rapidhash.h not found, specify path to it using `-DRAPIDHASH_INCLUDE_DIRS=...`")
+endif()
+
+# Configure the project version header
+configure_file(
+    src/version/version.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/version.h
+)
 
 # Collect all source files recursively
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
@@ -69,25 +97,11 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 file(GLOB SUBDIRS LIST_DIRECTORIES true src/*)
 file(GLOB ICONS icons/*)
 
-# Find external includes (rapidhash)
-find_path(RAPIDHASH_INCLUDE_DIRS "rapidhash.h")
-
-# Configure the project version header
-configure_file(
-    src/version/version.h.in
-    ${CMAKE_CURRENT_BINARY_DIR}/version.h
-)
-
 # Include paths
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${SUBDIRS}
-    $ENV{FFMPEG_INCLUDE_DIRS}
     ${RAPIDHASH_INCLUDE_DIRS}
-)
-
-# Link directories
-target_link_directories(${PROJECT_NAME} PRIVATE
-    $ENV{FFMPEG_LIBRARY_DIRS}
+    ${CIMG_INCLUDE_DIR}
 )
 
 # Link libraries
@@ -102,7 +116,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     avformat
     avutil
     swresample
-    CImg::CImg
 )
 
 # Install the built executable
