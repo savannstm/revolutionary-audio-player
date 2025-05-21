@@ -2,7 +2,6 @@
 
 extern "C" {
 #include <libavformat/avformat.h>
-#include <libavutil/dict.h>
 }
 
 #include "aliases.hpp"

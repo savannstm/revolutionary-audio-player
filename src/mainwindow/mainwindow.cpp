@@ -31,12 +31,6 @@
 #include <QWidgetAction>
 #include <QXmlStreamReader>
 
-auto MainWindow::setupUi() -> Ui::MainWindow* {
-    auto* ui_ = new Ui::MainWindow();
-    ui_->setupUi(this);
-    return ui_;
-}
-
 MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     QMainWindow(parent) {
     dockWidget->dockCoverLabel = dockCoverLabel;

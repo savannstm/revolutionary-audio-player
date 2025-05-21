@@ -70,7 +70,6 @@ class MainWindow : public QMainWindow {
     inline auto saveSettings() -> result<bool, QString>;
     inline void initializeSettings();
     inline void loadSettings();
-    inline auto setupUi() -> Ui::MainWindow*;
     inline void advancePlaylist(Direction direction);
     inline void updatePlaybackPosition();
     inline void playTrack(TrackTree* tree, const QModelIndex& index);
@@ -124,6 +123,12 @@ class MainWindow : public QMainWindow {
         const QString& outputPath,
         const vector<HashMap<TrackProperty, QString>>& metadataVector
     ) -> result<bool, QString>;
+
+    inline auto setupUi() -> Ui::MainWindow* {
+        auto* ui_ = new Ui::MainWindow();
+        ui_->setupUi(this);
+        return ui_;
+    };
 
     // UI - Widgets
     Ui::MainWindow* ui = setupUi();
@@ -229,7 +234,7 @@ class MainWindow : public QMainWindow {
 
     // Settings
     QFile settingsFile =
-        QApplication::applicationDirPath() + "/rap-settings.json";
+        QFile(QApplication::applicationDirPath() + "/rap-settings.json");
 
     // Miscellaneous
     EqualizerMenu* equalizerMenu = nullptr;

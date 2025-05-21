@@ -361,7 +361,7 @@ void EqualizerMenu::selectPreset(i32 index) {
                     return;
             }
         } else {
-            const i32 newIndex = index - DEFAULT_PRESET_COUNT;
+            const u16 newIndex = index - DEFAULT_PRESET_COUNT;
             gain = eqSettings.presets[bandCount][presetName][idx];
         }
 

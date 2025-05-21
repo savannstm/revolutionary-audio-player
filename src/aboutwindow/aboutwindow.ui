@@ -95,7 +95,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;GitHub: &lt;a href=&quot;https://github.com/savannstm/revolutionary-audio-player&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#6e6b67;&quot;&gt;revolutionary-audio-player&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;p&gt;My socials:&lt;/p&gt;&lt;p&gt;Telegram - @Arsen1337Curduke&lt;/p&gt;&lt;p&gt;VK - @stivhuis228&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;GitHub: &lt;a href=&quot;https://github.com/savannstm/revolutionary-audio-player&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#6e6b67;&quot;&gt;revolutionary-audio-player&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;Our &lt;/span&gt;socials:&lt;/p&gt;&lt;p&gt;Telegram - @Arsen1337Curduke&lt;/p&gt;&lt;p&gt;VK - @stivhuis228&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="textFormat">
          <enum>Qt::TextFormat::MarkdownText</enum>

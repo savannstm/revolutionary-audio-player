@@ -162,7 +162,7 @@ auto PlaylistView::createPage(
         pageTreeModel->setHeaderData(
             as<i32>(idx),
             Qt::Horizontal,
-            columnProperties.empty() ? idx : property,
+            as<i32>(columnProperties.empty() ? idx : property),
             PROPERTY_ROLE
         );
     }
