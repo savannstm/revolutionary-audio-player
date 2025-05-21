@@ -1,6 +1,14 @@
 #include "settingswindow.hpp"
 
+#ifdef Q_OS_WINDOWS
 #include "associationswindows.hpp"
+
+#elifdef Q_OS_LINUX
+#include "associationslinux.hpp"
+
+#elifdef Q_OS_MACOS
+#include "associationsmacos.hpp"
+#endif
 
 #include <QAudioDevice>
 #include <QSettings>
@@ -124,23 +132,12 @@ SettingsWindow::~SettingsWindow() {
 
 void SettingsWindow::addOpenDirectoryEntry() {
     QString appPath = QApplication::applicationFilePath();
-
-#ifdef Q_OS_WINDOWS
-    createContextMenuDirectoryEntryWindows(wstring(
-        ras<const wchar*>(appPath.replace('/', '\\').utf16()),
-        appPath.length()
-    ));
-
-#elifdef Q_OS_LINUX
-    // TODO
-#elifdef Q_OS_MACOS
-    // TODO
-#endif
+    createContextMenuDirectoryEntry(appPath.replace('/', '\\'));
 }
 
 void SettingsWindow::removeOpenDirectoryEntry() {
 #ifdef Q_OS_WINDOWS
-    removeContextMenuDirectoryEntryWindows();
+    removeContextMenuDirectoryEntry();
 
 #elifdef Q_OS_LINUX
     // TODO
@@ -154,29 +151,12 @@ void SettingsWindow::createFileAssociations() {
     QString iconPath = appDir + "/icons/rap-logo.ico";
     QString appPath = QApplication::applicationFilePath();
 
-#ifdef Q_OS_WINDOWS
-    appDir = appDir.replace('/', '\\');
-    iconPath = iconPath.replace('/', '\\');
-    appPath = appPath.replace('/', '\\');
-
-    createFileAssociationsWindows(
-        wstring(ras<const wchar*>(appPath.utf16()), appPath.length()),
-        wstring(ras<const wchar*>(iconPath.utf16()), iconPath.length())
+    ::createFileAssociations(
+        appPath.replace('/', '\\'),
+        iconPath.replace('/', '\\')
     );
-#elifdef Q_OS_LINUX
-    // TODO
-#elifdef Q_OS_MACOS
-    // TODO
-#endif
 }
 
 void SettingsWindow::removeFileAssociations() {
-#ifdef Q_OS_WINDOWS
-    removeFileAssociationsWindows();
-
-#elifdef Q_OS_LINUX
-    // TODO
-#elifdef Q_OS_MACOS
-    // TODO
-#endif
+    removeFileAssociations();
 }

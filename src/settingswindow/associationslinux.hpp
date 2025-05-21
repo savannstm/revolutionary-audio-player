@@ -9,7 +9,7 @@
 #include <QString>
 #include <QTextStream>
 
-void createFileAssociationsLinux(const QString& appPath, QString iconPath) {
+void createFileAssociations(const QString& appPath, QString iconPath) {
     iconPath = iconPath.replace(".ico", ".png");
 
     const QString desktopEntryPath =
@@ -47,3 +47,9 @@ void createFileAssociationsLinux(const QString& appPath, QString iconPath) {
         QProcess::execute("xdg-mime default rap.desktop " + mimeType);
     }
 }
+
+void createContextMenuDirectoryEntry(const QString& appPath_) {}
+
+void removeContextMenuDirectoryEntry() {}
+
+void removeFileAssociations() {}

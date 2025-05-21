@@ -62,10 +62,12 @@ auto removeRegistryKey(HKEY root, const wstring& subKey) -> bool {
     return true;
 }
 
-void createFileAssociationsWindows(
-    const wstring& appPath,
-    const wstring& iconPath
-) {
+void createFileAssociations(const QString& appPath_, const QString& iconPath_) {
+    const wstring appPath =
+        wstring(ras<const wchar*>(appPath_.utf16()), appPath_.length());
+    const wstring iconPath =
+        wstring(ras<const wchar*>(iconPath_.utf16()), iconPath_.length());
+
     for (const QStringView ext : ALLOWED_MUSIC_FILE_EXTENSIONS) {
         const wstring extension =
             wstring(ras<const wchar*>(ext.utf16()), ext.length());
@@ -156,7 +158,7 @@ void createFileAssociationsWindows(
     }
 }
 
-void removeFileAssociationsWindows() {
+void removeFileAssociations() {
     for (const QStringView ext : ALLOWED_MUSIC_FILE_EXTENSIONS) {
         const wstring extension =
             wstring(ras<const wchar*>(ext.utf16()), ext.length());
@@ -179,7 +181,10 @@ void removeFileAssociationsWindows() {
     }
 }
 
-void createContextMenuDirectoryEntryWindows(const wstring& appPath) {
+void createContextMenuDirectoryEntry(const QString& appPath_) {
+    const wstring appPath =
+        wstring(ras<const wchar*>(appPath_.utf16()), appPath_.length());
+
     setRegistryValue(
         HKEY_CURRENT_USER,
         LR"(Software\Classes\Directory\shell\Open directory in RAP)",
@@ -205,7 +210,7 @@ void createContextMenuDirectoryEntryWindows(const wstring& appPath) {
     );
 }
 
-void removeContextMenuDirectoryEntryWindows() {
+void removeContextMenuDirectoryEntry() {
     removeRegistryKey(
         HKEY_CURRENT_USER,
         LR"(Software\Classes\Directory\shell\Open directory in RAP)"
