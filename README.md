@@ -33,11 +33,9 @@ This audio player emphasizes clean codebase, little amount of dependencies, simp
 
 ## Releases
 
-Compile this shit for Linux yourself if you want. I'll probably start to make releases at 1.0.0 version.
+Can't compile this thing for Linux, keeps complaining about missing definitions in static FFmpeg build.
 
-But I did so for Windows. And statically.
-
-Program is a single `.exe` that's linked statically - no `.dll`s, folders, shit and other annoying things!
+Windows build is compiled statically - you can get in Releases section, just a single .exe and a couple of icon/translation files, no .dlls, folders and other bloat.
 
 ## Build
 
@@ -51,7 +49,7 @@ Default builds of the program include FFmpeg built with the following configurat
 
 Path to the `rapidhash` headers can be passed as `-DRAPIDHASH_INCLUDE_DIRS`.
 
-For MinGW compatibility, you'll have to use `7.0.12` version of JUCE framework, as `8.0.0` deprecated MinGW support.
+For MinGW compatibility, you'll have to use `7.0.12` (but it has issues when building with C++23 standard) version of JUCE framework, as `8.0.0` deprecated MinGW support.
 
 `build.ps1` PowerShell script and `build.sh` Bash script are used to build the project to `build` directory.
 
