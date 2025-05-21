@@ -124,7 +124,7 @@ class MainWindow : public QMainWindow {
         const vector<HashMap<TrackProperty, QString>>& metadataVector
     ) -> result<bool, QString>;
 
-    inline auto setupUi() -> Ui::MainWindow* {
+    auto setupUi() -> Ui::MainWindow* {
         auto* ui_ = new Ui::MainWindow();
         ui_->setupUi(this);
         return ui_;
@@ -239,7 +239,8 @@ class MainWindow : public QMainWindow {
     // Miscellaneous
     EqualizerMenu* equalizerMenu = nullptr;
     u8 sortIndicatorCleared;
-    std::random_device rng;
+    std::random_device seed;
+    std::mt19937 rng = std::mt19937(seed());
     QLocalServer* server = new QLocalServer(this);
     QAudioDevice previousDefaultAudioDevice =
         QMediaDevices::defaultAudioOutput();
