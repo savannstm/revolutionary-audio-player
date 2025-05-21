@@ -141,19 +141,23 @@ constexpr QStringView EXT_MKA = u"mka";
 constexpr QStringView EXT_ALAC = u"alac";
 constexpr QStringView EXT_MOV = u"mov";
 
-constexpr array<QStringView, 12> ALLOWED_FILE_EXTENSIONS = {
-    EXT_MP3, EXT_FLAC, EXT_OPUS, EXT_AAC, EXT_WAV,  EXT_OGG,
-    EXT_M4A, EXT_MP4,  EXT_MKV,  EXT_MKA, EXT_ALAC, EXT_MOV,
-};
+constexpr u8 ALLOWED_FILE_EXTENSIONS_COUNT = 12;
+constexpr array<QStringView, ALLOWED_FILE_EXTENSIONS_COUNT>
+    ALLOWED_FILE_EXTENSIONS = {
+        EXT_MP3, EXT_FLAC, EXT_OPUS, EXT_AAC, EXT_WAV,  EXT_OGG,
+        EXT_M4A, EXT_MP4,  EXT_MKV,  EXT_MKA, EXT_ALAC, EXT_MOV,
+    };
 
-constexpr array<QStringView, 9> ALLOWED_MUSIC_FILE_EXTENSIONS = {
-    EXT_MP3, EXT_FLAC, EXT_OPUS, EXT_AAC,  EXT_WAV,
-    EXT_OGG, EXT_M4A,  EXT_MKA,  EXT_ALAC,
-};
+constexpr u8 ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT = 9;
+constexpr array<QStringView, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
+    ALLOWED_MUSIC_FILE_EXTENSIONS = {
+        EXT_MP3, EXT_FLAC, EXT_OPUS, EXT_AAC,  EXT_WAV,
+        EXT_OGG, EXT_M4A,  EXT_MKA,  EXT_ALAC,
+    };
 
-constexpr array<QStringView, 3> ALLOWED_VIDEO_FILE_EXTENSIONS = { EXT_MP4,
-                                                                  EXT_MKV,
-                                                                  EXT_MOV };
+constexpr u8 ALLOWED_VIDEO_FILE_EXTENSIONS_COUNT = 3;
+constexpr array<QStringView, ALLOWED_VIDEO_FILE_EXTENSIONS_COUNT>
+    ALLOWED_VIDEO_FILE_EXTENSIONS = { EXT_MP4, EXT_MKV, EXT_MOV };
 
 // Searchable track property names
 constexpr array<QStringView, TRACK_PROPERTY_COUNT> SEARCH_PROPERTIES = {
