@@ -197,7 +197,6 @@ auto AudioStreamer::processFrame() -> bool {
     return nextBufferSize >= MIN_BUFFER_SIZE;
 }
 
-// TODO: For some reason, skips a little of data at the start
 // Only handles pcm_i*le and pcm_f32
 void AudioStreamer::decodeRaw() {
     buffer.resize(MIN_BUFFER_SIZE);
@@ -214,7 +213,6 @@ void AudioStreamer::decodeRaw() {
     }
 
     totalBytesRead += bytesRead;
-
     playbackSecond = as<u16>(totalBytesRead / bytesPerSecond);
 
     const u32 sampleCount = bytesRead / inputSampleSize;
@@ -394,8 +392,7 @@ void AudioStreamer::seekSecond(const u16 second) {
         AVSEEK_FLAG_ANY
     );
 
-    if (string_view(codecContext->codec->name).starts_with("pcm") &&
-        (formatContext->pb != nullptr)) {
+    if (formatName.starts_with("pcm") && (formatContext->pb != nullptr)) {
         totalBytesRead = avio_tell(formatContext->pb);
     }
 
