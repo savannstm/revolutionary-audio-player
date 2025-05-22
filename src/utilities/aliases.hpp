@@ -16,16 +16,6 @@
 #include <unordered_set>
 #include <vector>
 
-template <typename O, typename T>
-[[nodiscard]] constexpr auto as(T&& arg) -> O {
-    return static_cast<O>(std::forward<T>(arg));
-}
-
-template <typename O, typename T>
-[[nodiscard]] constexpr auto ras(T&& arg) -> O {
-    return reinterpret_cast<O>(std::forward<T>(arg));
-}
-
 using namespace Qt::Literals::StringLiterals;
 using namespace std::literals::string_view_literals;
 
@@ -91,6 +81,27 @@ using hashmap = std::unordered_map<K, V>;
 template <typename K>
 using hashset = std::unordered_set<K>;
 
-constexpr auto range(usize from, usize dest) {
+template <typename O, typename T>
+[[nodiscard]] constexpr auto as(T&& arg) -> O {
+    return static_cast<O>(std::forward<T>(arg));
+}
+
+template <typename O, typename T>
+[[nodiscard]] constexpr auto ras(T&& arg) -> O {
+    return reinterpret_cast<O>(std::forward<T>(arg));
+}
+
+constexpr auto range(const usize from, const usize dest) {
     return views::iota(from, dest);
+}
+
+template <ranges::input_range R, typename T>
+constexpr auto find_index(const R& range, const T& value) -> isize {
+    const auto item = ranges::find(range, value);
+
+    if (item == ranges::end(range)) {
+        return -1;
+    }
+
+    return ranges::distance(ranges::begin(range), item);
 }
