@@ -242,22 +242,25 @@ void AudioStreamer::decodeRaw() {
             break;
         }
         case sizeof(i8) + sizeof(i16): {
+            constexpr u8 I8_BIT = sizeof(i8) * CHAR_BIT;
+            constexpr u8 I16_BIT = sizeof(i16) * CHAR_BIT;
+            constexpr u32 INT24_SIGN_MASK = as<u32>(INT32_MAX) + 1;
+            constexpr i32 INT24_MAX = 16777215;
+
             const u8* samples = ras<const u8*>(buffer.constData());
 
             for (const u32 idx : range(0, sampleCount)) {
                 const u32 offset = idx * inputSampleSize;
                 i32 value = (samples[offset]) |
-                            (samples[offset + 1] << sizeof(i8)) |
-                            (samples[offset + 2] << sizeof(i16));
+                            (samples[offset + 1] << I8_BIT) |
+                            (samples[offset + 2] << I16_BIT);
 
-                if ((value & (as<i64>(INT32_MAX) + 1)) != 0) {
-                    constexpr i32 MAGIC_NUMBER = as<i32>(0xFF000000);
-                    value |= MAGIC_NUMBER;
+                if ((value & INT24_SIGN_MASK) != 0) {
+                    value |= ~INT24_MAX;
                 }
 
                 floatSamples[idx] =
-                    as<f32>(value) /
-                    (as<f32>(1 << ((sizeof(i8) + sizeof(i16)) * CHAR_BIT - 1)));
+                    as<f32>(value) / (as<f32>(1 << ((I8_BIT + I16_BIT) - 1)));
             }
             break;
         }
