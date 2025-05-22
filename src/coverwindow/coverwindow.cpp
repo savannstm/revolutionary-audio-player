@@ -16,8 +16,7 @@ CoverWindow::CoverWindow(
     setWindowTitle(tr("%1: Cover").arg(title));
     setMinimumSize(MINIMUM_COVER_SIZE);
 
-    // TODO: Changes the appearance of children
-    setStyleSheet("background-color: #000000");
+    setStyleSheet("CoverWindow { background-color: black; }");
 
     layout->setAlignment(Qt::AlignCenter);
     layout->setContentsMargins({ 0, 0, 0, 0 });
