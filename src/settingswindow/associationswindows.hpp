@@ -1,12 +1,17 @@
+// NOLINTBEGIN(bugprone-suspicious-stringview-data-usage)
+// The reason for disabling this lint check is that all string views constructed
+// from string literals always include null terminator at end upon calling
+// `.data()`.
+
 #include "aliases.hpp"
 #include "constants.hpp"
 
 #include <QDebug>
 #include <windows.h>
 
-constexpr wcstr DEFAULT_KEY = L"";
+constexpr wstring_view DEFAULT_KEY;
 
-constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
+constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
     EXTENSION_ENTRIES = {
         LR"(Software\Classes\.mp3)",  LR"(Software\Classes\.flac)",
         LR"(Software\Classes\.opus)", LR"(Software\Classes\.aac)",
@@ -20,39 +25,42 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> PROG_IDS = {
     L"rap.ogg", L"rap.m4a",  L"rap.mka",  L"rap.alac"
 };
 
-constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> PROG_ID_ENTRIES = {
-    LR"(Software\Classes\rap.mp3)",  LR"(Software\Classes\rap.flac)",
-    LR"(Software\Classes\rap.opus)", LR"(Software\Classes\rap.aac)",
-    LR"(Software\Classes\rap.wav)",  LR"(Software\Classes\rap.ogg)",
-    LR"(Software\Classes\rap.m4a)",  LR"(Software\Classes\rap.mka)",
-    LR"(Software\Classes\rap.alac)",
-};
+constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
+    PROG_ID_ENTRIES = {
+        LR"(Software\Classes\rap.mp3)",  LR"(Software\Classes\rap.flac)",
+        LR"(Software\Classes\rap.opus)", LR"(Software\Classes\rap.aac)",
+        LR"(Software\Classes\rap.wav)",  LR"(Software\Classes\rap.ogg)",
+        LR"(Software\Classes\rap.m4a)",  LR"(Software\Classes\rap.mka)",
+        LR"(Software\Classes\rap.alac)",
+    };
 
-constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> ICON_ENTRIES = {
-    LR"(Software\Classes\rap.mp3\DefaultIcon)",
-    LR"(Software\Classes\rap.flac\DefaultIcon)",
-    LR"(Software\Classes\rap.opus\DefaultIcon)",
-    LR"(Software\Classes\rap.aac\DefaultIcon)",
-    LR"(Software\Classes\rap.wav\DefaultIcon)",
-    LR"(Software\Classes\rap.ogg\DefaultIcon)",
-    LR"(Software\Classes\rap.m4a\DefaultIcon)",
-    LR"(Software\Classes\rap.mka\DefaultIcon)",
-    LR"(Software\Classes\rap.alac\DefaultIcon)",
-};
+constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
+    ICON_ENTRIES = {
+        LR"(Software\Classes\rap.mp3\DefaultIcon)",
+        LR"(Software\Classes\rap.flac\DefaultIcon)",
+        LR"(Software\Classes\rap.opus\DefaultIcon)",
+        LR"(Software\Classes\rap.aac\DefaultIcon)",
+        LR"(Software\Classes\rap.wav\DefaultIcon)",
+        LR"(Software\Classes\rap.ogg\DefaultIcon)",
+        LR"(Software\Classes\rap.m4a\DefaultIcon)",
+        LR"(Software\Classes\rap.mka\DefaultIcon)",
+        LR"(Software\Classes\rap.alac\DefaultIcon)",
+    };
 
-constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> SHELL_ENTRIES = {
-    LR"(Software\Classes\rap.mp3\shell)",
-    LR"(Software\Classes\rap.flac\shell)",
-    LR"(Software\Classes\rap.opus\shell)",
-    LR"(Software\Classes\rap.aac\shell)",
-    LR"(Software\Classes\rap.wav\shell)",
-    LR"(Software\Classes\rap.ogg\shell)",
-    LR"(Software\Classes\rap.m4a\shell)",
-    LR"(Software\Classes\rap.mka\shell)",
-    LR"(Software\Classes\rap.alac\shell)",
-};
+constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
+    SHELL_ENTRIES = {
+        LR"(Software\Classes\rap.mp3\shell)",
+        LR"(Software\Classes\rap.flac\shell)",
+        LR"(Software\Classes\rap.opus\shell)",
+        LR"(Software\Classes\rap.aac\shell)",
+        LR"(Software\Classes\rap.wav\shell)",
+        LR"(Software\Classes\rap.ogg\shell)",
+        LR"(Software\Classes\rap.m4a\shell)",
+        LR"(Software\Classes\rap.mka\shell)",
+        LR"(Software\Classes\rap.alac\shell)",
+    };
 
-constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
+constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
     SHELL_OPEN_ENTRIES = {
         LR"(Software\Classes\rap.mp3\shell\open)",
         LR"(Software\Classes\rap.flac\shell\open)",
@@ -65,7 +73,7 @@ constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
         LR"(Software\Classes\rap.alac\shell\open)",
     };
 
-constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
+constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
     SHELL_COMMAND_ENTRIES = {
         LR"(Software\Classes\rap.mp3\shell\open\command)",
         LR"(Software\Classes\rap.flac\shell\open\command)",
@@ -78,7 +86,7 @@ constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
         LR"(Software\Classes\rap.alac\shell\open\command)",
     };
 
-constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_ENTRIES = {
+constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_ENTRIES = {
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mp3\UserChoiceLatest)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.flac\UserChoiceLatest)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.opus\UserChoiceLatest)",
@@ -90,7 +98,7 @@ constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_ENTRIES = {
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest)"
 };
 
-constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_PROGIDS = {
+constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_PROGIDS = {
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mp3\UserChoiceLatest\ProgId)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.flac\UserChoiceLatest\ProgId)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.opus\UserChoiceLatest\ProgId)",
@@ -102,7 +110,7 @@ constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_PROGIDS = {
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\ProgId)"
 };
 
-constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_OPEN_WITH_LIST_ENTRIES = {
+constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_OPEN_WITH_LIST_ENTRIES = {
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mp3\UserChoiceLatest\OpenWithList)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.flac\UserChoiceLatest\OpenWithList)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.opus\UserChoiceLatest\OpenWithList)",
@@ -114,30 +122,35 @@ constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_OPEN_WITH_L
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\OpenWithList)"
 };
 
-constexpr array<wcstr, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_OPEN_WITH_PROGIDS_ENTRIES = {
-    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mp3\UserChoiceLatest\OpenWithProgids)",
-    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.flac\UserChoiceLatest\OpenWithProgids)",
-    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.opus\UserChoiceLatest\OpenWithProgids)",
-    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.aac\UserChoiceLatest\OpenWithProgids)",
-    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.wav\UserChoiceLatest\OpenWithProgids)",
-    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ogg\UserChoiceLatest\OpenWithProgids)",
-    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m4a\UserChoiceLatest\OpenWithProgids)",
-    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mka\UserChoiceLatest\OpenWithProgids)",
-    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\OpenWithProgids)"
-};
+constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
+    EXPLORER_OPEN_WITH_PROGIDS_ENTRIES = {
+        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mp3\UserChoiceLatest\OpenWithProgids)",
+        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.flac\UserChoiceLatest\OpenWithProgids)",
+        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.opus\UserChoiceLatest\OpenWithProgids)",
+        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.aac\UserChoiceLatest\OpenWithProgids)",
+        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.wav\UserChoiceLatest\OpenWithProgids)",
+        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ogg\UserChoiceLatest\OpenWithProgids)",
+        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m4a\UserChoiceLatest\OpenWithProgids)",
+        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mka\UserChoiceLatest\OpenWithProgids)",
+        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\OpenWithProgids)"
+    };
+
+constexpr wstring_view SHELL_ENTRY =
+    LR"(Software\Classes\Directory\shell\Open directory in RAP)";
+constexpr wstring_view SHELL_ENTRY_COMMAND =
+    LR"(Software\Classes\Directory\shell\Open directory in RAP\command)";
 
 auto setRegistryValue(
     const HKEY root,
-    wcstr entry,  // NOLINT
-    wcstr key,
-    wcstr value,
-    const u32 valueSize,
+    const wstring_view entry,
+    const wstring_view key,
+    const wstring_view value,
     const u32 type
 ) -> bool {
     HKEY hKey;
     i32 result = RegCreateKeyExW(
         root,
-        entry,
+        entry.data(),
         0,
         nullptr,
         REG_OPTION_NON_VOLATILE,
@@ -158,11 +171,11 @@ auto setRegistryValue(
 
     result = RegSetValueExW(
         hKey,
-        key,
+        key.data(),
         0,
         type,
-        ras<const u8*>(value),
-        (valueSize + 1) * sizeof(wchar)
+        ras<const u8*>(value.data()),
+        (value.size() + 1) * sizeof(wchar)
     );
 
     RegCloseKey(hKey);
@@ -179,8 +192,8 @@ auto setRegistryValue(
     return true;
 }
 
-auto removeRegistryEntry(HKEY root, wcstr entry) -> bool {
-    i32 result = RegDeleteTreeW(root, entry);
+auto removeRegistryEntry(HKEY root, const wstring_view entry) -> bool {
+    i32 result = RegDeleteTreeW(root, entry.data());
 
     if (result != ERROR_SUCCESS && result != ERROR_FILE_NOT_FOUND) {
         qDebug() << format(
@@ -194,26 +207,32 @@ auto removeRegistryEntry(HKEY root, wcstr entry) -> bool {
     return true;
 }
 
-void createFileAssociations(const QString& appPath, const QString& iconPath) {
+void createFileAssociations(const QString& appPath_, const QString& iconPath_) {
+    const wstring_view appPath = { ras<wcstr>(appPath_.utf16()),
+                                   as<usize>(appPath_.size()) };
+
+    const wstring_view iconPath = { ras<wcstr>(iconPath_.utf16()),
+                                    as<usize>(iconPath_.size()) };
+
     for (const u8 idx : range(0, ALLOWED_MUSIC_FILE_EXTENSIONS.size())) {
         const QStringView extension = ALLOWED_MUSIC_FILE_EXTENSIONS[idx];
-        const auto* wextension = ras<wcstr>(extension.utf16());
+        const wstring_view wextension = { ras<wcstr>(extension.utf16()),
+                                          as<usize>(extension.size()) };
 
         const wstring_view progId = PROG_IDS[idx];
-        const wcstr extensionEntry = EXTENSION_ENTRIES[idx];
-        const wcstr progIdEntry = PROG_ID_ENTRIES[idx];
-        const wcstr iconEntry = ICON_ENTRIES[idx];
-        const wcstr shellEntry = SHELL_ENTRIES[idx];
-        const wcstr shellOpenEntry = SHELL_OPEN_ENTRIES[idx];
-        const wcstr shellCommandEntry = SHELL_COMMAND_ENTRIES[idx];
+        const wstring_view extensionEntry = EXTENSION_ENTRIES[idx];
+        const wstring_view progIdEntry = PROG_ID_ENTRIES[idx];
+        const wstring_view iconEntry = ICON_ENTRIES[idx];
+        const wstring_view shellEntry = SHELL_ENTRIES[idx];
+        const wstring_view shellOpenEntry = SHELL_OPEN_ENTRIES[idx];
+        const wstring_view shellCommandEntry = SHELL_COMMAND_ENTRIES[idx];
 
         // Set HKEY_CURRENT_USER\Software\Classes\.ext
         setRegistryValue(
             HKEY_CURRENT_USER,
             extensionEntry,
             DEFAULT_KEY,
-            progId.data(),
-            progId.size(),
+            progId,
             REG_SZ
         );
 
@@ -223,18 +242,15 @@ void createFileAssociations(const QString& appPath, const QString& iconPath) {
             progIdEntry,
             DEFAULT_KEY,
             wextension,
-            extension.size(),
             REG_SZ
         );
 
-        const wstring iconEntryValue =
-            format(LR"("{}")", ras<wcstr>(iconPath.utf16()));
+        const wstring iconEntryValue = format(LR"("{}")", iconPath);
         setRegistryValue(
             HKEY_CURRENT_USER,
             iconEntry,
             DEFAULT_KEY,
-            iconEntryValue.data(),
-            iconEntryValue.size(),
+            iconEntryValue,
             REG_SZ
         );
 
@@ -244,8 +260,7 @@ void createFileAssociations(const QString& appPath, const QString& iconPath) {
             HKEY_CURRENT_USER,
             shellEntry,
             DEFAULT_KEY,
-            shellEntryValue.data(),
-            shellEntryValue.size(),
+            shellEntryValue,
             REG_SZ
         );
 
@@ -256,69 +271,62 @@ void createFileAssociations(const QString& appPath, const QString& iconPath) {
             HKEY_CURRENT_USER,
             shellOpenEntry,
             DEFAULT_KEY,
-            shellOpenValue.data(),
-            shellOpenValue.size(),
+            shellOpenValue,
             REG_SZ
         );
 
         // Set HKEY_CURRENT_USER\Software\Classes\rap.ext\shell\open\command
-        const wstring shellCommandValue =
-            format(LR"("{}" "%1")", ras<wcstr>(appPath.utf16()));
+        const wstring shellCommandValue = format(LR"("{}" "%1")", appPath);
         setRegistryValue(
             HKEY_CURRENT_USER,
             shellCommandEntry,
             DEFAULT_KEY,
-            shellCommandValue.c_str(),
-            shellCommandValue.size(),
+            shellCommandValue,
             REG_SZ
         );
 
         // Set
         // HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ext\UserChoiceLatest\ProgId
-        const wcstr explorerProgIdEntry = EXPLORER_PROGIDS[idx];
-        constexpr wcstr explorerProgIdKey = L"ProgId";
+        const wstring_view explorerProgIdEntry = EXPLORER_PROGIDS[idx];
+        constexpr wstring_view explorerProgIdKey = L"ProgId";
         setRegistryValue(
             HKEY_CURRENT_USER,
             explorerProgIdEntry,
             explorerProgIdKey,
-            progId.data(),
-            progId.size(),
+            progId,
             REG_SZ
         );
 
         // Set
         // HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ext\UserChoiceLatest\OpenWithList
-        const wcstr explorerOpenWithListEntry =
+        const wstring_view explorerOpenWithListEntry =
             EXPLORER_OPEN_WITH_LIST_ENTRIES[idx];
         constexpr wstring_view explorerOpenWithListA = L"a";
         constexpr wstring_view explorerOpenWithListValue = L"rap.exe";
         setRegistryValue(
             HKEY_CURRENT_USER,
             explorerOpenWithListEntry,
-            explorerOpenWithListA.data(),  // NOLINT
-            explorerOpenWithListValue.data(),
-            explorerOpenWithListValue.size(),
+            explorerOpenWithListA,
+            explorerOpenWithListValue,
             REG_SZ
         );
 
-        constexpr wcstr explorerOpenWithListMRU = L"MRUList";
+        constexpr wstring_view explorerOpenWithListMRU = L"MRUList";
         setRegistryValue(
             HKEY_CURRENT_USER,
             explorerOpenWithListEntry,
             explorerOpenWithListMRU,
-            explorerOpenWithListA.data(),
-            explorerOpenWithListA.size(),
+            explorerOpenWithListA,
             REG_SZ
         );
 
-        const wcstr ExplorerOpenWithProgidsEntry =
+        const wstring_view ExplorerOpenWithProgidsEntry =
             EXPLORER_OPEN_WITH_PROGIDS_ENTRIES[idx];
         setRegistryValue(
             HKEY_CURRENT_USER,
             ExplorerOpenWithProgidsEntry,
-            progId.data(),  // NOLINT
+            progId,
             DEFAULT_KEY,
-            0,
             REG_BINARY
         );
     }
@@ -326,9 +334,9 @@ void createFileAssociations(const QString& appPath, const QString& iconPath) {
 
 void removeFileAssociations() {
     for (const u8 idx : range(0, ALLOWED_MUSIC_FILE_EXTENSIONS.size())) {
-        const wcstr extensionEntry = EXTENSION_ENTRIES[idx];
-        const wcstr progIdEntry = PROG_ID_ENTRIES[idx];
-        const wcstr explorerEntry = EXPLORER_ENTRIES[idx];
+        const wstring_view extensionEntry = EXTENSION_ENTRIES[idx];
+        const wstring_view progIdEntry = PROG_ID_ENTRIES[idx];
+        const wstring_view explorerEntry = EXPLORER_ENTRIES[idx];
 
         // Delete HKEY_CURRENT_USER\Software\Classes\.ext
         removeRegistryEntry(HKEY_CURRENT_USER, extensionEntry);
@@ -342,32 +350,26 @@ void removeFileAssociations() {
     }
 }
 
-constexpr wcstr SHELL_ENTRY =
-    LR"(Software\Classes\Directory\shell\Open directory in RAP)";
-constexpr wcstr SHELL_ENTRY_COMMAND =
-    LR"(Software\Classes\Directory\shell\Open directory in RAP\command)";
-
 void createContextMenuDirectoryEntry(const QString& appPath_) {
-    const auto* appPath = ras<wcstr>(appPath_.utf16());
+    const wstring_view appPath = { ras<wcstr>(appPath_.utf16()),
+                                   as<usize>(appPath_.size()) };
 
-    constexpr wcstr shellEntryNameKey = L"Open directory in RAP";
+    constexpr wstring_view shellEntryNameKey = L"Open directory in RAP";
     setRegistryValue(
         HKEY_CURRENT_USER,
         SHELL_ENTRY,
-        shellEntryNameKey,
         DEFAULT_KEY,
-        2,
+        shellEntryNameKey,
         REG_SZ
     );
 
-    constexpr wcstr shellEntryIconKey = L"Icon";
+    constexpr wstring_view shellEntryIconKey = L"Icon";
     const wstring shellEntryIconValue = format(LR"("{}",0)", appPath);
     setRegistryValue(
         HKEY_CURRENT_USER,
         SHELL_ENTRY,
         shellEntryIconKey,
-        shellEntryIconValue.c_str(),
-        shellEntryIconValue.size(),
+        shellEntryIconValue,
         REG_SZ
     );
 
@@ -375,9 +377,8 @@ void createContextMenuDirectoryEntry(const QString& appPath_) {
     setRegistryValue(
         HKEY_CURRENT_USER,
         SHELL_ENTRY_COMMAND,
-        shellEntryNameKey,
-        shellEntryNameValue.c_str(),
-        shellEntryNameValue.size(),
+        DEFAULT_KEY,
+        shellEntryNameValue,
         REG_SZ
     );
 }
@@ -385,3 +386,5 @@ void createContextMenuDirectoryEntry(const QString& appPath_) {
 void removeContextMenuDirectoryEntry() {
     removeRegistryEntry(HKEY_CURRENT_USER, SHELL_ENTRY);
 }
+
+// NOLINTEND(bugprone-suspicious-stringview-data-usage)
