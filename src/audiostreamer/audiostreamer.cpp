@@ -2,8 +2,6 @@
 
 #include "constants.hpp"
 
-#include <libavfilter/avfilter.h>
-
 constexpr u16 MIN_BUFFER_SIZE = 4096;
 
 AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
@@ -77,7 +75,7 @@ void AudioStreamer::start(const QString& path) {
     err = swr_alloc_set_opts2(
         &swrContextPtr,
         &channelLayout,
-        AV_SAMPLE_FMT_FLT,
+        SAMPLE_FORMAT,
         sampleRate,
         &channelLayout,
         codecContext->sample_fmt,
@@ -94,9 +92,6 @@ void AudioStreamer::start(const QString& path) {
 
     swrContext.reset(swrContextPtr);
     swr_init(swrContextPtr);
-
-    packet = createPacket();
-    frame = createFrame();
 
     secondsDuration = formatContextPtr->duration / AV_TIME_BASE;
 
@@ -115,6 +110,10 @@ void AudioStreamer::start(const QString& path) {
     // when reading raw PCM
     if (formatName.starts_with("pcm")) {
         avio_seek(formatContext->pb, 0, SEEK_SET);
+    } else {
+        // We only need packets and frames when decoding the encoded data
+        packet = createPacket();
+        frame = createFrame();
     }
 
     initializeFilters();
@@ -145,7 +144,7 @@ auto AudioStreamer::processFrame() -> bool {
     return nextBufferSize >= MIN_BUFFER_SIZE;
 }
 
-auto AudioStreamer::buildEqualizerArgs(const bool change) -> string {
+auto AudioStreamer::buildEqualizerArgs() const -> string {
     u16 width;
 
     switch (bandCount) {
@@ -288,7 +287,7 @@ void AudioStreamer::initializeFilters() {
 
     const string abufferArgs = std::format(
         "sample_fmt={}:sample_rate={}:channel_layout={}",
-        av_get_sample_fmt_name(AV_SAMPLE_FMT_FLT),
+        SAMPLE_FORMAT_NAME,
         codecContext->sample_rate,
         channelLayout
     );
@@ -307,9 +306,7 @@ void AudioStreamer::initializeFilters() {
         return;
     }
 
-    const string equalizerArgs = buildEqualizerArgs(false);
-
-    qDebug() << equalizerArgs;
+    const string equalizerArgs = buildEqualizerArgs();
 
     err = avfilter_graph_create_filter(
         &equalizerContext,
@@ -341,7 +338,7 @@ void AudioStreamer::initializeFilters() {
 
     const string aformatArgs = std::format(
         "sample_fmts={}:sample_rates={}:channel_layouts={}",
-        av_get_sample_fmt_name(AV_SAMPLE_FMT_FLT),
+        SAMPLE_FORMAT_NAME,
         codecContext->sample_rate,
         channelLayout
     );
@@ -374,6 +371,7 @@ void AudioStreamer::initializeFilters() {
         return;
     }
 
+    // First pass the data to equalizer
     err = avfilter_link(abufferContext, 0, equalizerContext, 0);
     if (err < 0) {
         printErr(err);
@@ -381,6 +379,7 @@ void AudioStreamer::initializeFilters() {
         return;
     }
 
+    // Then normalize it
     err = avfilter_link(equalizerContext, 0, normalizerContext, 0);
     if (err < 0) {
         printErr(err);
@@ -388,6 +387,7 @@ void AudioStreamer::initializeFilters() {
         return;
     }
 
+    // Then resample it
     err = avfilter_link(normalizerContext, 0, aformatContext, 0);
     if (err < 0) {
         printErr(err);
@@ -395,6 +395,7 @@ void AudioStreamer::initializeFilters() {
         return;
     }
 
+    // Then output it
     err = avfilter_link(aformatContext, 0, abuffersinkContext, 0);
     if (err < 0) {
         printErr(err);
@@ -402,12 +403,36 @@ void AudioStreamer::initializeFilters() {
         return;
     }
 
+    // Ensure the validity of filter graph
     err = avfilter_graph_config(filterGraph.get(), nullptr);
     if (err < 0) {
         printErr(err);
         filterGraph.reset();
         return;
     }
+}
+
+void AudioStreamer::equalizeBuffer() {
+    if (!equalizerEnabled_ || filterGraph == nullptr ||
+        ranges::all_of(gains_, [](const i8 gain) { return gain == 0; })) {
+        return;
+    }
+
+    const u8 channelCount = codecContext->ch_layout.nb_channels;
+
+    frame = createFrame();
+    frame->nb_samples = MIN_BUFFER_SIZE / (SAMPLE_SIZE * 2);
+    frame->format = SAMPLE_FORMAT;
+    frame->ch_layout = codecContext->ch_layout;
+    frame->sample_rate = codecContext->sample_rate;
+
+    av_frame_get_buffer(frame.get(), 0);
+    memcpy(frame->data[0], buffer.data(), MIN_BUFFER_SIZE);
+
+    equalizeFrame();
+
+    memcpy(buffer.data(), frame->data[0], MIN_BUFFER_SIZE);
+    frame.reset();
 }
 
 void AudioStreamer::equalizeFrame() {
@@ -434,26 +459,33 @@ void AudioStreamer::equalizeFrame() {
     frame.reset(filteredFrame);
 }
 
-void AudioStreamer::convertFrame() {
-    if (frame == nullptr) {
-        frame = createFrame();
-        frame->ch_layout = codecContext->ch_layout;
-        frame->sample_rate = codecContext->sample_rate;
-        frame->format = codecContext->sample_fmt;
-        frame->nb_samples = as<i32>(
-            buffer.size() / av_get_bytes_per_sample(codecContext->sample_fmt)
-        );
-        frame->data[0] = ras<u8*>(buffer.data());
-    }
+void AudioStreamer::convertBuffer() {
+    array<u8, MIN_BUFFER_SIZE> outArray;
+    u8* out = outArray.data();
+    u8* in_ = ras<u8*>(buffer.data());
+    const u8 channelCount = codecContext->ch_layout.nb_channels;
 
-    if (codecContext->sample_fmt == AV_SAMPLE_FMT_FLT) {
+    swr_convert(
+        swrContext.get(),
+        &out,
+        MIN_BUFFER_SIZE / (SAMPLE_SIZE * channelCount),
+        &in_,
+        MIN_BUFFER_SIZE /
+            (av_get_bytes_per_sample(codecContext->sample_fmt) * channelCount)
+    );
+
+    memcpy(buffer.data(), outArray.data(), MIN_BUFFER_SIZE);
+}
+
+void AudioStreamer::convertFrame() {
+    if (codecContext->sample_fmt == SAMPLE_FORMAT) {
         return;
     }
 
     AVFrame* newFrame = av_frame_alloc();
     newFrame->ch_layout = codecContext->ch_layout;
     newFrame->sample_rate = codecContext->sample_rate;
-    newFrame->format = AV_SAMPLE_FMT_FLT;
+    newFrame->format = SAMPLE_FORMAT;
 
     swr_convert_frame(swrContext.get(), newFrame, frame.get());
     frame.reset(newFrame);
@@ -476,13 +508,10 @@ void AudioStreamer::decodeRaw() {
     totalBytesRead += bytesRead;
     playbackSecond = as<u16>(totalBytesRead / bytesPerSecond);
 
-    convertFrame();
-    equalizeFrame();
+    convertBuffer();
+    equalizeBuffer();
 
-    memcpy(buffer.data(), frame->data[0], buffer.size());
     nextBufferSize = buffer.size();
-
-    frame.reset();
 }
 
 void AudioStreamer::prepareBuffer() {
@@ -604,35 +633,35 @@ void AudioStreamer::setBandCount(const u8 bands) {
             memcpy(
                 frequencies_.data(),
                 THREE_BAND_FREQUENCIES.data(),
-                THREE_BANDS * SAMPLE_SIZE
+                as<u16>(THREE_BANDS * SAMPLE_SIZE)
             );
             break;
         case FIVE_BANDS:
             memcpy(
                 frequencies_.data(),
                 FIVE_BAND_FREQUENCIES.data(),
-                FIVE_BANDS * SAMPLE_SIZE
+                as<u16>(FIVE_BANDS * SAMPLE_SIZE)
             );
             break;
         case TEN_BANDS:
             memcpy(
                 frequencies_.data(),
                 TEN_BAND_FREQUENCIES.data(),
-                TEN_BANDS * SAMPLE_SIZE
+                as<u16>(TEN_BANDS * SAMPLE_SIZE)
             );
             break;
         case EIGHTEEN_BANDS:
             memcpy(
                 frequencies_.data(),
                 EIGHTEEN_BAND_FREQUENCIES.data(),
-                EIGHTEEN_BANDS * SAMPLE_SIZE
+                as<u16>(EIGHTEEN_BANDS * SAMPLE_SIZE)
             );
             break;
         case THIRTY_BANDS:
             memcpy(
                 frequencies_.data(),
                 THIRTY_BAND_FREQUENCIES.data(),
-                THIRTY_BANDS * SAMPLE_SIZE
+                as<u16>(THIRTY_BANDS * SAMPLE_SIZE)
             );
             break;
         default:

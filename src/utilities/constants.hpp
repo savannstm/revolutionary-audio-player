@@ -3,12 +3,14 @@
 #include "aliases.hpp"
 #include "enums.hpp"
 
+#include <libavutil/samplefmt.h>
+
 #include <QSize>
 
 // Audio Constants
-
-constexpr f32 Q_FACTOR = 1;
-constexpr usize SAMPLE_SIZE = sizeof(f32);
+constexpr u8 SAMPLE_SIZE = sizeof(f32);
+constexpr AVSampleFormat SAMPLE_FORMAT = AV_SAMPLE_FMT_FLT;
+constexpr cstr SAMPLE_FORMAT_NAME = "flt";
 
 // Equalizer gain range (in dB)
 constexpr i8 MAX_GAIN = 20;

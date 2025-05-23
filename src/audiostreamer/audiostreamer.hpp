@@ -98,7 +98,9 @@ class AudioStreamer : public QIODevice {
     inline void equalizeFrame();
     inline void initializeFilters();
     inline void convertFrame();
-    [[nodiscard]] inline auto buildEqualizerArgs(bool change) -> string;
+    [[nodiscard]] inline auto buildEqualizerArgs() const -> string;
+    inline void convertBuffer();
+    inline void equalizeBuffer();
 
     FormatContext formatContext;
     CodecContext codecContext;
