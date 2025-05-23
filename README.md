@@ -33,9 +33,11 @@ This audio player emphasizes clean codebase, little amount of dependencies, simp
 
 ## Releases
 
-Can't compile this thing for Linux, keeps complaining about missing definitions in static FFmpeg build.
+Linux builds are compiled statically on Alpine Linux with musl - they require **NO** system libraries.
 
-Windows build is compiled statically - you can get in Releases section, just a single .exe and a couple of icon/translation files, no .dlls, folders and other bloat.
+Windows builds are also compiled statically - no `dll`s are shipped with them.
+
+You can get those in Releases section.
 
 ## Build
 
@@ -43,13 +45,11 @@ You need a C++23 compatible compiler: `clang`, `gcc`, `msvc`.
 
 The project uses CMake as build system.
 
-You'll need `Qt6`, `JUCE`, `FFmpeg`, `CImg` and `rapidhash` to build the project.
+You'll need `Qt6`, `FFmpeg`, `CImg` and `rapidhash` to build the project.
 
-Default builds of the program include FFmpeg built with the following configuration: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-zlib --enable-protocol=file`
+Default builds of the program include FFmpeg built with the following configuration: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-avfilter --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-filter=aformat,anequalizer,aresample,alimiter --enable-protocol=file --enable-zlib`
 
 Path to the `rapidhash` headers can be passed as `-DRAPIDHASH_INCLUDE_DIRS`.
-
-For MinGW compatibility, you'll have to use `7.0.12` (but it has issues when building with C++23 standard) version of JUCE framework, as `8.0.0` deprecated MinGW support.
 
 `build.ps1` PowerShell script and `build.sh` Bash script are used to build the project to `build` directory.
 

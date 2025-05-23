@@ -43,13 +43,11 @@
 
 Проект использует CMake как билд-систему.
 
-Вам понадобятся `Qt6`, `JUCE`, `FFmpeg`, `CImg` и `rapidhash`, чтобы забилдить проект.
+Вам понадобятся `Qt6`, `FFmpeg`, `CImg` и `rapidhash`, чтобы забилдить проект.
 
-Приложение было забилжено со следующей конфигурацией FFmpeg: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-zlib --enable-protocol=file`
+Приложение было забилжено со следующей конфигурацией FFmpeg: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-avfilter --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-filter=aformat,anequalizer,aresample,alimiter --enable-protocol=file --enable-zlib`
 
 Путь к хедерам `rapidhash` может быть указан через `-DRAPIDHASH_INCLUDE_DIRS`.
-
-Для совместимости с MinGW, вам нужно будет использовать версию `7.0.12` (но у неё есть проблемы с совместимостью со стандартом C++23) фреймворка JUCE, так как `8.0.0` бросила поддержку MinGW.
 
 Скрипты PowerShell `build.ps1` и Bash `build.sh` используются для построения проекта в директорию `build`.
 
