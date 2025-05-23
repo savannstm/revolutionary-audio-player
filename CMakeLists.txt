@@ -6,6 +6,9 @@ set(PROJECT_NAME rap)
 set(PROJECT_VERSION "0.4.0")
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES C CXX)
 
+# Define option for static builds
+option(BUILD_STATIC "Link with static libraries" OFF)
+
 # Set standards for C and C++
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -116,6 +119,26 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     avutil
     swresample
 )
+
+# Libraries to link on Linux
+if (UNIX AND NOT APPLE)
+    if (BUILD_STATIC)
+        set(CMAKE_FIND_LIBRARY_SUFFIXES .a .so)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
+    endif()
+
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        -lX11
+        -lxcb
+        -lXau
+        -lXdmcp
+        -lpthread
+        -ldrm
+        -lintl
+        -latomic
+        -lm
+    )
+endif()
 
 # Install the built executable
 include(GNUInstallDirs)
