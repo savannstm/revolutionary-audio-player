@@ -10,41 +10,39 @@
 #include <QTextStream>
 
 void createFileAssociations(const QString& appPath, QString iconPath) {
-    iconPath = iconPath.replace(".ico", ".png");
+    iconPath.replace(u".ico"_s, u".png"_s);
 
-    const QString desktopEntryPath =
-        QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation) +
-        "/rap.desktop";
-    QFile desktopFile(desktopEntryPath);
-
-    if (desktopFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&desktopFile);
-        out << "[Desktop Entry]\n";
-        out << "Name=RAP\n";
-        out << "Exec=" << appPath << " %f\n";
-        out << "Type=Application\n";
-        out << "Icon=" << iconPath << '\n';
-        out << "Categories=AudioVideo;\n";
-
-        QString mimeTypes;
-
-        for (const QStringView extension : ALLOWED_MUSIC_FILE_EXTENSIONS) {
-            const QString mimeType = "audio/x-" + extension.toString();
-            mimeTypes += mimeType + ";";
-        }
-
-        out << "MimeType=" << mimeTypes << '\n';
-        desktopFile.close();
-    }
-
-    QProcess::execute(
-        "update-desktop-database " +
+    const QString desktopEntryPath = u"%1/rap.desktop"_s.arg(
         QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)
     );
+    QFile desktopFile(desktopEntryPath);
+
+    if (!desktopFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return;
+    }
+
+    QTextStream out(&desktopFile);
+    out << "[Desktop Entry]\n";
+    out << "Name=RAP\n";
+    out << "Exec=" << appPath << " %f\n";
+    out << "Type=Application\n";
+    out << "Icon=" << iconPath << '\n';
+    out << "Categories=AudioVideo;\n";
 
     for (const QStringView extension : ALLOWED_MUSIC_FILE_EXTENSIONS) {
-        const QString mimeType = u"audio/x-%1"_s.arg(extension);
-        QProcess::execute("xdg-mime default rap.desktop " + mimeType);
+        out << "MimeType=" << "audio/x-" << extension << ';' << '\n';
+    }
+
+    desktopFile.close();
+
+    QProcess::execute(u"update-desktop-database %1"_s.arg(
+        QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)
+    ));
+
+    for (const QStringView extension : ALLOWED_MUSIC_FILE_EXTENSIONS) {
+        QProcess::execute(
+            u"xdg-mime default rap.desktop audio/x-%1"_s.arg(extension)
+        );
     }
 }
 

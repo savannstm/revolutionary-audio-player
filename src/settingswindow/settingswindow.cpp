@@ -1,5 +1,7 @@
 #include "settingswindow.hpp"
 
+#include "constants.hpp"
+
 #ifdef Q_OS_WINDOWS
 #include "associationswindows.hpp"
 
@@ -11,7 +13,6 @@
 #endif
 
 #include <QAudioDevice>
-#include <QSettings>
 #include <QStyleFactory>
 
 auto SettingsWindow::setupUi() -> Ui::SettingsWindow* {
@@ -47,12 +48,9 @@ SettingsWindow::SettingsWindow(
         [&](const QString& itemText) {
         QApplication::setStyle(itemText);
 
-        for (const auto [idx, style] : views::enumerate(APPLICATION_STYLES)) {
-            if (itemText == style) {
-                settings->flags.applicationStyle = as<Style>(idx);
-                break;
-            }
-        }
+        // Will never be -1
+        const u8 styleIndex = find_index(APPLICATION_STYLES, itemText);
+        settings->flags.applicationStyle = as<Style>(styleIndex);
     }
     );
 
@@ -136,14 +134,7 @@ void SettingsWindow::addOpenDirectoryEntry() {
 }
 
 void SettingsWindow::removeOpenDirectoryEntry() {
-#ifdef Q_OS_WINDOWS
     removeContextMenuDirectoryEntry();
-
-#elifdef Q_OS_LINUX
-    // TODO
-#elifdef Q_OS_MACOS
-    // TODO
-#endif
 }
 
 void SettingsWindow::createFileAssociations() {
@@ -158,5 +149,5 @@ void SettingsWindow::createFileAssociations() {
 }
 
 void SettingsWindow::removeFileAssociations() {
-    removeFileAssociations();
+    ::removeFileAssociations();
 }
