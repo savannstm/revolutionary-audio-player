@@ -27,7 +27,6 @@ endif()
 
 # Find required packages
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia Concurrent LinguistTools Gui)
-find_package(JUCE REQUIRED)
 
 find_path(FFMPEG_INCLUDE_DIR "avcodec.h" PATH_SUFFIXES ffmpeg)
 
@@ -35,8 +34,9 @@ find_library(AVCODEC_LIBRARY avcodec)
 find_library(AVFORMAT_LIBRARY avformat)
 find_library(AVUTIL_LIBRARY avutil)
 find_library(SWRESAMPLE_LIBRARY swresample)
+find_library(AVFILTER_LIBRARY avfilter)
 
-if(NOT (AVCODEC_LIBRARY AND AVFORMAT_LIBRARY AND AVUTIL_LIBRARY AND SWRESAMPLE_LIBRARY))
+if(NOT (AVCODEC_LIBRARY AND AVFORMAT_LIBRARY AND AVUTIL_LIBRARY AND SWRESAMPLE_LIBRARY AND AVFILTER_LIBRARY))
     message(FATAL_ERROR "FFmpeg libraries not found, specify path to them using `-DFFMPEG_INCLUDE_DIR=...`")
 endif()
 
@@ -110,9 +110,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::Concurrent
-    juce_core
-    juce_dsp
     avcodec
+    avfilter
     avformat
     avutil
     swresample

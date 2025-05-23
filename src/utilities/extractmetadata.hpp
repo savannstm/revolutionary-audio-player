@@ -41,7 +41,7 @@ inline auto extractMetadata(const QString& filePath)
     -> HashMap<TrackProperty, QString> {
     HashMap<TrackProperty, QString> metadata;
 
-    FormatContextPtr formatContext;
+    FormatContext formatContext;
     AVFormatContext* formatContextPtr = formatContext.get();
 
     i32 err;
@@ -139,7 +139,7 @@ inline auto extractMetadata(const QString& filePath)
 }
 
 inline auto extractCover(cstr path) -> vector<u8> {
-    FormatContextPtr formatContext;
+    FormatContext formatContext;
     AVFormatContext* formatContextPtr = formatContext.get();
 
     vector<u8> cover;

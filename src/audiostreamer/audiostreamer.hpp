@@ -1,19 +1,22 @@
 #pragma once
 
+extern "C" {
+#define __STDC_CONSTANT_MACROS
+#include <libavfilter/avfilter.h>
+#include <libavfilter/buffersink.h>
+#include <libavfilter/buffersrc.h>
+#include <libavutil/avutil.h>
+}
+
 #include "aliases.hpp"
 #include "constants.hpp"
 #include "ffmpeg.hpp"
-
-#include <juce_dsp/juce_dsp.h>
 
 #include <QAudioFormat>
 #include <QDebug>
 #include <QIODevice>
 
 using namespace FFmpeg;
-
-using IIRFilter = juce::dsp::IIR::Filter<f32>;
-using IIRCoefficients = juce::dsp::IIR::Coefficients<f32>;
 
 class AudioStreamer : public QIODevice {
     Q_OBJECT
@@ -60,9 +63,13 @@ class AudioStreamer : public QIODevice {
         return frequencies_;
     };
 
-    [[nodiscard]] auto equalizerEnabled() const -> bool { return eqEnabled; };
+    [[nodiscard]] auto equalizerEnabled() const -> bool {
+        return equalizerEnabled_;
+    };
 
-    constexpr void toggleEqualizer(const bool enabled) { eqEnabled = enabled; };
+    constexpr void toggleEqualizer(const bool enabled) {
+        equalizerEnabled_ = enabled;
+    };
 
     [[nodiscard]] constexpr auto progress() const -> u16 {
         return playbackSecond;
@@ -84,24 +91,33 @@ class AudioStreamer : public QIODevice {
     };
 
    private:
-    inline void equalizeBuffer(QByteArray& buf);
     inline void prepareBuffer();
-    inline void initFilters();
-    void decodeRaw();
-    auto processFrame() -> bool;
+    inline void decodeRaw();
+    inline auto processFrame() -> bool;
     [[nodiscard]] inline auto second() const -> u16;
+    inline void equalizeFrame();
+    inline void initializeFilters();
+    inline void convertFrame();
+    [[nodiscard]] inline auto buildEqualizerArgs(bool change) -> string;
 
-    FormatContextPtr formatContext;
-    CodecContextPtr codecContext;
-    SwrContextPtr swrContext;
-    PacketPtr packet;
-    FramePtr frame;
+    FormatContext formatContext;
+    CodecContext codecContext;
+    FFmpeg::SwrContext swrContext;
+    Packet packet;
+    Frame frame;
+
+    FilterGraph filterGraph;
+    AVFilterContext* abufferContext = nullptr;
+    AVFilterContext* equalizerContext = nullptr;
+    AVFilterContext* normalizerContext = nullptr;
+    AVFilterContext* aformatContext = nullptr;
+    AVFilterContext* abuffersinkContext = nullptr;
 
     QByteArray buffer;
     QAudioFormat format_;
 
-    i64 nextBufferSize = 0;
-    i32 audioStreamIndex = 0;
+    u32 nextBufferSize = 0;
+    i8 audioStreamIndex = 0;
     u16 secondsDuration = 0;
     u16 playbackSecond = 0;
 
@@ -112,14 +128,15 @@ class AudioStreamer : public QIODevice {
 
     string_view formatName;
 
-    bool eqEnabled = false;
-
     u8 bandCount = TEN_BANDS;
-
-    array<char, AV_ERROR_MAX_STRING_SIZE> errBuf;
 
     FrequencyArray frequencies_;
     GainArray gains_;
+
+    array<char, AV_ERROR_MAX_STRING_SIZE> errBuf;
+
     array<bool, MAX_BANDS_COUNT> changedBands;
-    vector<vector<IIRFilter>> filters;
+
+    bool equalizerEnabled_ = false;
+    bool bandCountChanged = false;
 };

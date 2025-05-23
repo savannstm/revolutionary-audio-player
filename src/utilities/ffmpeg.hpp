@@ -2,6 +2,7 @@
 
 extern "C" {
 #include <libavcodec/avcodec.h>
+#include <libavfilter/avfilter.h>
 #include <libavformat/avformat.h>
 #include <libswresample/swresample.h>
 }
@@ -40,21 +41,33 @@ namespace FFmpeg {
         }
     };
 
-    using FormatContextPtr = unique_ptr<AVFormatContext, FormatContextDeleter>;
-    using CodecContextPtr = unique_ptr<AVCodecContext, CodecContextDeleter>;
-    using SwrContextPtr = unique_ptr<SwrContext, SwrContextDeleter>;
-    using PacketPtr = unique_ptr<AVPacket, PacketDeleter>;
-    using FramePtr = unique_ptr<AVFrame, FrameDeleter>;
+    struct FilterGraphDeleter {
+        void operator()(AVFilterGraph* filterGraph) const {
+            avfilter_graph_free(&filterGraph);
+        }
+    };
 
-    inline auto make_packet() -> PacketPtr {
-        return PacketPtr(av_packet_alloc());
+    using FormatContext = unique_ptr<AVFormatContext, FormatContextDeleter>;
+    using CodecContext = unique_ptr<AVCodecContext, CodecContextDeleter>;
+    using SwrContext = unique_ptr<SwrContext, SwrContextDeleter>;
+    using Packet = unique_ptr<AVPacket, PacketDeleter>;
+    using Frame = unique_ptr<AVFrame, FrameDeleter>;
+    using FilterGraph = unique_ptr<AVFilterGraph, FilterGraphDeleter>;
+
+    inline auto createPacket() -> Packet {
+        return Packet(av_packet_alloc());
     }
 
-    inline auto make_frame() -> FramePtr {
-        return FramePtr(av_frame_alloc());
+    inline auto createFrame() -> Frame {
+        return Frame(av_frame_alloc());
     }
 
-    inline auto make_codec_context(const AVCodec* codec) -> CodecContextPtr {
-        return CodecContextPtr(avcodec_alloc_context3(codec));
+    inline auto createCodecContext(const AVCodec* codec) -> CodecContext {
+        return CodecContext(avcodec_alloc_context3(codec));
     }
+
+    inline auto createFilterGraph() -> FilterGraph {
+        return FilterGraph(avfilter_graph_alloc());
+    }
+
 }  // namespace FFmpeg
