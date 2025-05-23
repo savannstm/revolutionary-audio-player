@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.1
+
+-   Fixed non-working `.wav` playback and skipping a couple of milliseconds when playing `.wav` files.
+-   Fixed ugly appearance of cover window's context menu.
+-   Reimplemented equalizer with FFmpeg's `libavfilter` instead of `JUCE` framework - something might sound different.
+-   Started to ship static Linux builds.
+
 ## v0.4.0
 
 -   FIXED NON-WORKING REPEAT.
