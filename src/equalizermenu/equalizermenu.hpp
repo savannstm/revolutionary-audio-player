@@ -58,6 +58,9 @@ class EqualizerMenu : public QDialog {
 
     void loadSettings() {
         enableEqualizerButton->setChecked(settings->equalizerSettings.enabled);
+        enableEqualizerButton->setText(
+            settings->equalizerSettings.enabled ? tr("Enabled") : tr("Disabled")
+        );
         bandSelect->setCurrentIndex(settings->equalizerSettings.bandIndex);
 
         changeBands(bandSelect->currentText());

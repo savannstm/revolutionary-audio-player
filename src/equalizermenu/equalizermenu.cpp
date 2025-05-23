@@ -371,7 +371,7 @@ void EqualizerMenu::selectPreset(i32 index) {
     previousPresetIndex = index;
 }
 
-void EqualizerMenu::toggleEqualizer(bool checked) {
+void EqualizerMenu::toggleEqualizer(const bool checked) {
     enableEqualizerButton->setText(checked ? tr("Enabled") : tr("Disabled"));
     audioWorker->toggleEqualizer(checked);
 }

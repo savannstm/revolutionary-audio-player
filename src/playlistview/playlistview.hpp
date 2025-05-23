@@ -6,6 +6,7 @@
 #include "playlisttabbar.hpp"
 #include "tracktree.hpp"
 
+#include <QDir>
 #include <QLabel>
 #include <QStackedWidget>
 #include <QVBoxLayout>
