@@ -8,9 +8,12 @@
 #include <QSize>
 
 // Audio Constants
-constexpr u8 SAMPLE_SIZE = sizeof(f32);
-constexpr AVSampleFormat SAMPLE_FORMAT = AV_SAMPLE_FMT_FLT;
-constexpr cstr SAMPLE_FORMAT_NAME = "flt";
+constexpr u16 MIN_BUFFER_SIZE = 4096;
+constexpr u16 MIN_BUFFER_SIZE_I24 = 4095;
+
+constexpr u8 F32_SAMPLE_SIZE = sizeof(f32);
+constexpr AVSampleFormat F32_SAMPLE_FORMAT = AV_SAMPLE_FMT_FLT;
+constexpr cstr F32_SAMPLE_FORMAT_NAME = "flt";
 
 // Equalizer gain range (in dB)
 constexpr i8 MAX_GAIN = 20;
@@ -194,6 +197,11 @@ constexpr u16 KB_BYTES = 1000;
 constexpr u8 MINUTE_SECONDS = 60;
 
 // Type Aliases / Structs
+
+constexpr i32 INT24_SIZE = 3;
+constexpr i32 INT24_MAX = 8388607;
+constexpr i32 INT24_MIN = ~INT24_MAX;
+constexpr i32 UINT24_MAX = 16777215;
 
 using MetadataArray = array<QString, TRACK_PROPERTY_COUNT>;
 using GainArray = array<i8, MAX_BANDS_COUNT>;
