@@ -13,7 +13,7 @@ class MusicModel : public QStandardItemModel {
    public:
     explicit MusicModel(QObject* parent = nullptr);
 
-    void setItem(u16 row, u16 column, MusicItem* item);
+    void setItem(u16 row, u16 column, MusicItem* item, bool path = false);
 
     [[nodiscard]] auto contains(const QString& path) const -> bool {
         return tracks.contains(path);

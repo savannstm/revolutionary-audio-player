@@ -10,9 +10,17 @@ MusicModel::MusicModel(QObject* parent) : QStandardItemModel(parent) {
     tracks.reserve(MINIMUM_TRACK_COUNT);
 }
 
-void MusicModel::setItem(const u16 row, const u16 col, MusicItem* item) {
+void MusicModel::setItem(
+    const u16 row,
+    const u16 col,
+    MusicItem* item,
+    const bool path
+) {
     QStandardItemModel::setItem(row, col, item);
-    tracks.emplace(item->text());
+
+    if (path) {
+        tracks.emplace(item->text());
+    }
 }
 
 auto MusicModel::itemFromIndex(const QModelIndex& index) const -> MusicItem* {

@@ -102,7 +102,7 @@ void TrackTree::addFile(
             item->setText(metadata[headerProperty]);
         }
 
-        musicModel->setItem(row, column, item);
+        musicModel->setItem(row, column, item, headerProperty == Path);
     }
 }
 
