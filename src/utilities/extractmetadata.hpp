@@ -1,9 +1,5 @@
 #pragma once
 
-extern "C" {
-#include <libavformat/avformat.h>
-}
-
 #include "aliases.hpp"
 #include "constants.hpp"
 #include "enums.hpp"
