@@ -9,7 +9,7 @@
 
 // Audio Constants
 constexpr u16 MIN_BUFFER_SIZE = 4096;
-constexpr u16 MIN_BUFFER_SIZE_I24 = 4095;
+constexpr u16 MIN_BUFFER_SIZE_I24 = 4098;
 
 constexpr u8 F32_SAMPLE_SIZE = sizeof(f32);
 constexpr AVSampleFormat F32_SAMPLE_FORMAT = AV_SAMPLE_FMT_FLT;
