@@ -99,8 +99,28 @@ class AudioStreamer : public QIODevice {
     inline void initializeFilters();
     inline void convertFrame();
     [[nodiscard]] inline auto buildEqualizerArgs() const -> string;
-    inline void convertBuffer();
+    inline void convertBuffer(u32 bytesRead);
     inline void equalizeBuffer();
+
+    auto
+    checkErr(const i32 err, const bool resetStreamer, const bool resetFilters)
+        -> bool {
+        if (err < 0) {
+            printErr(err);
+
+            if (resetStreamer) {
+                reset();
+            }
+
+            if (resetFilters) {
+                filterGraph.reset();
+            }
+
+            return true;
+        }
+
+        return false;
+    };
 
     FormatContext formatContext;
     CodecContext codecContext;
@@ -124,8 +144,8 @@ class AudioStreamer : public QIODevice {
     u16 playbackSecond = 0;
 
     // For raw formats
-    u32 totalBytesRead = 0;
     u8 inputSampleSize = 0;
+    u32 totalBytesRead = 0;
     u32 bytesPerSecond = 0;
 
     string_view formatName;
