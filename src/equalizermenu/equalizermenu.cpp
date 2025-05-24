@@ -34,7 +34,7 @@ EqualizerMenu::EqualizerMenu(
     );
 
     connect(
-        enableEqualizerButton,
+        toggleButton,
         &QPushButton::toggled,
         this,
         &EqualizerMenu::toggleEqualizer
@@ -205,7 +205,7 @@ void EqualizerMenu::buildBands() {
 }
 
 void EqualizerMenu::saveSettings() {
-    eqSettings.enabled = enableEqualizerButton->isChecked();
+    eqSettings.enabled = toggleButton->isChecked();
     eqSettings.bandIndex = as<u8>(bandSelect->currentIndex());
 
     const u16 presetIndex = as<u16>(presetSelect->currentIndex());
@@ -372,7 +372,7 @@ void EqualizerMenu::selectPreset(i32 index) {
 }
 
 void EqualizerMenu::toggleEqualizer(const bool checked) {
-    enableEqualizerButton->setText(checked ? tr("Enabled") : tr("Disabled"));
+    toggleButton->setText(checked ? tr("Enabled") : tr("Disabled"));
     audioWorker->toggleEqualizer(checked);
 }
 

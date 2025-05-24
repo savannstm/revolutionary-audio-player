@@ -45,6 +45,11 @@ class EqualizerMenu : public QDialog {
 
     void retranslate() {
         ui->retranslateUi(this);
+
+        if (audioWorker->equalizerEnabled()) {
+            toggleButton->setText(tr("Enabled"));
+        }
+
         const FrequencyArray frequencies = audioWorker->frequencies();
 
         for (const auto& [container, frequency] : views::zip(
@@ -57,10 +62,7 @@ class EqualizerMenu : public QDialog {
     }
 
     void loadSettings() {
-        enableEqualizerButton->setChecked(settings->equalizerSettings.enabled);
-        enableEqualizerButton->setText(
-            settings->equalizerSettings.enabled ? tr("Enabled") : tr("Disabled")
-        );
+        toggleButton->setChecked(settings->equalizerSettings.enabled);
         bandSelect->setCurrentIndex(settings->equalizerSettings.bandIndex);
 
         changeBands(bandSelect->currentText());
@@ -131,6 +133,6 @@ class EqualizerMenu : public QDialog {
     QPushButton* newPresetButton = ui->newPresetButton;
     QPushButton* deletePresetButton = ui->deletePresetButton;
 
-    QPushButton* enableEqualizerButton = ui->enableButton;
+    QPushButton* toggleButton = ui->toggleButton;
     array<SliderContainer, MAX_BANDS_COUNT> sliders;
 };
