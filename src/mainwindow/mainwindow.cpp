@@ -597,6 +597,15 @@ void MainWindow::loadSettings() {
 
     mainArea->setSizes({ QWIDGETSIZE_MAX, settings->dockWidgetSettings.size });
 
+    // Update system associations, in case if binary was moved somewhere
+    if (settings->flags.contextMenuEntryEnabled) {
+        SettingsWindow::createContextMenuEntry();
+    }
+
+    if (settings->flags.fileAssociationsEnabled) {
+        SettingsWindow::createFileAssociations();
+    }
+
     retranslate(settings->language);
 }
 

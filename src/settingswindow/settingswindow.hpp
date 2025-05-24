@@ -23,14 +23,15 @@ class SettingsWindow : public QDialog {
     explicit SettingsWindow(shared_ptr<Settings> settings, QWidget* parent);
     ~SettingsWindow() override;
 
+    static void removeContextMenuEntry();
+    static void createContextMenuEntry();
+    static void createFileAssociations();
+    static void removeFileAssociations();
+
    signals:
     void audioDeviceChanged(const QAudioDevice& device);
 
    private:
-    static void removeOpenDirectoryEntry();
-    static void addOpenDirectoryEntry();
-    static void createFileAssociations();
-    static void removeFileAssociations();
     auto setupUi() -> Ui::SettingsWindow*;
 
     Ui::SettingsWindow* ui = setupUi();
