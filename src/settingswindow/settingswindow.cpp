@@ -78,9 +78,9 @@ SettingsWindow::SettingsWindow(
         this,
         [&](const bool checked) {
         if (checked) {
-            addOpenDirectoryEntry();
+            createContextMenuEntry();
         } else {
-            removeOpenDirectoryEntry();
+            removeContextMenuEntry();
         }
 
         settings->flags.contextMenuEntryEnabled = checked;
@@ -128,13 +128,13 @@ SettingsWindow::~SettingsWindow() {
     delete ui;
 }
 
-void SettingsWindow::addOpenDirectoryEntry() {
+void SettingsWindow::createContextMenuEntry() {
     QString appPath = QApplication::applicationFilePath();
-    createContextMenuDirectoryEntry(appPath.replace('/', '\\'));
+    createContextMenuEntryOS(appPath.replace('/', '\\'));
 }
 
-void SettingsWindow::removeOpenDirectoryEntry() {
-    removeContextMenuDirectoryEntry();
+void SettingsWindow::removeContextMenuEntry() {
+    removeContextMenuEntryOS();
 }
 
 void SettingsWindow::createFileAssociations() {
@@ -142,12 +142,12 @@ void SettingsWindow::createFileAssociations() {
     QString iconPath = appDir + "/icons/rap-logo.ico";
     QString appPath = QApplication::applicationFilePath();
 
-    ::createFileAssociations(
+    createFileAssociationsOS(
         appPath.replace('/', '\\'),
         iconPath.replace('/', '\\')
     );
 }
 
 void SettingsWindow::removeFileAssociations() {
-    ::removeFileAssociations();
+    removeFileAssociationsOS();
 }

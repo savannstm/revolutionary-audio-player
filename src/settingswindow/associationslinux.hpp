@@ -9,7 +9,7 @@
 #include <QString>
 #include <QTextStream>
 
-void createFileAssociations(const QString& appPath, QString iconPath) {
+void createFileAssociationsOS(const QString& appPath, QString iconPath) {
     iconPath.replace(u".ico"_s, u".png"_s);
 
     const QString desktopEntryPath = u"%1/rap.desktop"_s.arg(
@@ -46,8 +46,8 @@ void createFileAssociations(const QString& appPath, QString iconPath) {
     }
 }
 
-void createContextMenuDirectoryEntry(const QString& appPath_) {}
+void createContextMenuEntryOS(const QString& appPath_) {}
 
-void removeContextMenuDirectoryEntry() {}
+void removeContextMenuEntryOS() {}
 
-void removeFileAssociations() {}
+void removeFileAssociationsOS() {}

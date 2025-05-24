@@ -2,10 +2,10 @@
 
 #include <QString>
 
-void createFileAssociations(const QString& appPath, QString iconPath) {}
+void createFileAssociationsOS(const QString& appPath, QString iconPath) {}
 
-void createContextMenuDirectoryEntry(const QString& appPath_) {}
+void createContextMenuEntryOS(const QString& appPath_) {}
 
-void removeContextMenuDirectoryEntry() {}
+void removeContextMenuEntryOS() {}
 
-void removeFileAssociations() {}
+void removeFileAssociationsOS() {}
