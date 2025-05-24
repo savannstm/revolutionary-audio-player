@@ -72,7 +72,7 @@ void AudioStreamer::start(const QString& path) {
                 : av_get_bytes_per_sample(codecContext->sample_fmt);
         minBufferSize =
             formatName.contains("24") ? MIN_BUFFER_SIZE_I24 : MIN_BUFFER_SIZE;
-        bytesPerSecond = sampleRate * channelCount * inputSampleSize;
+        byterate = sampleRate * channelCount * inputSampleSize;
     } else {
         // We only need packets and frames when decoding the encoded data
         packet = createPacket();
@@ -520,7 +520,7 @@ void AudioStreamer::decodeRaw() {
     equalizeBuffer();
 
     totalBytesRead += bytesRead;
-    playbackSecond = totalBytesRead / bytesPerSecond;
+    playbackSecond = totalBytesRead / byterate;
     nextBufferSize = buffer.size();
 }
 
@@ -597,7 +597,7 @@ auto AudioStreamer::reset() -> bool {
 
     totalBytesRead = 0;
     inputSampleSize = 0;
-    bytesPerSecond = 0;
+    byterate = 0;
 
     formatName = "";
 

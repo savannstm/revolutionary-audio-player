@@ -146,7 +146,7 @@ class AudioStreamer : public QIODevice {
     // For raw formats
     u8 inputSampleSize = 0;
     u32 totalBytesRead = 0;
-    u32 bytesPerSecond = 0;
+    u32 byterate = 0;
     i32 minBufferSize = MIN_BUFFER_SIZE;
 
     string_view formatName;
