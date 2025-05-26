@@ -1428,15 +1428,6 @@ void MainWindow::stopPlayback() {
     }
 }
 
-void MainWindow::resetSorting(
-    const i32 /* unused */,
-    const Qt::SortOrder sortOrder
-) {
-    if (trackTreeHeader->sortIndicatorSection() == -1) {
-        trackTree->sortByPath();
-    }
-};
-
 void MainWindow::importPlaylist(const bool createNewTab) {
     const QString filter =
         tr("XSPF/M3U/CUE Playlist (*.xspf *.m3u8 *.m3u *.cue)");

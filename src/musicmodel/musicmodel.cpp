@@ -13,7 +13,7 @@ MusicModel::MusicModel(QObject* parent) : QStandardItemModel(parent) {
 void MusicModel::setItem(
     const u16 row,
     const u16 col,
-    MusicItem* item,
+    QStandardItem* item,
     const bool path
 ) {
     QStandardItemModel::setItem(row, col, item);
