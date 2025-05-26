@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.5.0
+
+-   Fixed non-working track rewinding with `wav` or any other issues, for sure this time.
+-   Fixed wrong "Disabled" equalizer menu button text when it's actually enabled.
+-   Made the program update Windows registry associations on each run in case if binary was moved.
+-   Fixed non-working equalization when playing different tracks.
+-   Implemented drag and drop in track tables and `Order` column, which preserves the order of rearranged tracks.
+-   Removed files drag and drop option in favor of dropping files directly into the playlist to add tracks or outside the playlist to add new playlist.
+-   Implemented options to automatically set playlist background when playing a track and to prefer external covers instead of internal.
+-   Added dragging delay to playlist tabs dragging to prevent false drags.
+-   Fixed messed up styling of playlist context menus.
+-   Next up: Peak visualizer and `.cue` support.
+
 ## v0.4.1
 
 -   Fixed non-working `.wav` playback and skipping a couple of milliseconds when playing `.wav` files.
