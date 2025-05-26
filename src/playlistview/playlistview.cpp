@@ -105,7 +105,8 @@ auto PlaylistView::createPage(
     QColor bgColor = palette().color(QPalette::Window);
     bgColor.setAlphaF(HALF_TRANSPARENT);
     pageTree->setStyleSheet(
-        u"background-color: rgba(%1, %2, %3, %4);"_s.arg(bgColor.red())
+        u"TrackTree, MusicHeader { background-color: rgba(%1, %2, %3, %4); }"_s
+            .arg(bgColor.red())
             .arg(bgColor.green())
             .arg(bgColor.blue())
             .arg(QString::number(bgColor.alphaF(), 'f', 2))
