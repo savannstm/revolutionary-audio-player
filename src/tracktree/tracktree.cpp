@@ -28,8 +28,24 @@ TrackTree::TrackTree(QWidget* parent) : QTreeView(parent) {
         this,
         &TrackTree::reselectCurrentElement
     );
+
     connect(this, &TrackTree::finishedFilling, this, &TrackTree::postFill);
+
     connect(this, &TrackTree::metadataReceived, this, &TrackTree::addFile);
+
+    connect(
+        musicHeader,
+        &MusicHeader::headerPressed,
+        this,
+        &TrackTree::handleHeaderPress
+    );
+
+    connect(
+        musicHeader,
+        &MusicHeader::sortIndicatorChanged,
+        this,
+        &TrackTree::resetSorting
+    );
 }
 
 void TrackTree::reselectCurrentElement(
@@ -296,3 +312,59 @@ auto TrackTree::deselect(const i32 index) -> QModelIndex {
     setCurrentIndex(musicModel->index(-1, -1));
     return modelIndex;
 }
+
+void TrackTree::handleHeaderPress(
+    const u8 index,
+    const Qt::MouseButton button
+) {
+    if (button == Qt::RightButton) {
+        auto* menu = new OptionMenu(this);
+
+        for (const auto& [idx, label] :
+             views::drop(views::enumerate(trackPropertiesLabels()), 1)) {
+            auto* action = new QAction(label, menu);
+            action->setCheckable(true);
+
+            i8 columnIndex = -1;
+
+            for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
+                if (musicModel->headerData(column, Qt::Horizontal).toString() ==
+                    label) {
+                    columnIndex = as<i8>(column);
+                    break;
+                }
+            }
+
+            if (columnIndex != -1) {
+                action->setChecked(!isColumnHidden(columnIndex));
+            } else {
+                action->setEnabled(false);
+            }
+
+            connect(action, &QAction::triggered, menu, [=, this] {
+                if (columnIndex != -1) {
+                    const bool currentlyHidden = isColumnHidden(columnIndex);
+                    setColumnHidden(columnIndex, !currentlyHidden);
+
+                    if (currentlyHidden) {
+                        resizeColumnToContents(columnIndex);
+                    }
+                }
+            });
+
+            menu->addAction(action);
+        }
+
+        menu->exec(QCursor::pos());
+        menu->deleteLater();
+    }
+}
+
+void TrackTree::resetSorting(
+    const i32 /* unused */,
+    const Qt::SortOrder sortOrder
+) {
+    if (musicHeader->sortIndicatorSection() == -1) {
+        sortByPath();
+    }
+};

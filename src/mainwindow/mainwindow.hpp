@@ -3,7 +3,6 @@
 #include "actionbutton.hpp"
 #include "aliases.hpp"
 #include "audioworker.hpp"
-#include "constants.hpp"
 #include "custominput.hpp"
 #include "customslider.hpp"
 #include "dockwidget.hpp"
@@ -58,12 +57,6 @@ class MainWindow : public QMainWindow {
     void dropEvent(QDropEvent* event) override;
 
    signals:
-    void trackDataReady(
-        TrackTree* tree,
-        const MetadataArray& metadata,
-        const QString& path
-    );
-    void trackDataProcessed(TrackTree* tree);
     void retranslated();
 
    private:
@@ -75,7 +68,6 @@ class MainWindow : public QMainWindow {
     inline void playTrack(TrackTree* tree, const QModelIndex& index);
     inline void stopPlayback();
     inline void handleTrackPress(const QModelIndex& index);
-    inline void handleHeaderPress(u8 index, Qt::MouseButton button);
     inline void searchTrack();
     inline void showSearchInput();
     inline void onAudioProgressUpdated(u16 second);

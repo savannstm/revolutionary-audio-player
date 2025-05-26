@@ -818,55 +818,6 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
     }
 }
 
-void MainWindow::handleHeaderPress(
-    const u8 index,
-    const Qt::MouseButton button
-) {
-    if (button == Qt::RightButton) {
-        auto* menu = new OptionMenu(this);
-
-        for (const auto& [idx, label] :
-             views::drop(views::enumerate(trackPropertiesLabels()), 1)) {
-            auto* action = new QAction(label, menu);
-            action->setCheckable(true);
-
-            i8 columnIndex = -1;
-
-            for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
-                if (trackTreeModel
-                        ->headerData(column, Qt::Orientation::Horizontal)
-                        .toString() == label) {
-                    columnIndex = as<i8>(column);
-                    break;
-                }
-            }
-
-            if (columnIndex != -1) {
-                action->setChecked(!trackTree->isColumnHidden(columnIndex));
-            } else {
-                action->setEnabled(false);
-            }
-
-            connect(action, &QAction::triggered, menu, [=, this] {
-                if (columnIndex != -1) {
-                    const bool currentlyHidden =
-                        trackTree->isColumnHidden(columnIndex);
-                    trackTree->setColumnHidden(columnIndex, !currentlyHidden);
-
-                    if (currentlyHidden) {
-                        trackTree->resizeColumnToContents(columnIndex);
-                    }
-                }
-            });
-
-            menu->addAction(action);
-        }
-
-        menu->exec(QCursor::pos());
-        menu->deleteLater();
-    }
-}
-
 void MainWindow::searchTrack() {
     const QString input = searchTrackInput->text();
 
@@ -1253,22 +1204,6 @@ auto MainWindow::changePlaylist(const i8 index) -> bool {
         &TrackTree::trackSelected,
         this,
         &MainWindow::selectTrack,
-        Qt::UniqueConnection
-    );
-
-    connect(
-        trackTreeHeader,
-        &MusicHeader::headerPressed,
-        this,
-        &MainWindow::handleHeaderPress,
-        Qt::UniqueConnection
-    );
-
-    connect(
-        trackTreeHeader,
-        &MusicHeader::sortIndicatorChanged,
-        this,
-        &MainWindow::resetSorting,
         Qt::UniqueConnection
     );
 

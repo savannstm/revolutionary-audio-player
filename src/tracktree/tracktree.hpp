@@ -58,6 +58,8 @@ class TrackTree : public QTreeView {
         const QString& filePath,
         const HashMap<TrackProperty, QString>& metadata
     );
+    inline void handleHeaderPress(u8 index, Qt::MouseButton button);
+    inline void resetSorting(i32 /* unused */, Qt::SortOrder sortOrder);
 
     QModelIndex index;
     MusicHeader* musicHeader = new MusicHeader(Qt::Horizontal, this);
