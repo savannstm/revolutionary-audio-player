@@ -16,7 +16,7 @@ CoverWindow::CoverWindow(
     setWindowTitle(tr("%1: Cover").arg(title));
     setMinimumSize(MINIMUM_COVER_SIZE);
 
-    setStyleSheet("CoverWindow { background-color: black; }");
+    setStyleSheet(u"CoverWindow { background-color: black; }"_s);
 
     layout->setAlignment(Qt::AlignCenter);
     layout->setContentsMargins({ 0, 0, 0, 0 });

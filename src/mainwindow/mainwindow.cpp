@@ -842,10 +842,10 @@ void MainWindow::searchTrack() {
             value = input.sliced(colonPos + 1);
             hasPrefix = true;
 
-            const auto iter =
-                ranges::find_if(SEARCH_PROPERTIES, [&](const QStringView str) {
-                return prefix == str;
-            });
+            const auto iter = ranges::find_if(
+                SEARCH_PROPERTIES,
+                [&](const QStringView property) { return prefix == property; }
+            );
 
             if (iter != SEARCH_PROPERTIES.end()) {
                 const usize index =
@@ -1253,8 +1253,6 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
             ->setText(1, metadata[as<TrackProperty>(property)]);
     }
 
-    const vector<u8> coverBytes = extractCover(metadata[Path].toUtf8().data());
-
     QPixmap cover;
     QString path;
 
@@ -1492,7 +1490,7 @@ void MainWindow::importPlaylist(const bool createNewTab) {
         }
     };
 
-    if (extension == "xspf") {
+    if (extension == u"xspf"_qsv) {
         QXmlStreamReader xml(&file);
 
         while (!xml.atEnd()) {
@@ -1506,7 +1504,7 @@ void MainWindow::importPlaylist(const bool createNewTab) {
             QMessageBox::warning(this, tr("Error"), xml.errorString());
             return;
         }
-    } else if (extension == "m3u" || extension == "m3u8") {
+    } else if (extension == u"m3u"_qsv || extension == u"m3u8"_qsv) {
         QTextStream input(&file);
 
         while (!input.atEnd()) {
@@ -1516,7 +1514,7 @@ void MainWindow::importPlaylist(const bool createNewTab) {
                 appendIfExists(line);
             }
         }
-    } else if (extension == "cue") {
+    } else if (extension == u"cue"_qsv) {
         // TODO
     }
 
@@ -1554,7 +1552,7 @@ void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
 
     outputPath += u"/%1.%2"_s.arg(
         playlistView->tabLabel(index),
-        playlistType == XSPF ? "xspf" : "m3u8"
+        playlistType == XSPF ? u"xspf"_qsv : u"m3u8"_qsv
     );
 
     if (QFile::exists(outputPath)) {
@@ -1596,7 +1594,7 @@ void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
     }
 }
 
-static constexpr auto getXSPFTag(TrackProperty property) -> QStringView {
+static constexpr auto getXSPFTag(const TrackProperty property) -> QStringView {
     switch (property) {
         case TrackProperty::Title:
             return u"title";
