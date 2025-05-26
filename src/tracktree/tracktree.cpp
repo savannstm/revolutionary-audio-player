@@ -68,7 +68,7 @@ void TrackTree::mouseDoubleClickEvent(QMouseEvent* event) {
         return;
     }
 
-    if (newIndex.column() != CustomNumber) {
+    if (newIndex.column() != Order) {
         emit trackSelected(index.row(), newIndex.row());
         index = newIndex;
         setCurrentIndex(newIndex);
@@ -163,7 +163,7 @@ void TrackTree::dropEvent(QDropEvent* event) {
     for (const u16 row : range(0, musicModel->rowCount())) {
         auto* item = new QStandardItem();
         item->setData(row, Qt::EditRole);
-        musicModel->setItem(row, CustomNumber, item);
+        musicModel->setItem(row, Order, item);
     }
 
     event->acceptProposedAction();
@@ -224,7 +224,7 @@ void TrackTree::addFile(
             }
 
             item->setData(number.toInt(), Qt::EditRole);
-        } else if (headerProperty == CustomNumber) {
+        } else if (headerProperty == Order) {
             item->setData(row, Qt::EditRole);
             item->setEditable(true);
         } else if (headerProperty != Play) {

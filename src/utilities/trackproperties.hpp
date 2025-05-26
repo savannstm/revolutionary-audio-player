@@ -23,5 +23,5 @@ inline auto trackPropertiesLabels() -> QStringList {
              QObject::tr("Channels"),
              QObject::tr("Format"),
              QObject::tr("Path"),
-             QObject::tr("Custom Number") };
+             QObject::tr("Order") };
 }

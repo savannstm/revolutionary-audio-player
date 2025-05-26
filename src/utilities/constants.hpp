@@ -188,7 +188,7 @@ constexpr array<QStringView, TRACK_PROPERTY_COUNT> SEARCH_PROPERTIES = {
     u"duration",   u"composer",    u"bpm",       u"language",
     u"discnumber", u"comment",     u"publisher", u"bitrate",
     u"samplerate", u"channels",    u"format",    u"path",
-    u"customno"
+    u"order"
 };
 
 // Minimum number of search result matches

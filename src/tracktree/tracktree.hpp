@@ -65,7 +65,7 @@ class TrackTree : public QTreeView {
     MusicHeader* musicHeader = new MusicHeader(Qt::Horizontal, this);
     MusicModel* musicModel = new MusicModel(this);
 
-    vector<u16> customNumbers;
+    vector<u16> order;
 
     u16 draggedRow;
 };

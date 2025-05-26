@@ -44,7 +44,7 @@ TabObject::TabObject(const QJsonObject& obj) {
     label = obj["label"].toString();
     backgroundImagePath = obj["backgroundImagePath"].toString();
     tracks = toStringList(obj["tracks"].toArray());
-    customNumbers = toStringList(obj["customNumbers"].toArray());
+    order = toStringList(obj["order"].toArray());
     columnProperties = fromJsonArray<TrackProperty, TRACK_PROPERTY_COUNT>(
         obj["columnProperties"].toArray()
     );
@@ -58,7 +58,7 @@ auto TabObject::stringify() const -> QJsonObject {
     json["label"] = label;
     json["backgroundImagePath"] = backgroundImagePath;
     json["tracks"] = QJsonArray::fromStringList(tracks);
-    json["customNumbers"] = QJsonArray::fromStringList(customNumbers);
+    json["order"] = QJsonArray::fromStringList(order);
     json["columnProperties"] = toJsonArray(columnProperties);
     json["columnStates"] = toJsonArray(columnStates);
     return json;

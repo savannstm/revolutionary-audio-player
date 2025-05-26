@@ -27,7 +27,7 @@ class TabObject {
     QString label;
     QString backgroundImagePath;
     QStringList tracks;
-    QStringList customNumbers;
+    QStringList order;
     array<TrackProperty, TRACK_PROPERTY_COUNT> columnProperties;
     array<bool, TRACK_PROPERTY_COUNT> columnStates;
 };

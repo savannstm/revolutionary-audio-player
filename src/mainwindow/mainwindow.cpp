@@ -464,13 +464,13 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
         tabObject.label = playlistView->tabLabel(tab);
         tabObject.backgroundImagePath = playlistView->backgroundImagePath(tab);
         tabObject.tracks = QStringList(rowCount);
-        tabObject.customNumbers = QStringList(rowCount);
+        tabObject.order = QStringList(rowCount);
 
         for (const u16 row : range(0, rowCount)) {
             const HashMap<TrackProperty, QString> rowMetadata =
                 tree->rowMetadata(row);
             tabObject.tracks[row] = rowMetadata[Path];
-            tabObject.customNumbers[row] = rowMetadata[CustomNumber];
+            tabObject.order[row] = rowMetadata[Order];
         }
 
         for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
@@ -572,16 +572,13 @@ void MainWindow::loadSettings() {
             auto* tree = playlistView->tree(index);
             tree->fillTable(tabObject.tracks);
 
-            if (!tabObject.customNumbers.empty()) {
+            if (!tabObject.order.empty()) {
                 connect(tree, &TrackTree::finishedFilling, this, [&, tree] {
                     auto* model = tree->model();
 
                     for (const u16 track : range(0, model->rowCount())) {
-                        model->item(track, CustomNumber)
-                            ->setData(
-                                tabObject.customNumbers[track],
-                                Qt::EditRole
-                            );
+                        model->item(track, Order)
+                            ->setData(tabObject.order[track], Qt::EditRole);
                     }
                 }, Qt::SingleShotConnection);
             }
