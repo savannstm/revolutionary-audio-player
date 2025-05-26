@@ -184,6 +184,11 @@ void PlaylistTabBar::dropEvent(QDropEvent* event) {
 
     auto* dragged = findChild<QWidget*>(name);
 
+    if (dragged == nullptr) {
+        emit filesDropped(event);
+        return;
+    }
+
     const u8 oldIndex = tabContainerLayout->indexOf(dragged);
     tabContainerLayout->removeWidget(dragged);
 

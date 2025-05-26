@@ -303,6 +303,13 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     );
 
     connect(
+        playlistTabBar,
+        &PlaylistTabBar::filesDropped,
+        this,
+        &MainWindow::dropEvent
+    );
+
+    connect(
         dockWidget,
         &DockWidget::resized,
         this,
@@ -366,18 +373,19 @@ void MainWindow::processArgs(const QStringList& args) {
     }
 }
 
+void MainWindow::closeEvent(QCloseEvent* event) {
+    hide();
+    event->ignore();
+}
+
 void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
     if (event->mimeData()->hasUrls()) {
         event->acceptProposedAction();
     }
 }
 
-void MainWindow::closeEvent(QCloseEvent* event) {
-    hide();
-    event->ignore();
-}
-
 void MainWindow::dropEvent(QDropEvent* event) {
+    const QPoint dropPos = event->position().toPoint();
     auto* tree = trackTree;
 
     if (event->mimeData()->hasUrls()) {
@@ -406,20 +414,12 @@ void MainWindow::dropEvent(QDropEvent* event) {
             }
         }
 
-        if (paths.empty()) {
-            return;
-        }
-
-        u8 index = playingPlaylist;
-
         if (tree == nullptr ||
-            settings->flags.dragNDropMode == DragDropMode::CreateNewPlaylist) {
-            index = playlistView->addTab(
-                settings->flags.playlistNaming == DirectoryName
-                    ? QFileInfo(paths[0]).dir().dirName()
-                    : QString()
+            !QRect(tree->mapToGlobal(QPoint(0, 0)), tree->size())
+                 .contains(dropPos)) {
+            tree = playlistView->tree(
+                playlistView->addTab(QFileInfo(paths[0]).dir().dirName())
             );
-            tree = playlistView->tree(index);
         }
 
         tree->fillTable(paths);

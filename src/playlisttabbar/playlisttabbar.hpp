@@ -37,6 +37,7 @@ class PlaylistTabBar : public QWidget {
     void tabAdded(u8 index);
     void addButtonClicked(u8 index);
     void tabsRemoved(TabRemoveMode mode, u8 index);
+    void filesDropped(QDropEvent* event);
 
    protected:
     void dragEnterEvent(QDragEnterEvent* event) override {
