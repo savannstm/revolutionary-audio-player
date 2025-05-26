@@ -4,9 +4,7 @@
 
 class MusicItem : public QStandardItem {
    public:
-    explicit MusicItem() { setEditable(false); };
-
-    explicit MusicItem(const QString& text) : QStandardItem(text) {
+    explicit MusicItem(const QString& text = QString()) : QStandardItem(text) {
         setEditable(false);
     };
 };

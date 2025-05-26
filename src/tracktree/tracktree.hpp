@@ -1,5 +1,6 @@
 #pragma once
 
+#include "enums.hpp"
 #include "musicheader.hpp"
 #include "musicmodel.hpp"
 
@@ -41,10 +42,14 @@ class TrackTree : public QTreeView {
 
    protected:
     void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
+    void startDrag(Qt::DropActions supportedActions) override;
 
    private:
     inline void reselectCurrentElement(
-        const QItemSelection& /*unused*/,
+        const QItemSelection& /* unused */,
         const QItemSelection& deselected
     );
     inline void postFill();
@@ -55,7 +60,10 @@ class TrackTree : public QTreeView {
     );
 
     QModelIndex index;
-    MusicHeader* musicHeader =
-        new MusicHeader(Qt::Orientation::Horizontal, this);
+    MusicHeader* musicHeader = new MusicHeader(Qt::Horizontal, this);
     MusicModel* musicModel = new MusicModel(this);
+
+    vector<u16> customNumbers;
+
+    u16 draggedRow;
 };

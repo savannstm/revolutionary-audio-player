@@ -114,13 +114,16 @@ constexpr u8 TRACK_TREE_ROW_HEIGHT = 18;
 // Role for custom properties in Qt models
 constexpr u16 PROPERTY_ROLE = Qt::UserRole + 1;
 
-// Default visible columns in track tree (true = visible)
-constexpr array<bool, TRACK_PROPERTY_COUNT> DEFAULT_COLUMN_STATES = {
-    false, false, false, false, true, true, true, true, true, true,
-    true,  true,  true,  true,  true, true, true, true, true, true
-};
+consteval auto constructStates() -> array<bool, TRACK_PROPERTY_COUNT> {
+    array<bool, TRACK_PROPERTY_COUNT> properties;
 
-// Prevent mismatch fuckup
+    for (const u8 property : range(0, TRACK_PROPERTY_COUNT)) {
+        properties[property] = property > 3;
+    }
+
+    return properties;
+}
+
 consteval auto constructProperties()
     -> array<TrackProperty, TRACK_PROPERTY_COUNT> {
     array<TrackProperty, TRACK_PROPERTY_COUNT> properties;
@@ -131,6 +134,10 @@ consteval auto constructProperties()
 
     return properties;
 }
+
+// Default visible columns in track tree (true = visible)
+constexpr array<bool, TRACK_PROPERTY_COUNT> DEFAULT_COLUMN_STATES =
+    constructStates();
 
 // Default property ordering for track tree columns
 constexpr array<TrackProperty, TRACK_PROPERTY_COUNT> DEFAULT_COLUMN_PROPERTIES =
@@ -180,7 +187,8 @@ constexpr array<QStringView, TRACK_PROPERTY_COUNT> SEARCH_PROPERTIES = {
     u"album",      u"albumartist", u"genre",     u"year",
     u"duration",   u"composer",    u"bpm",       u"language",
     u"discnumber", u"comment",     u"publisher", u"bitrate",
-    u"samplerate", u"channels",    u"format",    u"path"
+    u"samplerate", u"channels",    u"format",    u"path",
+    u"customno"
 };
 
 // Minimum number of search result matches

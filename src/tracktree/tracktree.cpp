@@ -1,18 +1,26 @@
 #include "tracktree.hpp"
 
+#include "enums.hpp"
 #include "extractmetadata.hpp"
+#include "musicitem.hpp"
+#include "optionmenu.hpp"
 #include "rapidhasher.hpp"
+#include "trackproperties.hpp"
 
+#include <QApplication>
 #include <QDirIterator>
+#include <QDrag>
+#include <QMimeData>
 #include <QMouseEvent>
 #include <QThreadPool>
 
 TrackTree::TrackTree(QWidget* parent) : QTreeView(parent) {
     setHeader(musicHeader);
     setModel(musicModel);
-    setSelectionMode(QAbstractItemView::ExtendedSelection);
+    setSelectionMode(QAbstractItemView::SingleSelection);
     setIndentation(1);
     setSortingEnabled(true);
+    setDragDropMode(QAbstractItemView::DragDropMode::DragDrop);
 
     connect(
         selectionModel(),
@@ -44,10 +52,110 @@ void TrackTree::mouseDoubleClickEvent(QMouseEvent* event) {
         return;
     }
 
-    emit trackSelected(index.row(), newIndex.row());
-    index = newIndex;
-    setCurrentIndex(newIndex);
+    if (newIndex.column() != CustomNumber) {
+        emit trackSelected(index.row(), newIndex.row());
+        index = newIndex;
+        setCurrentIndex(newIndex);
+    }
+
     QTreeView::mouseDoubleClickEvent(event);
+}
+
+void TrackTree::mousePressEvent(QMouseEvent* event) {
+    const QModelIndex index = indexAt(event->pos());
+    if (!index.isValid()) {
+        draggedRow = UINT16_MAX;
+        clearSelection();
+    }
+
+    const Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
+    const bool shiftHeld = (mods & Qt::ShiftModifier) != 0;
+    const bool controlHeld = (mods & Qt::ControlModifier) != 0;
+
+    if (shiftHeld || controlHeld) {
+        setDragEnabled(false);
+        setAcceptDrops(false);
+        setDropIndicatorShown(false);
+        setSelectionMode(QAbstractItemView::ExtendedSelection);
+    } else {
+        draggedRow = index.row();
+        setDragEnabled(true);
+        setAcceptDrops(true);
+        setDropIndicatorShown(true);
+        setSelectionMode(QAbstractItemView::SingleSelection);
+    }
+
+    QTreeView::mousePressEvent(event);
+}
+
+void TrackTree::startDrag(const Qt::DropActions supportedActions) {
+    auto byteArray = QByteArray();
+    byteArray.resize(sizeof(u16));
+    memcpy(byteArray.data(), &draggedRow, sizeof(u16));
+
+    auto* mimeData = new QMimeData();
+    // CRAZY hack to not override other methods
+    mimeData->setData(u"application/x-qabstractitemmodeldatalist"_s, byteArray);
+
+    auto* drag = new QDrag(this);
+    drag->setMimeData(mimeData);
+    drag->exec(supportedActions, defaultDropAction());
+}
+
+void TrackTree::dropEvent(QDropEvent* event) {
+    const QModelIndex targetIndex = indexAt(event->position().toPoint());
+    if (!targetIndex.isValid()) {
+        return;
+    }
+
+    const QRect rect = visualRect(targetIndex);
+    const u16 centerY = rect.top() + (rect.height() / 2);
+    const u16 dropY = event->position().toPoint().y();
+
+    u16 targetRow = targetIndex.row();
+
+    const bool insertBelow = dropY > centerY;
+    if (insertBelow) {
+        targetRow += 1;
+    }
+
+    const QMimeData* mimeData = event->mimeData();
+    const QByteArray data =
+        mimeData->data(u"application/x-qabstractitemmodeldatalist"_s);
+
+    u16 sourceRow = *ras<const u16*>(data.constData());
+
+    vector<QStandardItem*> clonedItems;
+    clonedItems.reserve(TRACK_PROPERTY_COUNT);
+
+    for (const u8 column : range(0, TRACK_PROPERTY_COUNT - 1)) {
+        clonedItems.emplace_back(musicModel->item(sourceRow, column)->clone());
+    }
+
+    musicModel->insertRow(targetRow);
+
+    for (const u8 column : range(0, TRACK_PROPERTY_COUNT - 1)) {
+        musicModel->setItem(targetRow, column, clonedItems[column]);
+    }
+
+    if (sourceRow >= targetRow) {
+        sourceRow += 1;
+    }
+
+    musicModel->removeRow(sourceRow);
+
+    for (const u16 row : range(0, musicModel->rowCount())) {
+        auto* item = new QStandardItem();
+        item->setData(row, Qt::EditRole);
+        musicModel->setItem(row, CustomNumber, item);
+    }
+
+    event->acceptProposedAction();
+}
+
+void TrackTree::focusOutEvent(QFocusEvent* event) {
+    clearSelection();
+    QTreeView::focusOutEvent(event);
 }
 
 void TrackTree::setCurrentIndex(const QModelIndex& newIndex) {
@@ -58,6 +166,7 @@ void TrackTree::setCurrentIndex(const QModelIndex& newIndex) {
 auto TrackTree::rowMetadata(const u16 row) const
     -> HashMap<TrackProperty, QString> {
     HashMap<TrackProperty, QString> result;
+    result.reserve(TRACK_PROPERTY_COUNT);
 
     for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
         const TrackProperty headerProperty = musicModel->trackProperty(column);
@@ -77,12 +186,13 @@ void TrackTree::addFile(
 ) {
     const u16 row = musicModel->rowCount();
 
-    for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
+    for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
         const auto headerProperty = musicModel->trackProperty(column);
         auto* item = new MusicItem();
 
         if (headerProperty == TrackNumber) {
             QString number;
+            number.reserve(3);
 
             for (const auto& [idx, chr] :
                  views::enumerate(metadata[headerProperty])) {
@@ -98,7 +208,10 @@ void TrackTree::addFile(
             }
 
             item->setData(number.toInt(), Qt::EditRole);
-        } else {
+        } else if (headerProperty == CustomNumber) {
+            item->setData(row, Qt::EditRole);
+            item->setEditable(true);
+        } else if (headerProperty != Play) {
             item->setText(metadata[headerProperty]);
         }
 
@@ -109,7 +222,7 @@ void TrackTree::addFile(
 void TrackTree::sortByPath() {
     for (u8 column = TRACK_PROPERTY_COUNT - 1; column >= 0; column--) {
         if (musicModel->trackProperty(column) == Path) {
-            sortByColumn(column, Qt::SortOrder::AscendingOrder);
+            sortByColumn(column, Qt::AscendingOrder);
             break;
         }
     }

@@ -23,6 +23,7 @@ enum TrackProperty : u8 {
     Channels,
     Format,
     Path,
+    CustomNumber,
     TRACK_PROPERTY_COUNT
 };
 

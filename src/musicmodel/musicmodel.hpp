@@ -26,6 +26,18 @@ class MusicModel : public QStandardItemModel {
     removeRows(i32 row, i32 count, const QModelIndex& parent = QModelIndex())
         -> bool override;
 
+   protected:
+    [[nodiscard]] auto flags(const QModelIndex& index) const
+        -> Qt::ItemFlags override {
+        const Qt::ItemFlags defaultFlags = QStandardItemModel::flags(index);
+
+        if (!index.isValid()) {
+            return Qt::ItemIsDropEnabled | defaultFlags;
+        }
+
+        return defaultFlags & ~Qt::ItemIsDropEnabled;
+    }
+
    private:
     rapidhashset<QString> tracks;
 };

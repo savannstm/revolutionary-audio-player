@@ -12,18 +12,18 @@
 #include "extractmetadata.hpp"
 #include "helpwindow.hpp"
 #include "metadatawindow.hpp"
-#include "musicheader.hpp"
 #include "playlistview.hpp"
 #include "randint.hpp"
+#include "rapidhasher.hpp"
 #include "settings.hpp"
 #include "settingswindow.hpp"
 #include "tominutes.hpp"
 #include "trackproperties.hpp"
 #include "tracktree.hpp"
 
-#include <QDirIterator>
 #include <QFileDialog>
 #include <QJsonDocument>
+#include <QJsonObject>
 #include <QLocalSocket>
 #include <QMessageBox>
 #include <QMimeData>
@@ -464,9 +464,13 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
         tabObject.label = playlistView->tabLabel(tab);
         tabObject.backgroundImagePath = playlistView->backgroundImagePath(tab);
         tabObject.tracks = QStringList(rowCount);
+        tabObject.customNumbers = QStringList(rowCount);
 
         for (const u16 row : range(0, rowCount)) {
-            tabObject.tracks[row] = tree->rowMetadata(row)[Path];
+            const HashMap<TrackProperty, QString> rowMetadata =
+                tree->rowMetadata(row);
+            tabObject.tracks[row] = rowMetadata[Path];
+            tabObject.customNumbers[row] = rowMetadata[CustomNumber];
         }
 
         for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
@@ -568,6 +572,19 @@ void MainWindow::loadSettings() {
             auto* tree = playlistView->tree(index);
             tree->fillTable(tabObject.tracks);
 
+            if (!tabObject.customNumbers.empty()) {
+                connect(tree, &TrackTree::finishedFilling, this, [&, tree] {
+                    auto* model = tree->model();
+
+                    for (const u16 track : range(0, model->rowCount())) {
+                        model->item(track, CustomNumber)
+                            ->setData(
+                                tabObject.customNumbers[track],
+                                Qt::EditRole
+                            );
+                    }
+                }, Qt::SingleShotConnection);
+            }
 
             const QString& imagePath = tabObject.backgroundImagePath;
 
@@ -1295,11 +1312,10 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     trackLabel->setText(artistAndTrack);
     setWindowTitle(u"RAP: %1"_s.arg(artistAndTrack));
 
-    for (const TrackProperty property :
-         views::drop(DEFAULT_COLUMN_PROPERTIES, 1)) {
+    for (const u8 property : range(1, TRACK_PROPERTY_COUNT - 1)) {
         dockMetadataTree
             ->itemFromIndex(dockMetadataTree->model()->index(property - 1, 0))
-            ->setText(1, metadata[property]);
+            ->setText(1, metadata[as<TrackProperty>(property)]);
     }
 
     const vector<u8> coverBytes = extractCover(metadata[Path].toUtf8().data());
@@ -1497,10 +1513,9 @@ void MainWindow::stopPlayback() {
 
     dockCoverLabel->clear();
 
-    for (const TrackProperty property :
-         views::drop(DEFAULT_COLUMN_PROPERTIES, 1)) {
+    for (const u8 column : range(1, TRACK_PROPERTY_COUNT - 1)) {
         dockMetadataTree
-            ->itemFromIndex(dockMetadataTree->model()->index(property - 1, 0))
+            ->itemFromIndex(dockMetadataTree->model()->index(column - 1, 0))
             ->setText(1, QString());
     }
 }
