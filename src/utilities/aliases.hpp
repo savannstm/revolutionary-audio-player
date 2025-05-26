@@ -105,3 +105,8 @@ constexpr auto find_index(const R& range, const T& value) -> isize {
 
     return ranges::distance(ranges::begin(range), item);
 }
+
+constexpr auto operator""_qsv(const char16_t* chr, const size_t size)
+    -> QStringView {
+    return { chr, as<isize>(size) };
+}
