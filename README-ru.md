@@ -33,9 +33,11 @@
 
 ## Релизы
 
-Не могу скомпилировать плеер под Linux, постоянно жалуется на отсутствие определений в статическом билде FFmpeg.
+Linux билды компилируются статически на Alpine Linux с musl - для них не требуются никакие системные библиотеки.
 
-Билд под Windows скомпилирован статически - в разделе релизов вы можете скачать его, и он содержит всего один .exe и немного файлов иконов/переводов, никаких .dll, папок и прочей дрисни.
+Windows билды также компилируются статически - с ними не идёт никаких `dll` библиотек.
+
+Скачивайте в разделе Releases.
 
 ## Билд
 
@@ -43,7 +45,7 @@
 
 Проект использует CMake как билд-систему.
 
-Вам понадобятся `Qt6`, `FFmpeg`, `CImg` и `rapidhash`, чтобы забилдить проект.
+Вам понадобятся `Qt6`, `FFmpeg` и `rapidhash`, чтобы забилдить проект.
 
 Приложение было забилжено со следующей конфигурацией FFmpeg: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-avfilter --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-filter=aformat,anequalizer,aresample,alimiter --enable-protocol=file --enable-zlib`
 
@@ -53,4 +55,4 @@
 
 Скрипт поддерживает аргумент `-r` для билдинга в `Release` моде.
 
-Забилденный говняк выводился в директорию `build/target`.
+Забилденный говняк выводится в директорию `build/target`.
