@@ -2,18 +2,15 @@
 
 #include "aliases.hpp"
 #include "enums.hpp"
+#include "imageeffect.hpp"
 #include "playlisttabbar.hpp"
 #include "trackproperties.hpp"
 #include "tracktree.hpp"
 
-#include <CImg.h>
 #include <QFileDialog>
+#include <QGraphicsBlurEffect>
 #include <QLabel>
-#include <QMessageBox>
 #include <QStyledItemDelegate>
-#include <QXmlStreamReader>
-
-using namespace cimg_library;
 
 class CustomDelegate : public QStyledItemDelegate {
    public:
@@ -245,9 +242,10 @@ void PlaylistView::removeBackgroundImage(const u8 index) const {
 void PlaylistView::setBackgroundImage(
     const u8 index,  // NOLINT
     const u16 height,
+    const QImage& image,
     const QString& path
 ) const {
-    if (!QFile::exists(path)) {
+    if (path == backgroundImagePath(index)) {
         return;
     }
 
@@ -256,24 +254,12 @@ void PlaylistView::setBackgroundImage(
 
     const u16 layoutWidth = screen()->size().width();
 
-    CImg<u8> img = CImg(path.toStdString().c_str());
-    CImg<u8> interleaved = img.get_permute_axes("cxyz").unroll('x');
-
-    const QImage normalImage = QImage(
-        interleaved.data(),
-        img.width(),
-        img.height(),
-        as<u32>(img.width() * img.spectrum()),
-        QImage::Format_RGB888
+    const QPixmap centerPixmap = QPixmap::fromImage(image).scaled(
+        layoutWidth,
+        height,
+        Qt::KeepAspectRatio,
+        Qt::SmoothTransformation
     );
-
-    const QPixmap centerPixmap = QPixmap::fromImage(normalImage)
-                                     .scaled(
-                                         layoutWidth,
-                                         height,
-                                         Qt::KeepAspectRatio,
-                                         Qt::SmoothTransformation
-                                     );
 
     centerLabel->setPixmap(centerPixmap);
     centerLabel->setFixedSize(centerPixmap.size());
@@ -290,16 +276,11 @@ void PlaylistView::setBackgroundImage(
 
     const u16 sideWidth = (layoutWidth - centerPixmap.width()) / 2;
 
-    img.blur(BLUR_SIGMA);
-    interleaved = img.get_permute_axes("cxyz").unroll('x');
+    auto* blurEffect = new QGraphicsBlurEffect();
+    blurEffect->setBlurHints(QGraphicsBlurEffect::QualityHint);
+    blurEffect->setBlurRadius(BLUR_SIGMA);
 
-    const QImage blurredImage = QImage(
-        interleaved.data(),
-        img.width(),
-        img.height(),
-        as<u32>(img.width() * img.spectrum()),
-        QImage::Format_RGB888
-    );
+    const QImage blurredImage = applyEffectToImage(image, blurEffect);
 
     const QPixmap blurredPixmap = QPixmap::fromImage(blurredImage)
                                       .scaled(

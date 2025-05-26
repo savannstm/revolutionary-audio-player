@@ -568,15 +568,45 @@ void MainWindow::loadSettings() {
             auto* tree = playlistView->tree(index);
             tree->fillTable(tabObject.tracks);
 
-            if (!tabObject.backgroundImagePath.isEmpty()) {
-                QTimer::singleShot(SECOND_MS, [=, this] {
-                    playlistView->setBackgroundImage(
-                        index,
-                        mainArea->height(),
-                        tabObject.backgroundImagePath
-                    );
-                });
+
+            const QString& imagePath = tabObject.backgroundImagePath;
+
+            if (imagePath.isEmpty()) {
+                continue;
             }
+
+            QTimer::singleShot(SECOND_MS, [=, this] {
+                const QString extension =
+                    imagePath.sliced(imagePath.lastIndexOf('.') + 1);
+
+                QImage image;
+
+                if (ranges::contains(
+                        ALLOWED_MUSIC_FILE_EXTENSIONS,
+                        extension
+                    )) {
+                    const vector<u8> coverBytes =
+                        extractCover(imagePath.toUtf8().data());
+
+                    image.loadFromData(
+                        coverBytes.data(),
+                        as<i32>(coverBytes.size())
+                    );
+                } else {
+                    if (!QFile::exists(imagePath)) {
+                        return;
+                    }
+
+                    image.load(imagePath);
+                }
+
+                playlistView->setBackgroundImage(
+                    index,
+                    mainArea->height(),
+                    image,
+                    imagePath
+                );
+            });
         }
     }
 
@@ -740,16 +770,20 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
                     this,
                     tr("Select File"),
                     QString(),
-                    tr("Image Files (*.png *.jpg *.jpeg)")
+                    tr("Image Files (*.png *.jpg *.jpeg *.webp *.tiff *.bmp)")
                 );
 
                 if (file.isEmpty()) {
                     return;
                 }
 
+                QImage image;
+                image.load(file);
+
                 playlistView->setBackgroundImage(
                     playlistView->currentIndex(),
                     mainArea->height(),
+                    image,
                     file
                 );
             } else if (selectedAction == removePlaylistBackground) {
@@ -1271,7 +1305,50 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     const vector<u8> coverBytes = extractCover(metadata[Path].toUtf8().data());
 
     QPixmap cover;
-    cover.loadFromData(coverBytes.data(), coverBytes.size());
+    QString path;
+
+    if (settings->flags.prioritizeExternalCover) {
+        QDir fileDirectory =
+            metadata[Path].sliced(0, metadata[Path].lastIndexOf('/'));
+        fileDirectory.setFilter(QDir::Files | QDir::NoDotAndDotDot);
+
+        const QStringList entries = fileDirectory.entryList();
+
+        for (const QString& entry : entries) {
+            const QString extension = entry.sliced(entry.lastIndexOf('.') + 1);
+
+            if (!ranges::contains(IMAGE_EXTENSIONS, extension)) {
+                continue;
+            }
+
+            if (!entry.startsWith(u"cover"_qsv)) {
+                continue;
+            };
+
+            path = fileDirectory.filePath(entry);
+            cover.load(path);
+            break;
+        }
+    }
+
+    if (!settings->flags.prioritizeExternalCover || path.isEmpty()) {
+        const vector<u8> coverBytes =
+            extractCover(metadata[Path].toUtf8().data());
+        cover.loadFromData(coverBytes.data(), coverBytes.size());
+        path = metadata[Path];
+    }
+
+    if (settings->flags.autoSetBackground) {
+        const QImage image = cover.toImage();
+
+        playlistView->setBackgroundImage(
+            playingPlaylist,
+            playlistView->height(),
+            image,
+            path
+        );
+    }
+
     dockCoverLabel->setPixmap(cover);
     dockCoverLabel->setMinimumSize(MINIMUM_COVER_SIZE);
 }

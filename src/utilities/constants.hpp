@@ -171,6 +171,9 @@ constexpr u8 ALLOWED_VIDEO_FILE_EXTENSIONS_COUNT = 3;
 constexpr array<QStringView, ALLOWED_VIDEO_FILE_EXTENSIONS_COUNT>
     ALLOWED_VIDEO_FILE_EXTENSIONS = { EXT_MP4, EXT_MKV, EXT_MOV };
 
+constexpr array<QStringView, 6> IMAGE_EXTENSIONS = { u"jpg",  u"jpeg", u"png",
+                                                     u"tiff", u"webp", u"bmp" };
+
 // Searchable track property names
 constexpr array<QStringView, TRACK_PROPERTY_COUNT> SEARCH_PROPERTIES = {
     u"",           u"title",       u"artist",    u"no",

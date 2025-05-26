@@ -35,7 +35,12 @@ class PlaylistView : public QWidget {
         const array<bool, TRACK_PROPERTY_COUNT>& columnStates =
             DEFAULT_COLUMN_STATES
     ) -> QWidget*;
-    void setBackgroundImage(u8 index, u16 height, const QString& path) const;
+    void setBackgroundImage(
+        u8 index,
+        u16 height,
+        const QImage& image,
+        const QString& path
+    ) const;
     [[nodiscard]] auto backgroundImage(u8 index) const -> QLabel*;
     [[nodiscard]] auto currentBackgroundImage() const -> QLabel*;
     [[nodiscard]] auto tree(u8 index) const -> TrackTree*;
