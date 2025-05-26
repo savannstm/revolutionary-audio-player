@@ -2,6 +2,8 @@
 
 #include <QString>
 
+// TODO
+
 void createFileAssociationsOS(const QString& appPath, QString iconPath) {}
 
 void createContextMenuEntryOS(const QString& appPath_) {}

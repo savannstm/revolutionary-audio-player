@@ -9,6 +9,8 @@
 #include <QString>
 #include <QTextStream>
 
+// TODO
+
 void createFileAssociationsOS(const QString& appPath, QString iconPath) {
     iconPath.replace(u".ico"_s, u".png"_s);
 

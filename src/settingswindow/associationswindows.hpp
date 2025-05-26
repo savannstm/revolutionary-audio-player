@@ -2,6 +2,7 @@
 // The reason for disabling this lint check is that all string views constructed
 // from string literals always include null terminator at end upon calling
 // `.data()`.
+#pragma once
 
 #include "aliases.hpp"
 #include "constants.hpp"
@@ -193,7 +194,7 @@ auto setRegistryValue(
 }
 
 auto removeRegistryEntry(HKEY root, const wstring_view entry) -> bool {
-    i32 result = RegDeleteTreeW(root, entry.data());
+    const i32 result = RegDeleteTreeW(root, entry.data());
 
     if (result != ERROR_SUCCESS && result != ERROR_FILE_NOT_FOUND) {
         qDebug() << format(
@@ -217,7 +218,7 @@ void createFileAssociationsOS(
     const wstring_view iconPath = { ras<wcstr>(iconPath_.utf16()),
                                     as<usize>(iconPath_.size()) };
 
-    for (const u8 idx : range(0, ALLOWED_MUSIC_FILE_EXTENSIONS.size())) {
+    for (const u8 idx : range(0, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT)) {
         const QStringView extension = ALLOWED_MUSIC_FILE_EXTENSIONS[idx];
         const wstring_view wextension = { ras<wcstr>(extension.utf16()),
                                           as<usize>(extension.size()) };
@@ -336,7 +337,7 @@ void createFileAssociationsOS(
 }
 
 void removeFileAssociationsOS() {
-    for (const u8 idx : range(0, ALLOWED_MUSIC_FILE_EXTENSIONS.size())) {
+    for (const u8 idx : range(0, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT)) {
         const wstring_view extensionEntry = EXTENSION_ENTRIES[idx];
         const wstring_view progIdEntry = PROG_ID_ENTRIES[idx];
         const wstring_view explorerEntry = EXPLORER_ENTRIES[idx];
