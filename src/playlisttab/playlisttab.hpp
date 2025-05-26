@@ -32,6 +32,7 @@ class PlaylistTab : public QPushButton {
     void removeTabsRequested(TabRemoveMode mode);
 
    protected:
+    void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     auto eventFilter(QObject* obj, QEvent* event) -> bool override;
 
@@ -46,4 +47,7 @@ class PlaylistTab : public QPushButton {
     PlaylistTabLabel* label_;
     QToolButton* tabButton = new QToolButton(this);
     QHBoxLayout* layout_ = new QHBoxLayout(this);
+
+    QPoint dragStartPos;
+    bool dragging;
 };

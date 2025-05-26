@@ -47,7 +47,7 @@ PlaylistTab::PlaylistTab(const QString& text, bool closable, QWidget* parent) :
         tabButton->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::ListAdd));
         addTab = true;
 
-        setStyleSheet("border: none;");
+        setStyleSheet(u"border: none;"_s);
         tabButton->setContextMenuPolicy(Qt::CustomContextMenu);
 
         connect(
@@ -139,14 +139,15 @@ auto PlaylistTab::eventFilter(QObject* obj, QEvent* event) -> bool {
                 createContextMenu();
                 return true;
                 break;
+            case QEvent::MouseButtonPress: {
+                auto* mouseEvent = as<QMouseEvent*>(event);
+                mousePressEvent(mouseEvent);
+                return true;
+                break;
+            }
             case QEvent::MouseMove: {
-                const auto* mouseEvent = as<QMouseEvent*>(event);
-
-                if ((mouseEvent->buttons() & Qt::LeftButton) != 0) {
-                    return false;
-                }
-
-                grab();
+                auto* mouseEvent = as<QMouseEvent*>(event);
+                mouseMoveEvent(mouseEvent);
                 return true;
                 break;
             }
@@ -169,8 +170,20 @@ void PlaylistTab::deselectLabel() {
     setFixedSize(layout_->sizeHint());
 }
 
+void PlaylistTab::mousePressEvent(QMouseEvent* event) {
+    if (event->button() == Qt::LeftButton) {
+        dragStartPos = event->pos();
+        dragging = false;
+    }
+}
+
 void PlaylistTab::mouseMoveEvent(QMouseEvent* event) {
-    grab();
+    if ((event->buttons() & Qt::LeftButton) != 0 && !dragging &&
+        (event->pos() - dragStartPos).manhattanLength() > START_DRAG_DISTANCE) {
+        dragging = true;
+        grab();
+    }
+
     QPushButton::mouseMoveEvent(event);
 }
 

@@ -206,13 +206,14 @@ constexpr array<QStringView, 8> APPLICATION_STYLES = {
 constexpr u16 SECOND_MS = 1000;
 constexpr u16 KB_BYTES = 1000;
 constexpr u8 MINUTE_SECONDS = 60;
-
-// Type Aliases / Structs
+constexpr u8 START_DRAG_DISTANCE = 40;
 
 constexpr i32 INT24_SIZE = 3;
 constexpr i32 INT24_MAX = 8388607;
 constexpr i32 INT24_MIN = ~INT24_MAX;
 constexpr i32 UINT24_MAX = 16777215;
+
+// Type Aliases / Structs
 
 using MetadataArray = array<QString, TRACK_PROPERTY_COUNT>;
 using GainArray = array<i8, MAX_BANDS_COUNT>;
