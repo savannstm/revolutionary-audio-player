@@ -43,11 +43,6 @@ if(NOT (AVCODEC_LIBRARY AND AVFORMAT_LIBRARY AND AVUTIL_LIBRARY AND SWRESAMPLE_L
     message(FATAL_ERROR "FFmpeg libraries not found, specify path to them using `-DFFMPEG_INCLUDE_DIR=...`")
 endif()
 
-find_path(CIMG_INCLUDE_DIR "CImg.h")
-if(NOT CIMG_INCLUDE_DIR)
-    message(FATAL_ERROR "CImg.h not found, specify path to it using `-DCIMG_INCLUDE_DIR=...`")
-endif()
-
 find_path(RAPIDHASH_INCLUDE_DIRS "rapidhash.h")
 if(NOT RAPIDHASH_INCLUDE_DIRS)
     message(FATAL_ERROR "rapidhash.h not found, specify path to it using `-DRAPIDHASH_INCLUDE_DIRS=...`")
@@ -104,7 +99,6 @@ file(GLOB ICONS icons/*)
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${SUBDIRS}
     ${RAPIDHASH_INCLUDE_DIRS}
-    ${CIMG_INCLUDE_DIR}
 )
 
 # Link libraries
