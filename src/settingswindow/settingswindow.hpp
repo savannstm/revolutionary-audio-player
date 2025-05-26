@@ -40,10 +40,11 @@ class SettingsWindow : public QDialog {
 
     QComboBox* styleSelect = ui->styleSelect;
     QComboBox* playlistNamingSelect = ui->playlistNamingSelect;
-    QComboBox* dragDropSelect = ui->dragdropSelect;
     QCheckBox* createMenuItemCheckbox = ui->createMenuItemCheckbox;
     QCheckBox* setAssociationsCheckbox = ui->setAssociationsCheckbox;
     QComboBox* outputDeviceSelect = ui->outputDeviceSelect;
+    QCheckBox* prioritizeExternalCheckbox = ui->prioritizeExternalCheckbox;
+    QCheckBox* backgroundImageCheckbox = ui->backgroundImageCheckbox;
 
     const QList<QAudioDevice> devices = QMediaDevices::audioOutputs();
 };

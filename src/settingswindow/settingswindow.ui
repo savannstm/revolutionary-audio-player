@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>331</width>
-    <height>284</height>
+    <width>398</width>
+    <height>324</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -111,33 +111,6 @@
     </widget>
    </item>
    <item alignment="Qt::AlignmentFlag::AlignLeft">
-    <widget class="QWidget" name="dragDropSelectContainer" native="true">
-     <layout class="QHBoxLayout" name="horizontalLayout_4">
-      <item>
-       <widget class="QLabel" name="dragdropSelectLabel">
-        <property name="text">
-         <string>Drag &amp; Drop Mode</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QComboBox" name="dragdropSelect">
-        <item>
-         <property name="text">
-          <string>Create New Playlist</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Insert To The Current Playlist</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item alignment="Qt::AlignmentFlag::AlignLeft">
     <widget class="QWidget" name="createMenuItemContainer" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
@@ -172,6 +145,32 @@
        <widget class="QCheckBox" name="setAssociationsCheckbox">
         <property name="text">
          <string>Set file associations for audio files</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="backgroundImageContainer" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_7">
+      <item>
+       <widget class="QCheckBox" name="backgroundImageCheckbox">
+        <property name="text">
+         <string>Automatically set playlist background when playing a track</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="prioritizeExternalContainer" native="true">
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <widget class="QCheckBox" name="prioritizeExternalCheckbox">
+        <property name="text">
+         <string>Prioritize external cover (cover.png, cover.jpg...) over embedded</string>
         </property>
        </widget>
       </item>

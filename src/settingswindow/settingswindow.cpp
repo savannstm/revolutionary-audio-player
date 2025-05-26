@@ -34,11 +34,14 @@ SettingsWindow::SettingsWindow(
     styleSelect->setCurrentText(
         APPLICATION_STYLES[settings->flags.applicationStyle].toString()
     );
-    dragDropSelect->setCurrentIndex(settings->flags.dragNDropMode);
     playlistNamingSelect->setCurrentIndex(settings->flags.playlistNaming);
     createMenuItemCheckbox->setChecked(settings->flags.contextMenuEntryEnabled);
     setAssociationsCheckbox->setChecked(
         settings->flags.fileAssociationsEnabled
+    );
+    backgroundImageCheckbox->setChecked(settings->flags.autoSetBackground);
+    prioritizeExternalCheckbox->setChecked(
+        settings->flags.prioritizeExternalCover
     );
 
     connect(
@@ -51,15 +54,6 @@ SettingsWindow::SettingsWindow(
         // Will never be -1
         const u8 styleIndex = find_index(APPLICATION_STYLES, itemText);
         settings->flags.applicationStyle = as<Style>(styleIndex);
-    }
-    );
-
-    connect(
-        dragDropSelect,
-        &QComboBox::currentIndexChanged,
-        this,
-        [&](const u8 index) {
-        settings->flags.dragNDropMode = as<DragDropMode>(index);
     }
     );
 
@@ -121,6 +115,22 @@ SettingsWindow::SettingsWindow(
         settings->outputDevice = devices[index];
         emit audioDeviceChanged(devices[index]);
     }
+    );
+
+    connect(
+        prioritizeExternalCheckbox,
+        &QCheckBox::toggled,
+        this,
+        [&](const bool checked) {
+        settings->flags.prioritizeExternalCover = checked;
+    }
+    );
+
+    connect(
+        backgroundImageCheckbox,
+        &QCheckBox::toggled,
+        this,
+        [&](const bool checked) { settings->flags.autoSetBackground = checked; }
     );
 }
 
