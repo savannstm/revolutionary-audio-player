@@ -186,7 +186,7 @@ void AudioStreamer::initializeFilters() {
         return;
     }
 
-    if (!bandCountChanged) {
+    if (!bandCountChanged && filterGraph) {
         u16 width;
 
         switch (bandCount) {
