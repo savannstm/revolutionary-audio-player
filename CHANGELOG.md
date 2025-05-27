@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.1
+
+-   Made equalizer usable.
+
 ## v0.5.0
 
 -   Fixed non-working track rewinding with `wav` or any other issues, for sure this time.
