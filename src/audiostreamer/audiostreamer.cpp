@@ -3,6 +3,8 @@
 #include "aliases.hpp"
 #include "constants.hpp"
 
+#include <libavutil/error.h>
+
 struct Filter {
     cstr filter;
     cstr name;
@@ -38,13 +40,13 @@ void AudioStreamer::start(const QString& path) {
     }
 
     const AVCodec* codec;
-    audioStreamIndex = as<i8>(
-        av_find_best_stream(fCtxPtr, AVMEDIA_TYPE_AUDIO, -1, -1, &codec, 0)
-    );
+    err = av_find_best_stream(fCtxPtr, AVMEDIA_TYPE_AUDIO, -1, -1, &codec, 0);
 
     if (checkErr(err, true, false)) {
         return;
     }
+
+    audioStreamIndex = as<i8>(err);
 
     const AVStream* audioStream = fCtxPtr->streams[audioStreamIndex];
     codecContext = createCodecContext(codec);
