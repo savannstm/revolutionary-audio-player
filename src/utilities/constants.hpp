@@ -31,13 +31,6 @@ constexpr u8 TEN_BANDS = 10;
 constexpr u8 FIVE_BANDS = 5;
 constexpr u8 THREE_BANDS = 3;
 
-// Bandwidths for band counts
-constexpr u16 THIRTY_BANDS_WIDTH = 125;
-constexpr u16 EIGHTEEN_BANDS_WIDTH = 250;
-constexpr u16 TEN_BANDS_WIDTH = 500;
-constexpr u16 FIVE_BANDS_WIDTH = 1000;
-constexpr u16 THREE_BANDS_WIDTH = 2000;
-
 // Frequency sets per band count
 constexpr array<f32, THIRTY_BANDS> THIRTY_BAND_FREQUENCIES = {
     25,   31.5, 40,   50,   63,   80,   100,   125,   160,   200,

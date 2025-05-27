@@ -1,6 +1,14 @@
 #include "audiostreamer.hpp"
 
+#include "aliases.hpp"
 #include "constants.hpp"
+
+struct Filter {
+    cstr filter;
+    cstr name;
+    cstr args;
+    AVFilterContext** context;
+};
 
 AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
     format_.setSampleFormat(QAudioFormat::Float);
@@ -133,118 +141,46 @@ auto AudioStreamer::processFrame() -> bool {
 }
 
 auto AudioStreamer::buildEqualizerArgs() const -> string {
-    u16 width;
+    string args;
 
-    switch (bandCount) {
-        case THREE_BANDS:
-            width = THREE_BANDS_WIDTH;
-            break;
-        case FIVE_BANDS:
-            width = FIVE_BANDS_WIDTH;
-            break;
-        case TEN_BANDS:
-            width = TEN_BANDS_WIDTH;
-            break;
-        case EIGHTEEN_BANDS:
-            width = EIGHTEEN_BANDS_WIDTH;
-            break;
-        case THIRTY_BANDS:
-            width = THIRTY_BANDS_WIDTH;
-            break;
-        default:
-            break;
+    constexpr u8 stringSize = sizeof("entry(,);") - 1;
+    constexpr u8 maxFrequencyLength = 5;
+    constexpr u8 maxGainLength = 2;
+
+    args.reserve(
+        as<usize>(bandCount) * (stringSize + maxFrequencyLength + maxGainLength)
+    );
+
+    for (const auto [freq, gain] :
+         views::take(views::zip(frequencies_, gains_), bandCount)) {
+        args += std::format("entry({},{});", freq, gain);
     }
 
-    const u8 channelCount = codecContext->ch_layout.nb_channels;
-    string equalizerArgs;
-
-    for (const u8 idx : range(0, bandCount)) {
-        if (idx > 0) {
-            equalizerArgs += '|';
-        }
-
-        for (const u8 channel : range(0, channelCount)) {
-            if (channel > 0) {
-                equalizerArgs += '|';
-            }
-
-            equalizerArgs += std::format(
-                "c{} f={} w={} g={} t=1",
-                channel,
-                frequencies_[idx],
-                width,
-                gains_[idx]
-            );
-        }
-    }
-
-    return equalizerArgs;
+    args.pop_back();  // Remove last semicolon
+    return args;
 }
 
 void AudioStreamer::initializeFilters() {
-    if (!equalizerEnabled_) {
-        return;
-    }
+    // We don't ever need to rebuild the filters, equalizer's gains are adjusted
+    // through the command, if they need to be changed
+    if (!equalizerEnabled_ || filterGraph != nullptr) {
+        if ((bandCountChanged || ranges::contains(changedBands, true))) {
+            avfilter_graph_send_command(
+                filterGraph.get(),
+                "equalizer",
+                "gain_entry",
+                buildEqualizerArgs().c_str(),
+                nullptr,
+                0,
+                0
+            );
 
-    if (!bandCountChanged && filterGraph) {
-        u16 width;
-
-        switch (bandCount) {
-            case THREE_BANDS:
-                width = THREE_BANDS_WIDTH;
-                break;
-            case FIVE_BANDS:
-                width = FIVE_BANDS_WIDTH;
-                break;
-            case TEN_BANDS:
-                width = TEN_BANDS_WIDTH;
-                break;
-            case EIGHTEEN_BANDS:
-                width = EIGHTEEN_BANDS_WIDTH;
-                break;
-            case THIRTY_BANDS:
-                width = THIRTY_BANDS_WIDTH;
-                break;
-            default:
-                break;
-        }
-
-        const u8 channelCount = codecContext->ch_layout.nb_channels;
-
-        for (const u8 band : range(0, bandCount)) {
-            if (!changedBands[band]) {
-                continue;
-            }
-
-            for (const u8 channel : range(0, channelCount)) {
-                const u16 idx = (band * channelCount) + channel;
-
-                const string equalizerArgs = std::format(
-                    "{}|f={}|w={}|g={}",
-                    idx,
-                    frequencies_[band],
-                    width,
-                    gains_[band]
-                );
-
-                avfilter_graph_send_command(
-                    filterGraph.get(),
-                    "equalizer",
-                    "change",
-                    equalizerArgs.c_str(),
-                    nullptr,
-                    0,
-                    0
-                );
-            }
-
-            changedBands[band] = false;
+            changedBands.fill(false);
+            bandCountChanged = false;
         }
 
         return;
     }
-
-    bandCountChanged = false;
 
     filterGraph = createFilterGraph();
     if (filterGraph == nullptr) {
@@ -253,14 +189,9 @@ void AudioStreamer::initializeFilters() {
         return;
     }
 
-    const AVFilter* abuffer = avfilter_get_by_name("abuffer");
-    const AVFilter* abuffersink = avfilter_get_by_name("abuffersink");
-    const AVFilter* aformat = avfilter_get_by_name("aformat");
-    const AVFilter* equalizer = avfilter_get_by_name("anequalizer");
-    const AVFilter* normalizer = avfilter_get_by_name("alimiter");
-
+    // Get channel layout, `stereo`, `mono`, `5.1` etc.
     constexpr u8 CHANNEL_LAYOUT_SIZE = 16;
-    string channelLayout(CHANNEL_LAYOUT_SIZE, '\0');
+    string channelLayout = string(CHANNEL_LAYOUT_SIZE, '\0');
 
     i32 err = av_channel_layout_describe(
         &codecContext->ch_layout,
@@ -278,43 +209,13 @@ void AudioStreamer::initializeFilters() {
         channelLayout
     );
 
-    err = avfilter_graph_create_filter(
-        &abufferContext,
-        abuffer,
-        "src",
-        abufferArgs.c_str(),
-        nullptr,
-        filterGraph.get()
+    // FFT2 improves speed, it says in the docs
+    // Hamming window function is suggested by ChatGPT as the best for general
+    // EQ
+    const string equalizerArgs = std::format(
+        "gain_entry='{}':fft2=on:wfunc=hamming",
+        buildEqualizerArgs()
     );
-    if (checkErr(err, false, true)) {
-        return;
-    }
-
-    const string equalizerArgs = buildEqualizerArgs();
-
-    err = avfilter_graph_create_filter(
-        &equalizerContext,
-        equalizer,
-        "equalizer",
-        equalizerArgs.c_str(),
-        nullptr,
-        filterGraph.get()
-    );
-    if (checkErr(err, false, true)) {
-        return;
-    }
-
-    err = avfilter_graph_create_filter(
-        &normalizerContext,
-        normalizer,
-        "normalizer",
-        "",
-        nullptr,
-        filterGraph.get()
-    );
-    if (checkErr(err, false, true)) {
-        return;
-    }
 
     const string aformatArgs = std::format(
         "sample_fmts={}:sample_rates={}:channel_layouts={}",
@@ -323,54 +224,64 @@ void AudioStreamer::initializeFilters() {
         channelLayout
     );
 
-    err = avfilter_graph_create_filter(
-        &aformatContext,
-        aformat,
-        "aformat",
-        aformatArgs.c_str(),
-        nullptr,
-        filterGraph.get()
-    );
-    if (checkErr(err, false, true)) {
-        return;
+    // Order DOES matter!
+    // `abuffer` always must be first, and `aformat` with `abuffersink` last.
+    const array<Filter, 5> filters = {
+        Filter{ .filter = "abuffer",
+                .name = "src",
+                .args = abufferArgs.c_str(),
+                .context = &abufferContext },
+        { .filter = "firequalizer",
+          .name = "equalizer",
+          .args = equalizerArgs.c_str(),
+          .context = &equalizerContext },
+        { .filter = "alimiter",
+          .name = "limiter",
+          .args = nullptr,
+          .context = &limiterContext },
+        { .filter = "aformat",
+          .name = "aformat",
+          .args = aformatArgs.c_str(),
+          .context = &aformatContext },
+        { .filter = "abuffersink",
+          .name = "sink",
+          .args = nullptr,
+          .context = &abuffersinkContext },
+    };
+
+    // Create filters
+    for (const auto& filter : filters) {
+        const AVFilter* avfilter = avfilter_get_by_name(filter.filter);
+
+        err = avfilter_graph_create_filter(
+            filter.context,
+            avfilter,
+            filter.name,
+            filter.args,
+            nullptr,
+            filterGraph.get()
+        );
+
+        if (checkErr(err, false, true)) {
+            return;
+        }
     }
 
-    err = avfilter_graph_create_filter(
-        &abuffersinkContext,
-        abuffersink,
-        "sink",
-        nullptr,
-        nullptr,
-        filterGraph.get()
-    );
-    if (checkErr(err, false, true)) {
-        return;
+    // Connect filters
+    for (const u8 idx : range(0, filters.size() - 1)) {
+        err = avfilter_link(
+            *filters[idx].context,
+            0,
+            *filters[idx + 1].context,
+            0
+        );
+
+        if (checkErr(err, false, true)) {
+            return;
+        }
     }
 
-    // First pass the data to equalizer
-    err = avfilter_link(abufferContext, 0, equalizerContext, 0);
-    if (checkErr(err, false, true)) {
-        return;
-    }
-
-    // Then normalize it
-    err = avfilter_link(equalizerContext, 0, normalizerContext, 0);
-    if (checkErr(err, false, true)) {
-        return;
-    }
-    // Then resample it
-    err = avfilter_link(normalizerContext, 0, aformatContext, 0);
-    if (checkErr(err, false, true)) {
-        return;
-    }
-
-    // Then output it
-    err = avfilter_link(aformatContext, 0, abuffersinkContext, 0);
-    if (checkErr(err, false, true)) {
-        return;
-    }
-
-    // Ensure the validity of filter graph
+    // Check the validity of filter graph
     err = avfilter_graph_config(filterGraph.get(), nullptr);
     if (checkErr(err, false, true)) {
         return;

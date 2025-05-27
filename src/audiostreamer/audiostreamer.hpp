@@ -131,7 +131,7 @@ class AudioStreamer : public QIODevice {
     FilterGraph filterGraph;
     AVFilterContext* abufferContext = nullptr;
     AVFilterContext* equalizerContext = nullptr;
-    AVFilterContext* normalizerContext = nullptr;
+    AVFilterContext* limiterContext = nullptr;
     AVFilterContext* aformatContext = nullptr;
     AVFilterContext* abuffersinkContext = nullptr;
 
