@@ -152,20 +152,19 @@ constexpr QStringView EXT_MKV = u"mkv";
 constexpr QStringView EXT_MKA = u"mka";
 constexpr QStringView EXT_ALAC = u"alac";
 constexpr QStringView EXT_MOV = u"mov";
+constexpr QStringView EXT_AC3 = u"ac3";
 
-constexpr u8 ALLOWED_FILE_EXTENSIONS_COUNT = 12;
+constexpr u8 ALLOWED_FILE_EXTENSIONS_COUNT = 13;
 constexpr array<QStringView, ALLOWED_FILE_EXTENSIONS_COUNT>
-    ALLOWED_FILE_EXTENSIONS = {
-        EXT_MP3, EXT_FLAC, EXT_OPUS, EXT_AAC, EXT_WAV,  EXT_OGG,
-        EXT_M4A, EXT_MP4,  EXT_MKV,  EXT_MKA, EXT_ALAC, EXT_MOV,
-    };
+    ALLOWED_FILE_EXTENSIONS = { EXT_MP3,  EXT_FLAC, EXT_OPUS, EXT_AAC, EXT_WAV,
+                                EXT_OGG,  EXT_M4A,  EXT_MP4,  EXT_MKV, EXT_MKA,
+                                EXT_ALAC, EXT_MOV,  EXT_AC3 };
 
-constexpr u8 ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT = 9;
+constexpr u8 ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT = 10;
 constexpr array<QStringView, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
-    ALLOWED_MUSIC_FILE_EXTENSIONS = {
-        EXT_MP3, EXT_FLAC, EXT_OPUS, EXT_AAC,  EXT_WAV,
-        EXT_OGG, EXT_M4A,  EXT_MKA,  EXT_ALAC,
-    };
+    ALLOWED_MUSIC_FILE_EXTENSIONS = { EXT_MP3,  EXT_FLAC, EXT_OPUS, EXT_AAC,
+                                      EXT_WAV,  EXT_OGG,  EXT_M4A,  EXT_MKA,
+                                      EXT_ALAC, EXT_AC3 };
 
 constexpr u8 ALLOWED_VIDEO_FILE_EXTENSIONS_COUNT = 3;
 constexpr array<QStringView, ALLOWED_VIDEO_FILE_EXTENSIONS_COUNT>
@@ -201,7 +200,7 @@ constexpr u16 KB_BYTES = 1000;
 constexpr u8 MINUTE_SECONDS = 60;
 constexpr u8 START_DRAG_DISTANCE = 40;
 
-constexpr i32 INT24_SIZE = 3;
+constexpr u8 INT24_SIZE = 3;
 constexpr i32 INT24_MAX = 8388607;
 constexpr i32 INT24_MIN = ~INT24_MAX;
 constexpr i32 UINT24_MAX = 16777215;
