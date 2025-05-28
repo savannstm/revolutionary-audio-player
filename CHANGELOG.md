@@ -3,6 +3,7 @@
 ## v0.5.1
 
 -   Made equalizer usable.
+-   Added Dolby AC3/EAC3 formats support.
 
 ## v0.5.0
 

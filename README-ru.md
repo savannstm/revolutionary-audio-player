@@ -10,8 +10,8 @@
 
 ## Особенности
 
--   [x] Поддержка `mp3`, `flac`, `wav`, `ogg`, `opus`, `m4a`, `mp4`, `mkv`, `aac`, `alac`, `mov`, `mka` (другие форматы с кастомной сборкой FFmpeg).
--   [x] Поддержка изображений обложки `png`, `jpeg`, `bmp`, `webp`.
+-   [x] Поддержка `mp3`, `flac`, `wav`, `ogg`, `opus`, `m4a`, `mp4`, `mkv`, `aac`, `alac`, `mov`, `mka`, `ac3` (другие форматы с кастомной сборкой FFmpeg).
+-   [x] Поддержка изображений обложки `png`, `jpeg`, `bmp`, `webp`, `tiff`.
 -   [x] Одинаковые внешний вид и возможности на любой платформе.
 -   [x] Простой интерфейс.
 -   [x] Полная портабельность. Не оставляет следов в операционной системе!
@@ -47,7 +47,7 @@ Windows билды также компилируются статически - 
 
 Вам понадобятся `Qt6`, `FFmpeg` и `rapidhash`, чтобы забилдить проект.
 
-Приложение было забилжено со следующей конфигурацией FFmpeg: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-avfilter --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-filter=aformat,firequalizer,aresample,alimiter --enable-protocol=file --enable-zlib`
+Приложение было забилжено со следующей конфигурацией FFmpeg: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-avfilter --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp,ac3,eac3 --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-filter=aformat,firequalizer,aresample,alimiter --enable-protocol=file --enable-zlib`
 
 Путь к хедерам `rapidhash` может быть указан через `-DRAPIDHASH_INCLUDE_DIRS`.
 

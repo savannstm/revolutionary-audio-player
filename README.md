@@ -10,8 +10,8 @@ The Revolutionary Audio Player, abbreviated RAP (which initially was named Rusty
 
 ## Features
 
--   [x] `mp3`, `flac`, `wav`, `ogg`, `opus`, `m4a`, `mp4`, `mkv`, `aac`, `alac`, `mov`, `mka` audio default support.
--   [x] `png`, `jpeg`, `bmp`, `webp` cover image support.
+-   [x] `mp3`, `flac`, `wav`, `ogg`, `opus`, `m4a`, `mp4`, `mkv`, `aac`, `alac`, `mov`, `mka`, `ac3` audio default support.
+-   [x] `png`, `jpeg`, `bmp`, `webp`, `tiff` cover image support.
 -   [x] Native look and the same capabilities on **any** platform.
 -   [x] Interface, that keeps it simple.
 -   [x] Completely portable. Leaves **no** traces in OS by default!
@@ -47,7 +47,7 @@ The project uses CMake as build system.
 
 You'll need `Qt6`, `FFmpeg` and `rapidhash` to build the project.
 
-Default builds of the program include FFmpeg built with the following configuration: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-avfilter --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-filter=aformat,firequalizer,aresample,alimiter --enable-protocol=file --enable-zlib`
+Default builds of the program include FFmpeg built with the following configuration: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-avfilter --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp,ac3,eac3 --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-filter=aformat,firequalizer,aresample,alimiter --enable-protocol=file --enable-zlib`
 
 Path to the `rapidhash` headers can be passed as `-DRAPIDHASH_INCLUDE_DIRS`.
 
