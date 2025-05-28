@@ -352,16 +352,16 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
         case sizeof(i8): {
             const i8* samples = ras<const i8*>(buffer.constData());
 
-            for (const u32 idx : range(0, sampleCount)) {
-                out[idx] = as<f32>(samples[idx]) / (INT8_MAX + 1.0F);
+            for (const u32 sample : range(0, sampleCount)) {
+                out[sample] = as<f32>(samples[sample]) / (INT8_MAX + 1.0F);
             }
             break;
         }
         case sizeof(i16): {
             const i16* samples = ras<const i16*>(buffer.constData());
 
-            for (const u32 idx : range(0, sampleCount)) {
-                out[idx] = as<f32>(samples[idx]) / (INT16_MAX + 1.0F);
+            for (const u32 sample : range(0, sampleCount)) {
+                out[sample] = as<f32>(samples[sample]) / (INT16_MAX + 1.0F);
             }
             break;
         }
@@ -371,8 +371,8 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
 
             const u8* samples = ras<const u8*>(buffer.constData());
 
-            for (const u32 idx : range(0, sampleCount)) {
-                const u32 offset = idx * inputSampleSize;
+            for (const u32 sample : range(0, sampleCount)) {
+                const u32 offset = sample * inputSampleSize;
                 i32 value = (samples[offset]) |
                             (samples[offset + 1] << I8_BIT) |
                             (samples[offset + 2] << I16_BIT);
@@ -381,15 +381,15 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
                     value |= ~UINT24_MAX;
                 }
 
-                out[idx] = as<f32>(value) / (INT24_MAX + 1.0F);
+                out[sample] = as<f32>(value) / (INT24_MAX + 1.0F);
             }
             break;
         }
         case sizeof(i32): {
             const i32* samples = ras<const i32*>(buffer.constData());
 
-            for (const u32 idx : range(0, sampleCount)) {
-                out[idx] = as<f32>(samples[idx]) / as<f32>(INT32_MAX);
+            for (const u32 sample : range(0, sampleCount)) {
+                out[sample] = as<f32>(samples[sample]) / as<f32>(INT32_MAX);
             }
             break;
         }
