@@ -394,6 +394,7 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
             break;
         }
         default:
+            qWarning() << "Unsupported sample size:" << inputSampleSize;
             break;
     }
 
