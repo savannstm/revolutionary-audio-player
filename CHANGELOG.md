@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.6.0
+
+-   Implemented simple peak visualizer.
+-   When no track is selected and play button is pressed, the first track in the tree will be played now.
+-   Fixed issues with adding files due to possible extension mismatches.
+-   Removed retranslation of the version element in about window, which caused it to disappear.
+
 ## v0.5.1
 
 -   Made equalizer usable.
