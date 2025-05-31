@@ -1,5 +1,7 @@
 #include "settings.hpp"
 
+#include "enums.hpp"
+
 #include <QApplication>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -173,6 +175,20 @@ auto DockWidgetSettings::stringify() const -> QJsonObject {
     return json;
 }
 
+PeakVisualizerSettings::PeakVisualizerSettings(const QJsonObject& obj) {
+    hidden = obj["hidden"].toBool();
+    mode = as<PeakVisualizerMode>(obj["mode"].toInt());
+    preset = as<QGradient::Preset>(obj["preset"].toInt());
+}
+
+auto PeakVisualizerSettings::stringify() const -> QJsonObject {
+    QJsonObject json;
+    json["hidden"] = hidden;
+    json["mode"] = mode;
+    json["preset"] = preset;
+    return json;
+}
+
 // Settings implementation
 Settings::Settings(const QJsonObject& settingsObject) {
     lastOpenedDirectory = settingsObject["lastOpenedDirectory"].toString();
@@ -222,6 +238,12 @@ Settings::Settings(const QJsonObject& settingsObject) {
             }
         }
     }
+
+    if (settingsObject.contains("peakVisualizerSettings")) {
+        peakVisualizerSettings = PeakVisualizerSettings(
+            settingsObject["peakVisualizerSettings"].toObject()
+        );
+    }
 }
 
 auto Settings::stringify() const -> QJsonObject {
@@ -241,6 +263,7 @@ auto Settings::stringify() const -> QJsonObject {
     json["flags"] = flags.stringify();
     json["dockWidget"] = dockWidgetSettings.stringify();
     json["outputDevice"] = outputDevice.description();
+    json["peakVisualizerSettings"] = peakVisualizerSettings.stringify();
 
     return json;
 }

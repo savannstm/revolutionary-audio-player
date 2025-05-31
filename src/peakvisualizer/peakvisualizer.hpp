@@ -2,6 +2,7 @@
 
 #include "aliases.hpp"
 #include "constants.hpp"
+#include "settings.hpp"
 
 #include <QWidget>
 
@@ -20,6 +21,19 @@ class PeakVisualizer : public QWidget {
     }
 
     void reset();
+
+    void loadSettings(const PeakVisualizerSettings& settings) {
+        setHidden(settings.hidden);
+        gradientPreset = settings.preset;
+        gradient = QGradient(gradientPreset);
+        mode = settings.mode;
+    };
+
+    void saveSettings(PeakVisualizerSettings& settings) {
+        settings.hidden = isHidden();
+        settings.preset = gradientPreset;
+        settings.mode = mode;
+    }
 
    protected:
     void paintEvent(QPaintEvent* event) override;

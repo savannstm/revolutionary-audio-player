@@ -6,6 +6,7 @@
 
 #include <QAudioDevice>
 #include <QFile>
+#include <QGradient>
 #include <QJsonArray>
 #include <QMediaDevices>
 
@@ -82,6 +83,18 @@ class DockWidgetSettings {
     u16 imageSize = 0;
 };
 
+class PeakVisualizerSettings {
+   public:
+    explicit PeakVisualizerSettings() = default;
+    explicit PeakVisualizerSettings(const QJsonObject& obj);
+
+    [[nodiscard]] auto stringify() const -> QJsonObject;
+
+    bool hidden = false;
+    PeakVisualizerMode mode = DBFS;
+    QGradient::Preset preset = QGradient::MorpheusDen;
+};
+
 class Settings {
    public:
     explicit Settings() = default;
@@ -99,4 +112,5 @@ class Settings {
     SettingsFlags flags;
     DockWidgetSettings dockWidgetSettings;
     QAudioDevice outputDevice = QMediaDevices::defaultAudioOutput();
+    PeakVisualizerSettings peakVisualizerSettings;
 };

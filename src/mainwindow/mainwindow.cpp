@@ -344,11 +344,7 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
         delete menu;
 
         if (selectedAction == visualizerAction) {
-            if (visualizerHidden) {
-                peakVisualizer->show();
-            } else {
-                peakVisualizer->hide();
-            }
+            peakVisualizer->setHidden(!visualizerHidden);
         }
     }
     );
@@ -436,7 +432,7 @@ void MainWindow::dropEvent(QDropEvent* event) {
                 continue;
             }
 
-            const QFileInfo info(path);
+            const QFileInfo info = QFileInfo(path);
 
             if (info.isDir()) {
                 paths.append(path);
@@ -453,9 +449,12 @@ void MainWindow::dropEvent(QDropEvent* event) {
         if (tree == nullptr ||
             !QRect(tree->mapToGlobal(QPoint(0, 0)), tree->size())
                  .contains(dropPos)) {
-            tree = playlistView->tree(
-                playlistView->addTab(QFileInfo(paths[0]).dir().dirName())
-            );
+            QFileInfo info = QFileInfo(paths[0]);
+            bool pathIsDir = info.isDir();
+
+            tree = playlistView->tree(playlistView->addTab(
+                pathIsDir ? info.fileName() : info.dir().dirName()
+            ));
         }
 
         tree->fillTable(paths);
@@ -533,6 +532,8 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
     settings->dockWidgetSettings.position = dockWidgetPosition;
     settings->dockWidgetSettings.size = dockWidget->width();
     settings->dockWidgetSettings.imageSize = dockCoverLabel->height();
+
+    peakVisualizer->saveSettings(settings->peakVisualizerSettings);
 
     settings->save(settingsFile);
     return true;
@@ -676,6 +677,8 @@ void MainWindow::loadSettings() {
     moveDockWidget(dockWidgetPosition);
 
     mainArea->setSizes({ QWIDGETSIZE_MAX, settings->dockWidgetSettings.size });
+
+    peakVisualizer->loadSettings(settings->peakVisualizerSettings);
 
     // Update system associations, in case if binary was moved somewhere
     if (settings->flags.contextMenuEntryEnabled) {
@@ -1094,10 +1097,9 @@ void MainWindow::toggleEqualizerMenu(const bool checked) {
         equalizerMenu->move(
             equalizerButton->mapToGlobal(QPoint(0, equalizerButton->height()))
         );
-        equalizerMenu->show();
-    } else {
-        equalizerMenu->hide();
     }
+
+    equalizerMenu->setHidden(!checked);
 }
 
 void MainWindow::toggleRepeat() {
