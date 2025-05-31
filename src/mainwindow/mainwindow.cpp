@@ -1512,7 +1512,7 @@ void MainWindow::importPlaylist(const bool createNewTab) {
     const QString dirPath = filePathInfo.absolutePath() + '/';
     const QString extension = filePathInfo.suffix().toLower();
 
-    QFile file(filePath);
+    QFile file = QFile(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QMessageBox::warning(this, tr("Error"), file.errorString());
         return;
@@ -1683,13 +1683,13 @@ auto MainWindow::exportXSPF(
     const QString& outputPath,
     const vector<HashMap<TrackProperty, QString>>& metadataVector
 ) -> result<bool, QString> {
-    QFile file(outputPath);
+    QFile file = QFile(outputPath);
 
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         return err(file.errorString());
     }
 
-    QTextStream output(&file);
+    QTextStream output = QTextStream(&file);
     output.setEncoding(QStringConverter::Utf8);
 
     output << R"(<?xml version="1.0" encoding="UTF-8"?>)";

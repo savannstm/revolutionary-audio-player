@@ -8,7 +8,7 @@ class IntValidator : public QIntValidator {
 
     void fixup(QString& input) const override {
         bool valid;
-        i32 value = input.toInt(&valid);
+        const i32 value = input.toInt(&valid);
 
         if (valid) {
             if (value < bottom()) {
