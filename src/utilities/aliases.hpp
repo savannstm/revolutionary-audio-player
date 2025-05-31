@@ -45,17 +45,13 @@ using wchar = wchar_t;
 using wcstr = const wchar*;
 
 using fs::path;
-using std::abs;
 using std::array;
 using std::cerr;
-using std::clamp;
 using std::cout;
 using std::format;
 using std::make_shared;
 using std::make_unique;
 using std::map;
-using std::max;
-using std::min;
 using std::println;
 using std::set;
 using std::shared_ptr;
@@ -70,6 +66,16 @@ using std::unique_ptr;
 using std::vector;
 using std::wstring;
 using std::wstring_view;
+
+// math
+using std::abs;
+using std::clamp;
+using std::log10f;
+using std::log2f;
+using std::max;
+using std::min;
+using std::powf;
+using std::sqrtf;
 
 using panic = std::runtime_error;
 template <typename T, typename E>
