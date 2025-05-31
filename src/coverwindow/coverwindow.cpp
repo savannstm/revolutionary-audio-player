@@ -33,7 +33,14 @@ CoverWindow::CoverWindow(
 }
 
 void CoverWindow::updateCover(const QString& coverPath) {
-    const vector<u8> coverBytes = extractCover(coverPath.toUtf8().constData());
+    const auto extracted = extractCover(coverPath.toUtf8().constData());
+
+    if (!extracted) {
+        qWarning() << extracted.error();
+        return;
+    }
+
+    const vector<u8>& coverBytes = extracted.value();
     originalPixmap.loadFromData(coverBytes.data(), coverBytes.size());
     coverLabel->setPixmap(originalPixmap);
     resize(originalPixmap.size());

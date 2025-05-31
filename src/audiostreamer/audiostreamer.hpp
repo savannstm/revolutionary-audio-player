@@ -10,6 +10,7 @@ extern "C" {
 
 #include "aliases.hpp"
 #include "constants.hpp"
+#include "extractmetadata.hpp"
 #include "ffmpeg.hpp"
 
 #include <QAudioFormat>
@@ -75,9 +76,7 @@ class AudioStreamer : public QIODevice {
         return playbackSecond;
     }
 
-    void printErr(const i32 err) {
-        qWarning() << av_make_error_string(errBuf.data(), errBuf.size(), err);
-    }
+    static void printError(const i32 err) { qWarning() << FFmpegError(err); }
 
    signals:
     void progressUpdate(u16 second);
@@ -106,7 +105,7 @@ class AudioStreamer : public QIODevice {
     checkErr(const i32 err, const bool resetStreamer, const bool resetFilters)
         -> bool {
         if (err < 0) {
-            printErr(err);
+            printError(err);
 
             if (resetStreamer) {
                 reset();
@@ -155,8 +154,6 @@ class AudioStreamer : public QIODevice {
 
     FrequencyArray frequencies_;
     GainArray gains_;
-
-    array<char, AV_ERROR_MAX_STRING_SIZE> errBuf;
 
     array<bool, MAX_BANDS_COUNT> changedBands;
 

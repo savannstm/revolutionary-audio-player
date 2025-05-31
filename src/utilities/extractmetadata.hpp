@@ -11,6 +11,12 @@
 
 using namespace FFmpeg;
 
+inline auto FFmpegError(const i32 err) -> string {
+    string buffer(AV_ERROR_MAX_STRING_SIZE, '\0');
+    av_strerror(err, buffer.data(), buffer.size());
+    return buffer;
+}
+
 inline auto roundBitrate(const u32 bitrate) -> QString {
     const u32 kbps = bitrate / KB_BYTES;
 
@@ -34,60 +40,58 @@ inline auto roundBitrate(const u32 bitrate) -> QString {
 }
 
 inline auto extractMetadata(const QString& filePath)
-    -> HashMap<TrackProperty, QString> {
-    HashMap<TrackProperty, QString> metadata;
-
+    -> result<HashMap<TrackProperty, QString>, string> {
     FormatContext formatContext;
-    AVFormatContext* formatContextPtr = formatContext.get();
+    AVFormatContext* fCtxPtr = formatContext.get();
 
-    i32 err;
-    array<char, AV_ERROR_MAX_STRING_SIZE> errBuf;
+    i32 errorCode;
 
-    err = avformat_open_input(
-        &formatContextPtr,
+    errorCode = avformat_open_input(
+        &fCtxPtr,
         filePath.toStdString().c_str(),
         nullptr,
         nullptr
     );
-    if (err < 0) {
-        qWarning() << av_make_error_string(
-            errBuf.data(),
-            AV_ERROR_MAX_STRING_SIZE,
-            err
-        );
-        return metadata;
+    if (errorCode < 0) {
+        return err(FFmpegError(errorCode));
     }
 
-    formatContext.reset(formatContextPtr);
+    formatContext.reset(fCtxPtr);
 
-    err = avformat_find_stream_info(formatContextPtr, nullptr);
-    if (err < 0) {
-        qWarning() << av_make_error_string(
-            errBuf.data(),
-            AV_ERROR_MAX_STRING_SIZE,
-            err
-        );
-        return metadata;
+    errorCode = avformat_find_stream_info(fCtxPtr, nullptr);
+    if (errorCode < 0) {
+        return err(FFmpegError(errorCode));
     }
 
-    AVDictionary* tags = formatContext->metadata;
+    errorCode =
+        av_find_best_stream(fCtxPtr, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+
+    if (errorCode < 0) {
+        return err(FFmpegError(errorCode));
+    }
+
+    const i8 audioStreamIndex = as<i8>(errorCode);
+    const AVStream* audioStream = formatContext->streams[audioStreamIndex];
+
     const auto getTag = [&](cstr key) -> QString {
-        const AVDictionaryEntry* tag = av_dict_get(tags, key, nullptr, 0);
+        const AVDictionaryEntry* tag =
+            av_dict_get(formatContext->metadata, key, nullptr, 0);
         return tag ? tag->value : QString();
     };
 
+    HashMap<TrackProperty, QString> metadata;
     metadata.emplace(Path, filePath);
 
     const QString titleTag = getTag("title");
 
     if (titleTag.isEmpty()) {
-        isize lastIndex = filePath.lastIndexOf('/') + 1;
+        isize lastIndex = filePath.lastIndexOf('/');
 
         if (lastIndex == -1) {
-            lastIndex = filePath.lastIndexOf('\\') + 1;
+            lastIndex = filePath.lastIndexOf('\\');
         }
 
-        metadata.emplace(Title, filePath.sliced(lastIndex));
+        metadata.emplace(Title, filePath.sliced(lastIndex + 1));
     } else {
         metadata.emplace(Title, titleTag);
     }
@@ -104,81 +108,79 @@ inline auto extractMetadata(const QString& filePath)
     metadata.emplace(DiscNumber, getTag("disc"));
     metadata.emplace(Comment, getTag("comment"));
     metadata.emplace(Publisher, getTag("publisher"));
-
     metadata.emplace(
         Duration,
         toMinutes(formatContext->duration / AV_TIME_BASE)
     );
     metadata.emplace(Bitrate, roundBitrate(formatContext->bit_rate));
 
-    const u8 streamCount = formatContext->nb_streams;
-    const span<AVStream*> streams = span(formatContext->streams, streamCount);
+    metadata.emplace(
+        SampleRate,
+        QString::number(audioStream->codecpar->sample_rate)
+    );
 
-    for (const AVStream* stream : streams) {
-        if (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            metadata.emplace(
-                SampleRate,
-                QString::number(stream->codecpar->sample_rate)
-            );
-            metadata.emplace(
-                Channels,
-                QString::number(stream->codecpar->ch_layout.nb_channels)
-            );
+    metadata.emplace(
+        Channels,
+        QString::number(audioStream->codecpar->ch_layout.nb_channels)
+    );
 
-            const QString formatName = formatContext->iformat->name;
-            metadata.emplace(Format, formatName.toUpper());
-            break;
-        }
-    }
+    const QString formatName = formatContext->iformat->name;
+    metadata.emplace(Format, formatName.toUpper());
 
     return metadata;
 }
 
-inline auto extractCover(cstr path) -> vector<u8> {
+inline auto extractCover(cstr path) -> result<vector<u8>, string> {
     FormatContext formatContext;
-    AVFormatContext* formatContextPtr = formatContext.get();
+    AVFormatContext* fCtxPtr = formatContext.get();
 
-    vector<u8> cover;
+    vector<u8> coverBytes;
+    i32 errorCode;
 
-    i32 err;
-    array<char, AV_ERROR_MAX_STRING_SIZE> errBuf;
-
-    err = avformat_open_input(&formatContextPtr, path, nullptr, nullptr);
-    if (err < 0) {
-        qWarning() << av_make_error_string(
-            errBuf.data(),
-            AV_ERROR_MAX_STRING_SIZE,
-            err
-        );
-        return cover;
+    errorCode = avformat_open_input(&fCtxPtr, path, nullptr, nullptr);
+    if (errorCode < 0) {
+        return err(FFmpegError(errorCode));
     }
 
-    formatContext.reset(formatContextPtr);
-    err = avformat_find_stream_info(formatContextPtr, nullptr);
+    formatContext.reset(fCtxPtr);
+    errorCode = avformat_find_stream_info(fCtxPtr, nullptr);
 
-    if (err < 0) {
-        qWarning() << av_make_error_string(
-            errBuf.data(),
-            AV_ERROR_MAX_STRING_SIZE,
-            err
-        );
-        return cover;
+    if (errorCode < 0) {
+        return err(FFmpegError(errorCode));
     }
 
-    const u8 streamCount = formatContext->nb_streams;
-    const span<AVStream*> streams = span(formatContext->streams, streamCount);
+    errorCode =
+        av_find_best_stream(fCtxPtr, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
 
-    for (const AVStream* stream : streams) {
-        if ((stream->disposition & AV_DISPOSITION_ATTACHED_PIC) != 0) {
-            cover.resize(stream->attached_pic.size);
-            memcpy(
-                cover.data(),
-                stream->attached_pic.data,
-                stream->attached_pic.size
-            );
-            break;
+    if (errorCode < 0) {
+        errorCode = av_find_best_stream(
+            fCtxPtr,
+            AVMEDIA_TYPE_ATTACHMENT,
+            -1,
+            -1,
+            nullptr,
+            0
+        );
+
+        if (errorCode < 0) {
+            return err(FFmpegError(errorCode));
         }
     }
 
-    return cover;
+    const i8 attachmentStreamIndex = as<i8>(errorCode);
+    const AVStream* attachmentStream =
+        formatContext->streams[attachmentStreamIndex];
+
+    if (attachmentStream->attached_pic.size == 0) {
+        return err("Unable to find cover attachment.");
+    }
+
+    coverBytes.resize(attachmentStream->attached_pic.size);
+    memcpy(
+        coverBytes.data(),
+        attachmentStream->attached_pic.data,
+        attachmentStream->attached_pic.size
+    );
+
+    return coverBytes;
 }

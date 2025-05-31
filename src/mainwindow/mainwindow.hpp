@@ -116,6 +116,8 @@ class MainWindow : public QMainWindow {
         const vector<HashMap<TrackProperty, QString>>& metadataVector
     ) -> result<bool, QString>;
 
+    static inline auto constructAudioFileFilter() -> QString;
+
     auto setupUi() -> Ui::MainWindow* {
         auto* ui_ = new Ui::MainWindow();
         ui_->setupUi(this);

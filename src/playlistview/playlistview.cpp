@@ -242,7 +242,6 @@ void PlaylistView::removeBackgroundImage(const u8 index) const {
 
 void PlaylistView::setBackgroundImage(
     const u8 index,  // NOLINT
-    const u16 height,
     const QImage& image,
     const QString& path
 ) const {
@@ -257,7 +256,7 @@ void PlaylistView::setBackgroundImage(
 
     const QPixmap centerPixmap = QPixmap::fromImage(image).scaled(
         layoutWidth,
-        height,
+        stackedWidget->height(),
         Qt::KeepAspectRatio,
         Qt::SmoothTransformation
     );

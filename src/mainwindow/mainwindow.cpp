@@ -406,11 +406,10 @@ void MainWindow::dropEvent(QDropEvent* event) {
                 continue;
             }
 
-            for (const QStringView extension : ALLOWED_FILE_EXTENSIONS) {
-                if (path.endsWith(extension)) {
-                    paths.append(path);
-                    break;
-                }
+            const QString extension = info.suffix().toLower();
+
+            if (ranges::contains(ALLOWED_FILE_EXTENSIONS, extension)) {
+                paths.append(path);
             }
         }
 
@@ -572,16 +571,18 @@ void MainWindow::loadSettings() {
             auto* tree = playlistView->tree(index);
             tree->fillTable(tabObject.tracks);
 
-            if (!tabObject.order.empty()) {
-                connect(tree, &TrackTree::finishedFilling, this, [&, tree] {
-                    auto* model = tree->model();
-
-                    for (const u16 track : range(0, model->rowCount())) {
-                        model->item(track, Order)
-                            ->setData(tabObject.order[track], Qt::EditRole);
-                    }
-                }, Qt::SingleShotConnection);
+            if (tabObject.order.empty()) {
+                continue;
             }
+
+            connect(tree, &TrackTree::finishedFilling, this, [&, tree] {
+                auto* model = tree->model();
+
+                for (const u16 track : range(0, model->rowCount())) {
+                    model->item(track, Order)
+                        ->setData(tabObject.order[track], Qt::EditRole);
+                }
+            }, Qt::SingleShotConnection);
 
             const QString& imagePath = tabObject.backgroundImagePath;
 
@@ -589,37 +590,35 @@ void MainWindow::loadSettings() {
                 continue;
             }
 
-            QTimer::singleShot(SECOND_MS, [=, this] {
-                const QString extension =
-                    imagePath.sliced(imagePath.lastIndexOf('.') + 1);
+            const QString extension =
+                imagePath.sliced(imagePath.lastIndexOf('.') + 1);
 
-                QImage image;
+            QImage image;
 
-                if (ranges::contains(
-                        ALLOWED_MUSIC_FILE_EXTENSIONS,
-                        extension
-                    )) {
-                    const vector<u8> coverBytes =
-                        extractCover(imagePath.toUtf8().data());
+            if (ranges::contains(ALLOWED_MUSIC_FILE_EXTENSIONS, extension)) {
+                const auto extracted = extractCover(imagePath.toUtf8().data());
 
-                    image.loadFromData(
-                        coverBytes.data(),
-                        as<i32>(coverBytes.size())
-                    );
-                } else {
-                    if (!QFile::exists(imagePath)) {
-                        return;
-                    }
-
-                    image.load(imagePath);
+                if (!extracted) {
+                    qWarning() << extracted.error();
+                    return;
                 }
 
-                playlistView->setBackgroundImage(
-                    index,
-                    mainArea->height(),
-                    image,
-                    imagePath
+                const vector<u8>& coverBytes = extracted.value();
+
+                image.loadFromData(
+                    coverBytes.data(),
+                    as<i32>(coverBytes.size())
                 );
+            } else {
+                if (!QFile::exists(imagePath)) {
+                    return;
+                }
+
+                image.load(imagePath);
+            }
+
+            QTimer::singleShot(SECOND_MS, [=, this] {
+                playlistView->setBackgroundImage(index, image, imagePath);
             });
         }
     }
@@ -796,7 +795,6 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
 
                 playlistView->setBackgroundImage(
                     playlistView->currentIndex(),
-                    mainArea->height(),
                     image,
                     file
                 );
@@ -1005,9 +1003,7 @@ void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
             this,
             tr("Select File"),
             searchDirectory,
-            tr(
-                "Audio/Video Files (*.mp3 *.flac *.opus *.aac *.wav *.ogg *.m4a *.mp4 *.mkv)"
-            )
+            constructAudioFileFilter()
         );
 
         if (path.isEmpty()) {
@@ -1261,13 +1257,16 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
         const QStringList entries = fileDirectory.entryList();
 
         for (const QString& entry : entries) {
-            const QString extension = entry.sliced(entry.lastIndexOf('.') + 1);
+            const QString extension =
+                entry.sliced(entry.lastIndexOf('.') + 1).toLower();
 
             if (!ranges::contains(IMAGE_EXTENSIONS, extension)) {
                 continue;
             }
 
-            if (!entry.startsWith(u"cover"_qsv)) {
+            const QString prefix = entry.sliced(0, 5).toLower();
+
+            if (prefix != "cover") {
                 continue;
             };
 
@@ -1278,21 +1277,20 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     }
 
     if (!settings->flags.prioritizeExternalCover || path.isEmpty()) {
-        const vector<u8> coverBytes =
-            extractCover(metadata[Path].toUtf8().data());
-        cover.loadFromData(coverBytes.data(), coverBytes.size());
-        path = metadata[Path];
+        const auto extracted = extractCover(metadata[Path].toUtf8().data());
+
+        if (!extracted) {
+            qWarning() << extracted.error();
+        } else {
+            const vector<u8>& coverBytes = extracted.value();
+            cover.loadFromData(coverBytes.data(), coverBytes.size());
+            path = metadata[Path];
+        }
     }
 
     if (settings->flags.autoSetBackground) {
         const QImage image = cover.toImage();
-
-        playlistView->setBackgroundImage(
-            playingPlaylist,
-            playlistView->height(),
-            image,
-            path
-        );
+        playlistView->setBackgroundImage(playingPlaylist, image, path);
     }
 
     dockCoverLabel->setPixmap(cover);
@@ -1836,4 +1834,19 @@ void MainWindow::adjustPlaylistImage(
             rightLabel->move(width - rightLabelWidth, 0);
             break;
     }
+}
+
+auto MainWindow::constructAudioFileFilter() -> QString {
+    QString filter;
+    filter.reserve(128);  // NOLINT
+
+    filter += tr("Audio/Video Files (");
+
+    for (const QStringView extension : ALLOWED_FILE_EXTENSIONS) {
+        filter += u"*.%1 "_s.arg(extension);
+    }
+
+    filter.removeLast();  // Remove space
+    filter += u')';
+    return filter;
 }

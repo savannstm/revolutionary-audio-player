@@ -272,7 +272,15 @@ void TrackTree::fillTable(const QStringList& paths) {
                 continue;
             }
 
-            const auto metadata = extractMetadata(path);
+            const auto extracted = extractMetadata(path);
+
+            if (!extracted) {
+                qWarning() << extracted.error();
+                continue;
+            }
+
+            const auto& metadata = extracted.value();
+
             if (metadata.empty()) {
                 continue;
             }

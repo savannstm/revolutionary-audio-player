@@ -37,7 +37,6 @@ class PlaylistView : public QWidget {
     ) -> QWidget*;
     void setBackgroundImage(
         u8 index,
-        u16 height,
         const QImage& image,
         const QString& path
     ) const;
