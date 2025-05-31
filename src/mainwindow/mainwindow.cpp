@@ -1368,6 +1368,11 @@ void MainWindow::togglePlayback(const QString& path) {
             playButton->setIcon(pauseIcon);
             playButton->setToolTip(tr("Pause"));
             actionTogglePlayback->setText(tr("Pause"));
+        } else if ((state == QtAudio::StoppedState ||
+                    state == QtAudio::IdleState) &&
+                   trackTree != nullptr &&
+                   !trackTree->currentIndex().isValid()) {
+            selectTrack(-1, 0);
         }
     }
 }
