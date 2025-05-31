@@ -3,8 +3,6 @@
 #include "aliases.hpp"
 #include "constants.hpp"
 
-#include <libavutil/error.h>
-
 struct Filter {
     cstr filter;
     cstr name;
@@ -480,6 +478,7 @@ auto AudioStreamer::readData(str data, const qi64 /* size */) -> qi64 {
     const u32 bufferSize = buffer.size();
     memcpy(data, buffer.constData(), bufferSize);
 
+    emit samples(buffer, codecContext->sample_rate);
     emit progressUpdate(playbackSecond);
 
     initializeFilters();

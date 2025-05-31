@@ -89,6 +89,7 @@ class AudioWorker : public QObject {
     void progressUpdated(u16 second);
     void streamEnded();
     void volumeChanged(f64 gain);
+    void samples(const QByteArray& samples, u16 sampleRate);
 
    private:
     void rebuildAudioSink(QtAudio::State state);

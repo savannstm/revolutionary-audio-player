@@ -316,6 +316,43 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
         &MainWindow::adjustPlaylistView
     );
 
+    ui->controlLayout->insertWidget(
+        ui->controlLayout->indexOf(equalizerButton) + 1,
+        peakVisualizer
+    );
+
+    connect(
+        audioWorker,
+        &AudioWorker::samples,
+        peakVisualizer,
+        &PeakVisualizer::processSamples
+    );
+
+    connect(
+        ui->controlContainer,
+        &QWidget::customContextMenuRequested,
+        this,
+        [&] {
+        auto* menu = new QMenu(this);
+
+        const bool visualizerHidden = peakVisualizer->isHidden();
+        auto* visualizerAction = menu->addAction(tr("Visualizer"));
+        visualizerAction->setCheckable(true);
+        visualizerAction->setChecked(!visualizerHidden);
+
+        auto* selectedAction = menu->exec(QCursor::pos());
+        delete menu;
+
+        if (selectedAction == visualizerAction) {
+            if (visualizerHidden) {
+                peakVisualizer->show();
+            } else {
+                peakVisualizer->hide();
+            }
+        }
+    }
+    );
+
     server->listen("revolutionary-audio-player-server");
 
     progressLabelCloned->setText(trackDuration);
@@ -1428,6 +1465,7 @@ void MainWindow::stopPlayback() {
         tree->deselect();
     }
 
+    peakVisualizer->reset();
     audioWorker->stop();
     trackLabel->clear();
     progressSlider->setRange(0, 0);

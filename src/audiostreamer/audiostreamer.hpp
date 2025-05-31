@@ -81,6 +81,7 @@ class AudioStreamer : public QIODevice {
    signals:
     void progressUpdate(u16 second);
     void streamEnded();
+    void samples(const QByteArray& samples, u16 sampleRate);
 
    protected:
     auto readData(str data, qi64 maxSize) -> qi64 override;

@@ -68,6 +68,9 @@
         <height>128</height>
        </size>
       </property>
+      <property name="contextMenuPolicy">
+       <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+      </property>
       <layout class="QHBoxLayout" name="controlLayout" stretch="0,0,0,0,0,0,0,0,0,0,0,0">
        <property name="spacing">
         <number>0</number>

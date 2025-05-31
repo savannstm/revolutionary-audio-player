@@ -4,6 +4,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavfilter/avfilter.h>
 #include <libavformat/avformat.h>
+#include <libavutil/tx.h>
 #include <libswresample/swresample.h>
 }
 
@@ -47,12 +48,19 @@ namespace FFmpeg {
         }
     };
 
+    struct TXContextDeleter {
+        void operator()(AVTXContext* txContext) const {
+            av_tx_uninit(&txContext);
+        }
+    };
+
     using FormatContext = unique_ptr<AVFormatContext, FormatContextDeleter>;
     using CodecContext = unique_ptr<AVCodecContext, CodecContextDeleter>;
     using SwrContext = unique_ptr<SwrContext, SwrContextDeleter>;
     using Packet = unique_ptr<AVPacket, PacketDeleter>;
     using Frame = unique_ptr<AVFrame, FrameDeleter>;
     using FilterGraph = unique_ptr<AVFilterGraph, FilterGraphDeleter>;
+    using TXContext = unique_ptr<AVTXContext, TXContextDeleter>;
 
     inline auto createPacket() -> Packet {
         return Packet(av_packet_alloc());
@@ -68,6 +76,10 @@ namespace FFmpeg {
 
     inline auto createFilterGraph() -> FilterGraph {
         return FilterGraph(avfilter_graph_alloc());
+    }
+
+    inline auto createTXContext() -> TXContext {
+        return {};
     }
 
 }  // namespace FFmpeg

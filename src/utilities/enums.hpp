@@ -82,3 +82,8 @@ enum DockWidgetPosition : u8 {
     Bottom,
     Right
 };
+
+enum PeakVisualizerMode : u8 {
+    Relative,
+    DBFS
+};

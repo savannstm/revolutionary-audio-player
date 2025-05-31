@@ -12,6 +12,7 @@
 #include "musicheader.hpp"
 #include "musicmodel.hpp"
 #include "optionmenu.hpp"
+#include "peakvisualizer.hpp"
 #include "playlistview.hpp"
 #include "scaledlabel.hpp"
 #include "settings.hpp"
@@ -238,4 +239,5 @@ class MainWindow : public QMainWindow {
     QLocalServer* server = new QLocalServer(this);
     QAudioDevice previousDefaultAudioDevice =
         QMediaDevices::defaultAudioOutput();
+    PeakVisualizer* peakVisualizer = new PeakVisualizer(this);
 };

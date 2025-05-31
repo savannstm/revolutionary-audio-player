@@ -21,6 +21,13 @@ AudioWorker::AudioWorker(QObject* parent) : QObject(parent) {
         this,
         &AudioWorker::streamEnded
     );
+
+    connect(
+        audioStreamer,
+        &AudioStreamer::samples,
+        this,
+        &AudioWorker::samples
+    );
 }
 
 AudioWorker::~AudioWorker() {
