@@ -1256,6 +1256,7 @@ void MainWindow::selectTrack(const i32 oldRow, const u16 newRow) {
             tree->deselect(oldRow);
         }
 
+        trackTree->setCurrentIndex(trackTreeModel->index(newRow, 0));
         playingPlaylist = playlistView->currentIndex();
         playTrack(trackTree, trackTreeModel->index(newRow, 0));
     }
