@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 
 # Project definition
 set(PROJECT_NAME rap)
-set(PROJECT_VERSION "0.5.1")
+set(PROJECT_VERSION "0.6.0")
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES C CXX)
 
 # Define option for static builds
