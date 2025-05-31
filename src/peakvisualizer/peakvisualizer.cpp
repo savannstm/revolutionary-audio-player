@@ -34,7 +34,7 @@ PeakVisualizer::PeakVisualizer(QWidget* parent) : QWidget(parent) {
         auto* presetMenu = new QMenu(menu);
         presetMenu->setTitle(tr("Presets"));
 
-        for (const u16 preset : range(0, QGradient::Preset::PerfectBlue + 1)) {
+        for (const u16 preset : range(1, QGradient::Preset::NumPresets)) {
             QAction* action = presetMenu->addAction(QString::number(preset));
             action->setCheckable(true);
 
