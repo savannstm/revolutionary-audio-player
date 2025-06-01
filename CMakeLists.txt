@@ -85,6 +85,13 @@ qt_add_executable(${PROJECT_NAME}
     ${WINDOWS_APPLICATION_ICON}
 )
 
+# Build mode macros for usage in C++
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        $<$<CONFIG:Debug>:DEBUG_BUILD>
+        $<$<CONFIG:Release>:RELEASE_BUILD>
+)
+
 # Set properties (e.g., no console window for Windows app)
 set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
 
