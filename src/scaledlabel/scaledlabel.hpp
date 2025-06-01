@@ -1,5 +1,7 @@
 #pragma once
 
+#include "constants.hpp"
+
 #include <QLabel>
 #include <QPixmap>
 
@@ -8,6 +10,7 @@ class ScaledLabel : public QLabel {
 
    public:
     ScaledLabel(QWidget* parent = nullptr) : QLabel(parent) {
+        setMinimumSize(MINIMUM_COVER_SIZE);
         setAlignment(Qt::AlignCenter);
         setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
     }

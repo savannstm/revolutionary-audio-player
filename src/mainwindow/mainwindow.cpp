@@ -1334,7 +1334,6 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     }
 
     dockCoverLabel->setPixmap(cover);
-    dockCoverLabel->setMinimumSize(MINIMUM_COVER_SIZE);
 }
 
 void MainWindow::togglePlayback(const QString& path) {
