@@ -71,7 +71,7 @@ void PeakVisualizer::processSamples(
     const QByteArray& byteSamples,
     const u16 sampleRate
 ) {
-    if (isHidden()) {
+    if (isHidden() || byteSamples.isEmpty()) {
         return;
     }
 
