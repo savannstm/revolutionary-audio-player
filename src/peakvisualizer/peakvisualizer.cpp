@@ -113,7 +113,7 @@ void PeakVisualizer::processSamples(
     vector<u16> bandIndices = getBandIndices(sampleRate, fftSize);
     ranges::fill(peaks, 0);
 
-    for (u8 band = 0; band < TEN_BANDS; band++) {
+    for (const u8 band : range(0, TEN_BANDS)) {
         const u16 start = band == 0 ? 0 : bandIndices[band - 1];
         const u16 end = bandIndices[band];
         f32 maxMagnitude = 0;

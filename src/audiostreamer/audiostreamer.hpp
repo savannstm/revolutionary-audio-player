@@ -12,9 +12,9 @@ extern "C" {
 #include "constants.hpp"
 #include "extractmetadata.hpp"
 #include "ffmpeg.hpp"
+#include "log.hpp"
 
 #include <QAudioFormat>
-#include <QDebug>
 #include <QIODevice>
 
 using namespace FFmpeg;
@@ -76,8 +76,6 @@ class AudioStreamer : public QIODevice {
         return playbackSecond;
     }
 
-    static void printError(const i32 err) { qWarning() << FFmpegError(err); }
-
    signals:
     void progressUpdate(u16 second);
     void streamEnded();
@@ -103,10 +101,10 @@ class AudioStreamer : public QIODevice {
     inline void equalizeBuffer();
 
     auto
-    checkErr(const i32 err, const bool resetStreamer, const bool resetFilters)
+    checkError(const i32 err, const bool resetStreamer, const bool resetFilters)
         -> bool {
         if (err < 0) {
-            printError(err);
+            LOG_WARN(FFMPEG_ERROR(err));
 
             if (resetStreamer) {
                 reset();

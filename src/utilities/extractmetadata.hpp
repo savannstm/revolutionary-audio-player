@@ -7,15 +7,27 @@
 #include "rapidhasher.hpp"
 #include "tominutes.hpp"
 
-#include <QDebug>
+#include <QTextStream>
 
 using namespace FFmpeg;
 
-inline auto FFmpegError(const i32 err) -> string {
-    string buffer(AV_ERROR_MAX_STRING_SIZE, '\0');
+inline auto
+FFmpegError(const cstr file, const i32 line, const cstr func, const i32 err)
+    -> QString {
+    array<char, AV_ERROR_MAX_STRING_SIZE> buffer;
     av_strerror(err, buffer.data(), buffer.size());
-    return buffer;
+
+    QString string;
+    string.reserve(AV_ERROR_MAX_STRING_SIZE * 4);
+
+    QTextStream stream = QTextStream(&string);
+
+    stream << file << ' ' << line << ' ' << func << ' ' << buffer.data();
+
+    return string;
 }
+
+#define FFMPEG_ERROR(err) FFmpegError(__FILE__, __LINE__, __func__, err)
 
 inline auto roundBitrate(const u32 bitrate) -> QString {
     const u32 kbps = bitrate / KB_BYTES;
@@ -40,7 +52,7 @@ inline auto roundBitrate(const u32 bitrate) -> QString {
 }
 
 inline auto extractMetadata(const QString& filePath)
-    -> result<HashMap<TrackProperty, QString>, string> {
+    -> result<HashMap<TrackProperty, QString>, QString> {
     FormatContext formatContext;
     AVFormatContext* fCtxPtr = formatContext.get();
 
@@ -53,21 +65,21 @@ inline auto extractMetadata(const QString& filePath)
         nullptr
     );
     if (errorCode < 0) {
-        return err(FFmpegError(errorCode));
+        return err(FFMPEG_ERROR(errorCode));
     }
 
     formatContext.reset(fCtxPtr);
 
     errorCode = avformat_find_stream_info(fCtxPtr, nullptr);
     if (errorCode < 0) {
-        return err(FFmpegError(errorCode));
+        return err(FFMPEG_ERROR(errorCode));
     }
 
     errorCode =
         av_find_best_stream(fCtxPtr, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
 
     if (errorCode < 0) {
-        return err(FFmpegError(errorCode));
+        return err(FFMPEG_ERROR(errorCode));
     }
 
     const i8 audioStreamIndex = as<i8>(errorCode);
@@ -130,7 +142,7 @@ inline auto extractMetadata(const QString& filePath)
     return metadata;
 }
 
-inline auto extractCover(cstr path) -> result<vector<u8>, string> {
+inline auto extractCover(cstr path) -> result<vector<u8>, QString> {
     FormatContext formatContext;
     AVFormatContext* fCtxPtr = formatContext.get();
 
@@ -139,14 +151,14 @@ inline auto extractCover(cstr path) -> result<vector<u8>, string> {
 
     errorCode = avformat_open_input(&fCtxPtr, path, nullptr, nullptr);
     if (errorCode < 0) {
-        return err(FFmpegError(errorCode));
+        return err(FFMPEG_ERROR(errorCode));
     }
 
     formatContext.reset(fCtxPtr);
     errorCode = avformat_find_stream_info(fCtxPtr, nullptr);
 
     if (errorCode < 0) {
-        return err(FFmpegError(errorCode));
+        return err(FFMPEG_ERROR(errorCode));
     }
 
     errorCode =
@@ -163,7 +175,7 @@ inline auto extractCover(cstr path) -> result<vector<u8>, string> {
         );
 
         if (errorCode < 0) {
-            return err(FFmpegError(errorCode));
+            return err(FFMPEG_ERROR(errorCode));
         }
     }
 

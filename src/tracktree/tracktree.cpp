@@ -2,6 +2,7 @@
 
 #include "enums.hpp"
 #include "extractmetadata.hpp"
+#include "log.hpp"
 #include "musicitem.hpp"
 #include "optionmenu.hpp"
 #include "rapidhasher.hpp"
@@ -281,7 +282,7 @@ void TrackTree::fillTable(const QStringList& paths) {
             const auto extracted = extractMetadata(path);
 
             if (!extracted) {
-                qWarning() << extracted.error();
+                LOG_WARN(extracted.error());
                 continue;
             }
 

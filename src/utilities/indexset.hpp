@@ -41,9 +41,7 @@ class IndexSet {
 
     [[nodiscard]] auto at(const usize index) const -> u32 {
         if (index >= elements.size()) {
-            throw panic(
-                format("Index {} out of range {}", index, elements.size())
-            );
+            return UINT32_MAX;
         }
 
         return elements[index];
@@ -51,7 +49,7 @@ class IndexSet {
 
     [[nodiscard]] auto indexOf(const u32 element) -> usize {
         if (!map.contains(element)) {
-            throw panic("Element not found");
+            return SIZE_MAX;
         }
 
         return map.at(element);

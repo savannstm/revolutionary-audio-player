@@ -637,7 +637,7 @@ void MainWindow::loadSettings() {
                 const auto extracted = extractCover(imagePath.toUtf8().data());
 
                 if (!extracted) {
-                    qWarning() << extracted.error();
+                    LOG_WARN(extracted.error());
                     return;
                 }
 
@@ -1290,11 +1290,11 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     QString path;
 
     if (settings->flags.prioritizeExternalCover) {
-        QDir fileDirectory =
+        const QDir fileDirectory =
             metadata[Path].sliced(0, metadata[Path].lastIndexOf('/'));
-        fileDirectory.setFilter(QDir::Files | QDir::NoDotAndDotDot);
 
-        const QStringList entries = fileDirectory.entryList();
+        const QStringList entries =
+            fileDirectory.entryList(QDir::Files | QDir::NoDotAndDotDot);
 
         for (const QString& entry : entries) {
             const QString extension =
@@ -1320,7 +1320,7 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
         const auto extracted = extractCover(metadata[Path].toUtf8().data());
 
         if (!extracted) {
-            qWarning() << extracted.error();
+            LOG_WARN(extracted.error());
         } else {
             const vector<u8>& coverBytes = extracted.value();
             cover.loadFromData(coverBytes.data(), coverBytes.size());

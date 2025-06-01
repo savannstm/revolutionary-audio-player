@@ -2,6 +2,7 @@
 
 #include "constants.hpp"
 #include "extractmetadata.hpp"
+#include "log.hpp"
 
 #include <QMenu>
 #include <QPixmap>
@@ -36,7 +37,7 @@ void CoverWindow::updateCover(const QString& coverPath) {
     const auto extracted = extractCover(coverPath.toUtf8().constData());
 
     if (!extracted) {
-        qWarning() << extracted.error();
+        LOG_WARN(extracted.error());
         return;
     }
 

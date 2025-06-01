@@ -12,6 +12,12 @@ struct Filter {
 
 AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
     format_.setSampleFormat(QAudioFormat::Float);
+
+#ifdef DEBUG_BUILD
+    av_log_set_level(AV_LOG_VERBOSE);
+#elifdef RELEASE_BUILD
+    av_log_set_level(AV_LOG_QUIET);
+#endif
 }
 
 void AudioStreamer::start(const QString& path) {
@@ -24,7 +30,7 @@ void AudioStreamer::start(const QString& path) {
     i32 err;
     err = avformat_open_input(&fCtxPtr, pathString.c_str(), nullptr, nullptr);
 
-    if (checkErr(err, true, false)) {
+    if (checkError(err, true, false)) {
         return;
     }
 
@@ -33,14 +39,14 @@ void AudioStreamer::start(const QString& path) {
 
     err = avformat_find_stream_info(fCtxPtr, nullptr);
 
-    if (checkErr(err, true, false)) {
+    if (checkError(err, true, false)) {
         return;
     }
 
     const AVCodec* codec;
     err = av_find_best_stream(fCtxPtr, AVMEDIA_TYPE_AUDIO, -1, -1, &codec, 0);
 
-    if (checkErr(err, true, false)) {
+    if (checkError(err, true, false)) {
         return;
     }
 
@@ -54,7 +60,7 @@ void AudioStreamer::start(const QString& path) {
 
     err = avcodec_open2(cCtxPtr, codec, nullptr);
 
-    if (checkErr(err, true, false)) {
+    if (checkError(err, true, false)) {
         return;
     }
 
@@ -102,7 +108,7 @@ void AudioStreamer::start(const QString& path) {
             nullptr
         );
 
-        if (checkErr(err, true, false)) {
+        if (checkError(err, true, false)) {
             return;
         }
 
@@ -180,7 +186,7 @@ void AudioStreamer::initializeFilters() {
 
     filterGraph = createFilterGraph();
     if (filterGraph == nullptr) {
-        qWarning() << "Could not allocate filter graph.";
+        LOG_WARN(u"Could not allocate filter graph."_s);
         filterGraph.reset();
         return;
     }
@@ -194,7 +200,7 @@ void AudioStreamer::initializeFilters() {
         channelLayout.data(),
         CHANNEL_LAYOUT_SIZE
     );
-    if (checkErr(err, false, true)) {
+    if (checkError(err, false, true)) {
         return;
     }
 
@@ -258,7 +264,7 @@ void AudioStreamer::initializeFilters() {
             filterGraph.get()
         );
 
-        if (checkErr(err, false, true)) {
+        if (checkError(err, false, true)) {
             return;
         }
     }
@@ -272,14 +278,14 @@ void AudioStreamer::initializeFilters() {
             0
         );
 
-        if (checkErr(err, false, true)) {
+        if (checkError(err, false, true)) {
             return;
         }
     }
 
     // Check the validity of filter graph
     err = avfilter_graph_config(filterGraph.get(), nullptr);
-    if (checkErr(err, false, true)) {
+    if (checkError(err, false, true)) {
         return;
     }
 }
@@ -315,14 +321,14 @@ void AudioStreamer::equalizeFrame() {
     }
 
     i32 err = av_buffersrc_add_frame(abufferContext, frame.get());
-    if (checkErr(err, false, false)) {
+    if (checkError(err, false, false)) {
         return;
     }
 
     AVFrame* filteredFrame = av_frame_alloc();
     err = av_buffersink_get_frame(abuffersinkContext, filteredFrame);
 
-    if (checkErr(err, false, false)) {
+    if (checkError(err, false, false)) {
         av_frame_free(&filteredFrame);
         return;
     }
@@ -394,7 +400,7 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
             break;
         }
         default:
-            qWarning() << "Unsupported sample size:" << inputSampleSize;
+            LOG_WARN(u"Unsupported sample size: %1"_s.arg(inputSampleSize));
             break;
     }
 
@@ -450,7 +456,7 @@ void AudioStreamer::prepareBuffer() {
     }
 
     buffer.clear();
-    buffer.reserve(as<i32>(MIN_BUFFER_SIZE * 4));
+    buffer.reserve(as<i32>(MIN_BUFFER_SIZE * 2));
 
     while (av_read_frame(formatContext.get(), packet.get()) >= 0) {
         if (packet->stream_index != audioStreamIndex) {
@@ -461,14 +467,14 @@ void AudioStreamer::prepareBuffer() {
         i32 err = avcodec_send_packet(codecContext.get(), packet.get());
         av_packet_unref(packet.get());
 
-        if (checkErr(err, false, false)) {
+        if (checkError(err, false, false)) {
             continue;
         }
 
         while (true) {
             err = avcodec_receive_frame(codecContext.get(), frame.get());
 
-            if (checkErr(err, false, false)) {
+            if (err == AVERROR(EAGAIN) || checkError(err, false, false)) {
                 av_frame_unref(frame.get());
                 break;
             }

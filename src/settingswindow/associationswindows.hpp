@@ -6,8 +6,8 @@
 
 #include "aliases.hpp"
 #include "constants.hpp"
+#include "log.hpp"
 
-#include <QDebug>
 #include <windows.h>
 
 constexpr wstring_view DEFAULT_KEY;
@@ -162,11 +162,8 @@ auto setRegistryValue(
     );
 
     if (result != ERROR_SUCCESS) {
-        qDebug() << format(
-            L"Failed to open/create registry entry: {}. Error: {}",
-            entry,
-            result
-        );
+        LOG_ERROR(u"Failed to open/create registry entry: %1. Error: %2"_s
+                      .arg(entry, result));
         return false;
     }
 
@@ -182,10 +179,8 @@ auto setRegistryValue(
     RegCloseKey(hKey);
 
     if (result != ERROR_SUCCESS) {
-        qDebug() << format(
-            L"Failed to set value for entry: {}. Error: {}",
-            entry,
-            result
+        LOG_ERROR(
+            u"Failed to set value for entry: %1. Error: %2"_s.arg(entry, result)
         );
         return false;
     }
@@ -197,10 +192,8 @@ auto removeRegistryEntry(HKEY root, const wstring_view entry) -> bool {
     const i32 result = RegDeleteTreeW(root, entry.data());
 
     if (result != ERROR_SUCCESS && result != ERROR_FILE_NOT_FOUND) {
-        qDebug() << format(
-            L"Failed to delete registry key: {}. Error: {}",
-            entry,
-            result
+        LOG_ERROR(
+            u"Failed to delete registry key: %1. Error: %2"_s.arg(entry, result)
         );
         return false;
     }
