@@ -1333,6 +1333,7 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
         playlistView->setBackgroundImage(playingPlaylist, image, path);
     }
 
+    dockCoverLabel->clear();
     dockCoverLabel->setPixmap(cover);
 }
 
