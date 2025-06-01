@@ -2,10 +2,15 @@
 
 ## v0.6.0
 
--   Implemented simple peak visualizer.
+-   Implemented simple peak visualizer with presets.
 -   When no track is selected and play button is pressed, the first track in the tree will be played now.
 -   Fixed issues with adding files due to possible extension mismatches.
 -   Removed retranslation of the version element in about window, which caused it to disappear.
+-   When opening/dropping folders in the program, it correctly creates tab with these folders' names, instead of theirs parents names.
+-   Added `rap.log` file, where some logs of the program is output.
+-   Maybe improved the performance of playback and opening files in the table.
+-   Fixed problems when deleting tabs to the left of the selected, and made tab removal even less error-prone.
+-   Fixed not removing the old cover from the dock widget when switching to a new track that has no cover.
 
 ## v0.5.1
 
