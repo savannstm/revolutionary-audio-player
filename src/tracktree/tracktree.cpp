@@ -247,24 +247,30 @@ void TrackTree::sortByPath() {
 void TrackTree::fillTable(const QStringList& paths) {
     QThreadPool::globalInstance()->start([=, this] {
         for (const QString& path : paths) {
-            QFileInfo info(path);
+            const QFileInfo info = QFileInfo(path);
+
+            if (info.isFile() && !ranges::contains(
+                                     ALLOWED_FILE_EXTENSIONS,
+                                     info.suffix().toLower()
+                                 )) {
+                continue;
+            }
 
             if (info.isDir()) {
-                QDirIterator iterator(
-                    path,
-                    QDir::Files | QDir::NoDotAndDotDot,
-                    QDirIterator::Subdirectories
+                const QDir dir = QDir(path);
+                const QStringList entries = dir.entryList(
+                    QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot
                 );
 
-                QStringList filePaths;
-                filePaths.reserve(MINIMUM_TRACK_COUNT);
+                const auto pathsView =
+                    views::transform(entries, [&](const QString& entry) {
+                    return dir.absoluteFilePath(entry);
+                });
 
-                while (iterator.hasNext()) {
-                    iterator.next();
-                    filePaths.append(iterator.fileInfo().filePath());
-                }
+                const QStringList paths =
+                    QStringList(pathsView.begin(), pathsView.end());
 
-                fillTable(filePaths);
+                fillTable(paths);
                 continue;
             }
 
