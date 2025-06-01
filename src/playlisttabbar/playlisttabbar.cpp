@@ -93,20 +93,6 @@ void PlaylistTabBar::removeTab(const u8 index) {
     PlaylistTab* tab = tabs.takeAt(index);
     tabContainerLayout->removeWidget(tab);
     delete tab;
-
-    if (previousIndex >= index) {
-        previousIndex--;
-    }
-
-    i8 nextIndex = currentIndex_;
-
-    if (currentIndex_ == 0 && tabCount() != 0) {
-        nextIndex = 0;
-    } else if (currentIndex_ >= index) {
-        nextIndex = as<i8>(currentIndex_ - 1);
-    }
-
-    setCurrentIndex(nextIndex);
 }
 
 void PlaylistTabBar::setCurrentIndex(const i8 index) {
@@ -124,10 +110,6 @@ void PlaylistTabBar::setCurrentIndex(const i8 index) {
     currentIndex_ = index;
     previousIndex = index;
     tabs[index]->setChecked(true);
-}
-
-auto PlaylistTabBar::currentIndex() const -> i8 {
-    return currentIndex_;
 }
 
 auto PlaylistTabBar::tabCount() const -> u8 {
@@ -150,18 +132,24 @@ void PlaylistTabBar::setTabLabel(const u8 index, const QString& label) {
     tabs[index]->setLabel(label);
 }
 
-void PlaylistTabBar::removeTabs(const TabRemoveMode mode, const u8 index) {
+void PlaylistTabBar::removeTabs(const TabRemoveMode mode, const u8 startIndex) {
     if (mode != Single && tabCount() == 1) {
         return;
     }
 
+    i8 newIndex = currentIndex_;
+
     switch (mode) {
         case Single:
-            removeTab(index);
+            removeTab(startIndex);
+
+            if ((newIndex != 0 || startIndex != 0) && newIndex >= startIndex) {
+                newIndex -= 1;
+            }
             break;
         case Other:
         case ToRight:
-            for (i8 i = as<i8>(tabCount() - 1); i > index; i--) {
+            for (i8 i = as<i8>(tabCount() - 1); i > startIndex; i--) {
                 removeTab(i);
             }
 
@@ -169,13 +157,18 @@ void PlaylistTabBar::removeTabs(const TabRemoveMode mode, const u8 index) {
                 break;
             }
         case ToLeft:
-            for (i8 i = as<i8>(index - 1); i >= 0; i--) {
+            for (i8 i = as<i8>(startIndex - 1); i >= 0; i--) {
+                if (i < newIndex) {
+                    newIndex -= 1;
+                }
+
                 removeTab(i);
             }
             break;
     }
 
-    emit tabsRemoved(mode, index);
+    setCurrentIndex(newIndex);
+    emit tabsRemoved(mode, startIndex);
 }
 
 void PlaylistTabBar::dropEvent(QDropEvent* event) {

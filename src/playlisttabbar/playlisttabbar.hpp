@@ -19,7 +19,11 @@ class PlaylistTabBar : public QWidget {
     void insertTab(u8 index, QString label, bool closable);
     void removeTab(u8 index);
     void setCurrentIndex(i8 index);
-    [[nodiscard]] auto currentIndex() const -> i8;
+
+    [[nodiscard]] constexpr auto currentIndex() const -> i8 {
+        return currentIndex_;
+    }
+
     [[nodiscard]] auto tabCount() const -> u8;
     [[nodiscard]] auto tabLabel(u8 index) const -> QString;
     void setTabLabel(u8 index, const QString& label);

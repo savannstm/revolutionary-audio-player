@@ -51,8 +51,8 @@ class PlaylistView : public QWidget {
     void removeBackgroundImage(u8 index) const;
     [[nodiscard]] auto backgroundImagePath(u8 index) const -> QString;
     [[nodiscard]] auto hasBackgroundImage(u8 index) const -> bool;
-    void removeTabPages(TabRemoveMode mode, u8 index);
-    void removeTabPage(u8 index);
+    void removePages(TabRemoveMode mode, u8 index);
+    void removePage(u8 index);
 
     constexpr auto tabBar() -> PlaylistTabBar* { return tabBar_; }
 
@@ -60,7 +60,7 @@ class PlaylistView : public QWidget {
     void renameTabRequested(u8 index);
     void closeTabRequested(u8 index);
     void indexChanged(i8 index);
-    void tabsRemoved(TabRemoveMode mode, u8 index, u8 count);
+    void tabsRemoved(TabRemoveMode mode, u8 startIndex, u8 count);
 
    private:
     void changePage(i8 index);

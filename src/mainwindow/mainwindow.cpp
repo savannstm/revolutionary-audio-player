@@ -239,11 +239,21 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
         playlistView,
         &PlaylistView::tabsRemoved,
         this,
-        [&](const TabRemoveMode mode, const u8 index, const u8 count)  // NOLINT
-    {
-        if (playingPlaylist >= index) {
-            playingPlaylist = as<i8>(playingPlaylist - count);
-            changePlaylist(playingPlaylist);
+        [&](const TabRemoveMode mode, const u8 startIndex, const u8 count) {
+        if (playingPlaylist == 0 || playingPlaylist < startIndex) {
+            return;
+        }
+
+        switch (mode) {
+            case Single:
+                playingPlaylist -= 1;
+                break;
+            case ToLeft:
+            case Other:
+                playingPlaylist = as<i8>(playingPlaylist - count);
+                break;
+            default:
+                break;
         }
     }
     );
