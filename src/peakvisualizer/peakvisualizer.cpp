@@ -34,7 +34,19 @@ PeakVisualizer::PeakVisualizer(QWidget* parent) : QWidget(parent) {
         auto* presetMenu = new QMenu(menu);
         presetMenu->setTitle(tr("Presets"));
 
-        for (const u16 preset : range(1, QGradient::Preset::NumPresets)) {
+        constexpr auto unfilteredPresetRange =
+            range(1, QGradient::Preset::NumPresets);
+
+        // For some idiotic reasons, those indices aren't in Preset enum
+        auto filteredPresetRange =
+            views::filter(unfilteredPresetRange, [](const u16 preset) {
+            return !ranges::contains(
+                array{ 39, 40, 74, 141, 130, 135, 119, 71, 27 },
+                preset
+            );
+        });
+
+        for (const u16 preset : filteredPresetRange) {
             QAction* action = presetMenu->addAction(QString::number(preset));
             action->setCheckable(true);
 
