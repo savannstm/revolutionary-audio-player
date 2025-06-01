@@ -47,7 +47,7 @@ class AudioStreamer : public QIODevice {
 
     constexpr void setGain(const i8 dbGain, const u8 band) {
         gains_[band] = dbGain;
-        changedBands[band] = true;
+        changedBands = true;
     };
 
     [[nodiscard]] constexpr auto gain(const u8 band) const -> i8 {
@@ -139,15 +139,15 @@ class AudioStreamer : public QIODevice {
     QAudioFormat format_;
 
     u32 nextBufferSize = 0;
-    i8 audioStreamIndex = 0;
+    u8 audioStreamIndex = 0;
     u16 secondsDuration = 0;
     u16 playbackSecond = 0;
 
     // For raw formats
     u8 inputSampleSize = 0;
     u32 totalBytesRead = 0;
-    u32 byterate = 0;
-    i32 minBufferSize = MIN_BUFFER_SIZE;
+    u32 fileKbps = 0;
+    u32 minBufferSize = MIN_BUFFER_SIZE;
 
     string_view formatName;
 
@@ -156,8 +156,6 @@ class AudioStreamer : public QIODevice {
     FrequencyArray frequencies_;
     GainArray gains_;
 
-    array<bool, MAX_BANDS_COUNT> changedBands;
-
+    bool changedBands = false;
     bool equalizerEnabled_ = false;
-    bool bandCountChanged = false;
 };

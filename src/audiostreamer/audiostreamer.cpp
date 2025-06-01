@@ -44,7 +44,7 @@ void AudioStreamer::start(const QString& path) {
         return;
     }
 
-    audioStreamIndex = as<i8>(err);
+    audioStreamIndex = as<u8>(err);
 
     const AVStream* audioStream = fCtxPtr->streams[audioStreamIndex];
     codecContext = createCodecContext(codec);
@@ -58,7 +58,7 @@ void AudioStreamer::start(const QString& path) {
         return;
     }
 
-    const AVChannelLayout channelLayout = codecContext->ch_layout;
+    const AVChannelLayout& channelLayout = codecContext->ch_layout;
     const u8 channelCount = codecContext->ch_layout.nb_channels;
     const u16 sampleRate = codecContext->sample_rate;
 
@@ -80,7 +80,7 @@ void AudioStreamer::start(const QString& path) {
                 : av_get_bytes_per_sample(codecContext->sample_fmt);
         minBufferSize =
             formatName.contains("24") ? MIN_BUFFER_SIZE_I24 : MIN_BUFFER_SIZE;
-        byterate = sampleRate * channelCount * inputSampleSize;
+        fileKbps = sampleRate * channelCount * inputSampleSize;
     } else {
         // We only need packets and frames when decoding the encoded data
         packet = createPacket();
@@ -135,7 +135,6 @@ auto AudioStreamer::processFrame() -> bool {
         frame->nb_samples * F32_SAMPLE_SIZE * frame->ch_layout.nb_channels;
 
     buffer.append(ras<cstr>(frame->data[0]), bufferSize);
-
     nextBufferSize = buffer.size();
     return nextBufferSize >= minBufferSize;
 }
@@ -164,7 +163,7 @@ void AudioStreamer::initializeFilters() {
     // We don't ever need to rebuild the filters, equalizer's gains are adjusted
     // through the command, if they need to be changed
     if (!equalizerEnabled_ || filterGraph != nullptr) {
-        if ((bandCountChanged || ranges::contains(changedBands, true))) {
+        if (changedBands) {
             avfilter_graph_send_command(
                 filterGraph.get(),
                 "equalizer",
@@ -174,9 +173,6 @@ void AudioStreamer::initializeFilters() {
                 0,
                 0
             );
-
-            changedBands.fill(false);
-            bandCountChanged = false;
         }
 
         return;
@@ -343,15 +339,17 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
     const u32 sampleCount = bytesRead / inputSampleSize;
     const u32 floatBufferSize = sampleCount * F32_SAMPLE_SIZE;
 
-    vector<f32> outBuffer(floatBufferSize);
-    f32* out = outBuffer.data();
+    vector<f32> outBuffer;
+    outBuffer.reserve(floatBufferSize);
 
     switch (inputSampleSize) {
         case sizeof(i8): {
             const i8* samples = ras<const i8*>(buffer.constData());
 
             for (const u32 sample : range(0, sampleCount)) {
-                out[sample] = as<f32>(samples[sample]) / (INT8_MAX + 1.0F);
+                outBuffer.emplace_back(
+                    as<f32>(samples[sample]) / (INT8_MAX + 1.0F)
+                );
             }
             break;
         }
@@ -359,7 +357,9 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
             const i16* samples = ras<const i16*>(buffer.constData());
 
             for (const u32 sample : range(0, sampleCount)) {
-                out[sample] = as<f32>(samples[sample]) / (INT16_MAX + 1.0F);
+                outBuffer.emplace_back(
+                    as<f32>(samples[sample]) / (INT16_MAX + 1.0F)
+                );
             }
             break;
         }
@@ -379,7 +379,7 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
                     value |= ~UINT24_MAX;
                 }
 
-                out[sample] = as<f32>(value) / (INT24_MAX + 1.0F);
+                outBuffer.emplace_back(as<f32>(value) / (INT24_MAX + 1.0F));
             }
             break;
         }
@@ -387,7 +387,9 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
             const i32* samples = ras<const i32*>(buffer.constData());
 
             for (const u32 sample : range(0, sampleCount)) {
-                out[sample] = as<f32>(samples[sample]) / as<f32>(INT32_MAX);
+                outBuffer.emplace_back(
+                    as<f32>(samples[sample]) / as<f32>(INT32_MAX)
+                );
             }
             break;
         }
@@ -397,7 +399,7 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
     }
 
     buffer.resize(floatBufferSize);
-    memcpy(buffer.data(), out, floatBufferSize);
+    memcpy(buffer.data(), outBuffer.data(), floatBufferSize);
 }
 
 void AudioStreamer::convertFrame() {
@@ -415,14 +417,17 @@ void AudioStreamer::convertFrame() {
 }
 
 void AudioStreamer::decodeRaw() {
-    buffer.resize(minBufferSize);
-
     if (avio_feof(formatContext->pb) != 0) {
         return;
     }
 
-    const i32 bytesRead =
-        avio_read(formatContext->pb, ras<u8*>(buffer.data()), minBufferSize);
+    buffer.resize(minBufferSize);
+
+    const i32 bytesRead = avio_read(
+        formatContext->pb,
+        ras<u8*>(buffer.data()),
+        as<i32>(minBufferSize)
+    );
 
     if (bytesRead <= 0) {
         return;
@@ -432,18 +437,20 @@ void AudioStreamer::decodeRaw() {
     equalizeBuffer();
 
     totalBytesRead += bytesRead;
-    playbackSecond = totalBytesRead / byterate;
+    playbackSecond = totalBytesRead / fileKbps;
     nextBufferSize = buffer.size();
 }
 
 void AudioStreamer::prepareBuffer() {
     nextBufferSize = 0;
-    buffer.clear();
 
     if (formatName.starts_with("pcm")) {
         decodeRaw();
         return;
     }
+
+    buffer.clear();
+    buffer.reserve(as<i32>(MIN_BUFFER_SIZE * 4));
 
     while (av_read_frame(formatContext.get(), packet.get()) >= 0) {
         if (packet->stream_index != audioStreamIndex) {
@@ -510,7 +517,7 @@ auto AudioStreamer::reset() -> bool {
 
     totalBytesRead = 0;
     inputSampleSize = 0;
-    byterate = 0;
+    fileKbps = 0;
 
     formatName = "";
 
@@ -590,6 +597,4 @@ void AudioStreamer::setBandCount(const u8 bands) {
     }
 
     gains_.fill(0);
-    changedBands.fill(false);
-    bandCountChanged = true;
 }

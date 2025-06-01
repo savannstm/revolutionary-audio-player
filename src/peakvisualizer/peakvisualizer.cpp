@@ -75,16 +75,18 @@ void PeakVisualizer::processSamples(
         return;
     }
 
-    // Measure the sample count and copy samples into f32 vector
+    // Measure the sample count
     const u16 sampleCount = byteSamples.size() / F32_SAMPLE_SIZE;
-    vector<f32> samples = vector<f32>(sampleCount);
-    memcpy(samples.data(), byteSamples.constData(), byteSamples.size());
 
     // Compute size that is any power of 2
     const i32 fftSize = 1 << as<i32>(log2f(sampleCount));
 
     // Compute the scale
     const f32 fftScale = 1.0F / as<f32>(fftSize);
+
+    // Copy only those samples, that will be used in FFT
+    vector<f32> samples = vector<f32>(fftSize);
+    memcpy(samples.data(), byteSamples.constData(), fftSize);
 
     FFmpeg::TXContext fftCtx;
     AVTXContext* fftCtxPtr = nullptr;
