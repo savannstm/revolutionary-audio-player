@@ -18,12 +18,12 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
         LR"(Software\Classes\.opus)", LR"(Software\Classes\.aac)",
         LR"(Software\Classes\.wav)",  LR"(Software\Classes\.ogg)",
         LR"(Software\Classes\.m4a)",  LR"(Software\Classes\.mka)",
-        LR"(Software\Classes\.alac)",
+        LR"(Software\Classes\.alac)", LR"(Software\Classes\.ac3)",
     };
 
 constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> PROG_IDS = {
-    L"rap.mp3", L"rap.flac", L"rap.opus", L"rap.aac", L"rap.wav",
-    L"rap.ogg", L"rap.m4a",  L"rap.mka",  L"rap.alac"
+    L"rap.mp3", L"rap.flac", L"rap.opus", L"rap.aac",  L"rap.wav",
+    L"rap.ogg", L"rap.m4a",  L"rap.mka",  L"rap.alac", L"rap.ac3"
 };
 
 constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
@@ -32,7 +32,7 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
         LR"(Software\Classes\rap.opus)", LR"(Software\Classes\rap.aac)",
         LR"(Software\Classes\rap.wav)",  LR"(Software\Classes\rap.ogg)",
         LR"(Software\Classes\rap.m4a)",  LR"(Software\Classes\rap.mka)",
-        LR"(Software\Classes\rap.alac)",
+        LR"(Software\Classes\rap.alac)", LR"(Software\Classes\rap.ac3)",
     };
 
 constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
@@ -46,6 +46,7 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
         LR"(Software\Classes\rap.m4a\DefaultIcon)",
         LR"(Software\Classes\rap.mka\DefaultIcon)",
         LR"(Software\Classes\rap.alac\DefaultIcon)",
+        LR"(Software\Classes\rap.ac3\DefaultIcon)",
     };
 
 constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
@@ -59,6 +60,7 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
         LR"(Software\Classes\rap.m4a\shell)",
         LR"(Software\Classes\rap.mka\shell)",
         LR"(Software\Classes\rap.alac\shell)",
+        LR"(Software\Classes\rap.ac3\shell)",
     };
 
 constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
@@ -72,6 +74,7 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
         LR"(Software\Classes\rap.m4a\shell\open)",
         LR"(Software\Classes\rap.mka\shell\open)",
         LR"(Software\Classes\rap.alac\shell\open)",
+        LR"(Software\Classes\rap.ac3\shell\open)",
     };
 
 constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
@@ -85,6 +88,7 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
         LR"(Software\Classes\rap.m4a\shell\open\command)",
         LR"(Software\Classes\rap.mka\shell\open\command)",
         LR"(Software\Classes\rap.alac\shell\open\command)",
+        LR"(Software\Classes\rap.ac3\shell\open\command)",
     };
 
 constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_ENTRIES = {
@@ -96,7 +100,8 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_ENTR
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ogg\UserChoiceLatest)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m4a\UserChoiceLatest)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mka\UserChoiceLatest)",
-    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest)"
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ac3\UserChoiceLatest)",
 };
 
 constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_PROGIDS = {
@@ -108,7 +113,8 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_PROG
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ogg\UserChoiceLatest\ProgId)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m4a\UserChoiceLatest\ProgId)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mka\UserChoiceLatest\ProgId)",
-    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\ProgId)"
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\ProgId)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ac3\UserChoiceLatest\ProgId)",
 };
 
 constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_OPEN_WITH_LIST_ENTRIES = {
@@ -120,26 +126,55 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_OPEN
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ogg\UserChoiceLatest\OpenWithList)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m4a\UserChoiceLatest\OpenWithList)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mka\UserChoiceLatest\OpenWithList)",
-    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\OpenWithList)"
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\OpenWithList)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ac3\UserChoiceLatest\OpenWithList)",
 };
 
-constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
-    EXPLORER_OPEN_WITH_PROGIDS_ENTRIES = {
-        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mp3\UserChoiceLatest\OpenWithProgids)",
-        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.flac\UserChoiceLatest\OpenWithProgids)",
-        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.opus\UserChoiceLatest\OpenWithProgids)",
-        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.aac\UserChoiceLatest\OpenWithProgids)",
-        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.wav\UserChoiceLatest\OpenWithProgids)",
-        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ogg\UserChoiceLatest\OpenWithProgids)",
-        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m4a\UserChoiceLatest\OpenWithProgids)",
-        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mka\UserChoiceLatest\OpenWithProgids)",
-        LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\OpenWithProgids)"
-    };
+constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_OPEN_WITH_PROGIDS_ENTRIES = {
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mp3\UserChoiceLatest\OpenWithProgids)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.flac\UserChoiceLatest\OpenWithProgids)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.opus\UserChoiceLatest\OpenWithProgids)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.aac\UserChoiceLatest\OpenWithProgids)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.wav\UserChoiceLatest\OpenWithProgids)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ogg\UserChoiceLatest\OpenWithProgids)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m4a\UserChoiceLatest\OpenWithProgids)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mka\UserChoiceLatest\OpenWithProgids)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\OpenWithProgids)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ac3\UserChoiceLatest\OpenWithProgids)",
+};
 
 constexpr wstring_view SHELL_ENTRY =
     LR"(Software\Classes\Directory\shell\Open directory in RAP)";
 constexpr wstring_view SHELL_ENTRY_COMMAND =
     LR"(Software\Classes\Directory\shell\Open directory in RAP\command)";
+
+constexpr auto arrayMissingEntry(
+    const array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>& arr
+) -> bool {
+    return ranges::any_of(arr, &wstring_view::empty);
+}
+
+constexpr auto arraysMissingEntry() -> bool {
+    constexpr array<
+        array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>,
+        11>
+        arr = { EXTENSION_ENTRIES,
+                PROG_IDS,
+                PROG_ID_ENTRIES,
+                ICON_ENTRIES,
+                SHELL_ENTRIES,
+                SHELL_OPEN_ENTRIES,
+                SHELL_COMMAND_ENTRIES,
+                EXPLORER_ENTRIES,
+                EXPLORER_PROGIDS,
+                EXPLORER_OPEN_WITH_LIST_ENTRIES,
+                EXPLORER_OPEN_WITH_PROGIDS_ENTRIES };
+
+    return ranges::any_of(arr, &arrayMissingEntry);
+}
+
+// Quick hack to check if some extensions were forgotten
+static_assert(!arraysMissingEntry(), "Array missing entry!");
 
 auto setRegistryValue(
     const HKEY root,
@@ -148,7 +183,7 @@ auto setRegistryValue(
     const wstring_view value,
     const u32 type
 ) -> bool {
-    HKEY hKey;
+    HKEY hkey;
     i32 result = RegCreateKeyExW(
         root,
         entry.data(),
@@ -157,18 +192,19 @@ auto setRegistryValue(
         REG_OPTION_NON_VOLATILE,
         KEY_SET_VALUE,
         nullptr,
-        &hKey,
+        &hkey,
         nullptr
     );
 
     if (result != ERROR_SUCCESS) {
         LOG_ERROR(u"Failed to open/create registry entry: %1. Error: %2"_s
-                      .arg(entry, result));
+                      .arg(entry)
+                      .arg(result));
         return false;
     }
 
     result = RegSetValueExW(
-        hKey,
+        hkey,
         key.data(),
         0,
         type,
@@ -176,12 +212,11 @@ auto setRegistryValue(
         (value.size() + 1) * sizeof(wchar)
     );
 
-    RegCloseKey(hKey);
+    RegCloseKey(hkey);
 
     if (result != ERROR_SUCCESS) {
-        LOG_ERROR(
-            u"Failed to set value for entry: %1. Error: %2"_s.arg(entry, result)
-        );
+        LOG_ERROR(u"Failed to set value for entry: %1. Error: %2"_s.arg(entry)
+                      .arg(result));
         return false;
     }
 
@@ -192,9 +227,8 @@ auto removeRegistryEntry(HKEY root, const wstring_view entry) -> bool {
     const i32 result = RegDeleteTreeW(root, entry.data());
 
     if (result != ERROR_SUCCESS && result != ERROR_FILE_NOT_FOUND) {
-        LOG_ERROR(
-            u"Failed to delete registry key: %1. Error: %2"_s.arg(entry, result)
-        );
+        LOG_ERROR(u"Failed to delete registry key: %1. Error: %2"_s.arg(entry)
+                      .arg(result));
         return false;
     }
 
