@@ -1,13 +1,13 @@
 #include "peakvisualizer.hpp"
 
 #include "enums.hpp"
-#include "ffmpeg.hpp"
 
 #include <QMenu>
 #include <QPainter>
 
 constexpr u8 VISUALIZER_WIDTH = 128;
 constexpr u8 PEAK_PADDING = 4;
+constexpr u16 MIN_SAMPLE_COUNT = 512;
 
 PeakVisualizer::PeakVisualizer(QWidget* parent) : QWidget(parent) {
     setFixedWidth(VISUALIZER_WIDTH);
@@ -37,13 +37,13 @@ PeakVisualizer::PeakVisualizer(QWidget* parent) : QWidget(parent) {
         constexpr auto unfilteredPresetRange =
             range(1, QGradient::Preset::NumPresets);
 
+        constexpr array<u16, 9> missingPresets = { 39,  40,  74, 141, 130,
+                                                   135, 119, 71, 27 };
+
         // For some idiotic reasons, those indices aren't in Preset enum
         auto filteredPresetRange =
-            views::filter(unfilteredPresetRange, [](const u16 preset) {
-            return !ranges::contains(
-                array{ 39, 40, 74, 141, 130, 135, 119, 71, 27 },
-                preset
-            );
+            views::filter(unfilteredPresetRange, [&](const u16 preset) {
+            return !ranges::contains(missingPresets, preset);
         });
 
         for (const u16 preset : filteredPresetRange) {
@@ -90,28 +90,50 @@ void PeakVisualizer::processSamples(
     // Measure the sample count
     const u16 sampleCount = byteSamples.size() / F32_SAMPLE_SIZE;
 
-    // Compute size that is any power of 2
-    const i32 fftSize = 1 << as<i32>(log2f(sampleCount));
+    // Inners of FFmpeg's FFT don't allow sizes less than 512
+    if (sampleCount < MIN_SAMPLE_COUNT) {
+        return;
+    }
 
-    // Compute the scale
-    const f32 fftScale = 1.0F / as<f32>(fftSize);
+    // Compute size that is any power of 2
+    const u16 fftSampleCount = as<u16>(1 << as<u16>(log2f(sampleCount)));
 
     // Copy only those samples, that will be used in FFT
-    vector<f32> samples = vector<f32>(fftSize);
-    memcpy(samples.data(), byteSamples.constData(), fftSize);
+    vector<f32> samples = vector<f32>(fftSampleCount);
+    memcpy(
+        samples.data(),
+        byteSamples.constData(),
+        as<i32>(fftSampleCount * F32_SAMPLE_SIZE)
+    );
 
-    FFmpeg::TXContext fftCtx;
     AVTXContext* fftCtxPtr = nullptr;
-    av_tx_fn fft = nullptr;
 
-    av_tx_init(&fftCtxPtr, &fft, AV_TX_FLOAT_RDFT, 0, fftSize, &fftScale, 0);
-    fftCtx.reset(fftCtxPtr);
+    if (fftSampleCount != lastFFTSampleCount) {
+        fftScale = 1.0F / as<f32>(fftSampleCount);
 
-    vector<AVComplexFloat> output = vector<AVComplexFloat>((fftSize / 2) + 1);
+        av_tx_init(
+            &fftCtxPtr,
+            &fft,
+            AV_TX_FLOAT_RDFT,
+            0,
+            fftSampleCount,
+            &fftScale,
+            0
+        );
+
+        fftCtx.reset(fftCtxPtr);
+        fftOutputSampleCount = (fftSampleCount / 2) + 1;
+        lastFFTSampleCount = fftSampleCount;
+    }
+
+    vector<AVComplexFloat> output =
+        vector<AVComplexFloat>(fftOutputSampleCount);
+
     fft(fftCtx.get(), output.data(), samples.data(), F32_SAMPLE_SIZE);
 
-    vector<u16> bandIndices = getBandIndices(sampleRate, fftSize);
-    ranges::fill(peaks, 0);
+    const array<u16, TEN_BANDS> bandIndices =
+        getBandIndices(sampleRate, fftSampleCount);
+    peaks.fill(0);
 
     for (const u8 band : range(0, TEN_BANDS)) {
         const u16 start = band == 0 ? 0 : bandIndices[band - 1];
@@ -134,14 +156,13 @@ void PeakVisualizer::processSamples(
 }
 
 auto PeakVisualizer::getBandIndices(const u16 sampleRate, const u16 fftSize)
-    -> vector<u16> {
-    vector<u16> indices;
-    indices.reserve(TEN_BANDS);
+    -> array<u16, TEN_BANDS> {
+    array<u16, TEN_BANDS> indices;
 
-    for (const f32 frequency : TEN_BAND_FREQUENCIES) {
+    for (const auto [idx, frequency] : views::enumerate(TEN_BAND_FREQUENCIES)) {
         const i32 index =
             as<i32>((frequency / as<f32>(sampleRate)) * as<f32>(fftSize));
-        indices.emplace_back(min(index, fftSize / 2));
+        indices[idx] = min(index, fftSize / 2);
     }
 
     return indices;
@@ -192,6 +213,6 @@ void PeakVisualizer::paintEvent(QPaintEvent* /* event */) {
 }
 
 void PeakVisualizer::reset() {
-    ranges::fill(peaks, 0);
+    peaks.fill(0);
     update();
 }

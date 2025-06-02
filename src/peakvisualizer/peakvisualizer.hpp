@@ -2,6 +2,7 @@
 
 #include "aliases.hpp"
 #include "constants.hpp"
+#include "ffmpeg.hpp"
 #include "settings.hpp"
 
 #include <QWidget>
@@ -40,9 +41,16 @@ class PeakVisualizer : public QWidget {
 
    private:
     [[nodiscard]] static inline auto getBandIndices(u16 sampleRate, u16 fftSize)
-        -> vector<u16>;
+        -> array<u16, TEN_BANDS>;
 
-    vector<f32> peaks = vector<f32>(TEN_BANDS);
+    FFmpeg::TXContext fftCtx;
+    av_tx_fn fft = nullptr;
+
+    f32 fftScale = 0;
+    u16 lastFFTSampleCount = 0;
+    u16 fftOutputSampleCount = 0;
+
+    array<f32, TEN_BANDS> peaks;
     PeakVisualizerMode mode = DBFS;
     QGradient gradient = QGradient(QGradient::MorpheusDen);
     QGradient::Preset gradientPreset = QGradient::MorpheusDen;
