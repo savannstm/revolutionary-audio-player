@@ -235,10 +235,8 @@ auto removeRegistryEntry(HKEY root, const wstring_view entry) -> bool {
     return true;
 }
 
-void createFileAssociationsOS(
-    const QString& appPath_,
-    const QString& iconPath_
-) {
+inline void
+createFileAssociationsOS(const QString& appPath_, const QString& iconPath_) {
     const wstring_view appPath = { ras<wcstr>(appPath_.utf16()),
                                    as<usize>(appPath_.size()) };
 
@@ -363,7 +361,7 @@ void createFileAssociationsOS(
     }
 }
 
-void removeFileAssociationsOS() {
+inline void removeFileAssociationsOS() {
     for (const u8 idx : range(0, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT)) {
         const wstring_view extensionEntry = EXTENSION_ENTRIES[idx];
         const wstring_view progIdEntry = PROG_ID_ENTRIES[idx];
@@ -381,7 +379,7 @@ void removeFileAssociationsOS() {
     }
 }
 
-void createContextMenuEntryOS(const QString& appPath_) {
+inline void createContextMenuEntryOS(const QString& appPath_) {
     const wstring_view appPath = { ras<wcstr>(appPath_.utf16()),
                                    as<usize>(appPath_.size()) };
 
@@ -414,7 +412,7 @@ void createContextMenuEntryOS(const QString& appPath_) {
     );
 }
 
-void removeContextMenuEntryOS() {
+inline void removeContextMenuEntryOS() {
     removeRegistryEntry(HKEY_CURRENT_USER, SHELL_ENTRY);
 }
 

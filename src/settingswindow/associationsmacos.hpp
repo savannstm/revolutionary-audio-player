@@ -2,12 +2,15 @@
 
 #include <QString>
 
-// TODO
+// TODO: I have no interest in ever supporting MacOS and figuring out how
+// everything works there, so this file will be left unimplemented until some
+// contributor that will implement it appears
 
-void createFileAssociationsOS(const QString& appPath, QString iconPath) {}
+inline void
+createFileAssociationsOS(const QString& appPath, const QString& iconPath) {}
 
-void createContextMenuEntryOS(const QString& appPath_) {}
+inline void createContextMenuEntryOS(const QString& appPath_) {}
 
-void removeContextMenuEntryOS() {}
+inline void removeContextMenuEntryOS() {}
 
-void removeFileAssociationsOS() {}
+inline void removeFileAssociationsOS() {}
