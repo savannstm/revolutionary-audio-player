@@ -1262,7 +1262,7 @@ auto MainWindow::changePlaylist(const i8 index) -> bool {
         return false;
     }
 
-    if (index > playlistView->tabCount()) {
+    if (index > playlistView->tabCount() - 1) {
         return false;
     }
 
