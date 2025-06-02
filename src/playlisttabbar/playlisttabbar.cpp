@@ -133,7 +133,8 @@ void PlaylistTabBar::setTabLabel(const u8 index, const QString& label) {
 }
 
 void PlaylistTabBar::removeTabs(const TabRemoveMode mode, const u8 startIndex) {
-    if (mode != Single && tabCount() == 1) {
+    const u8 count = tabCount();
+    if (mode != Single && count == 0) {
         return;
     }
 
@@ -143,13 +144,19 @@ void PlaylistTabBar::removeTabs(const TabRemoveMode mode, const u8 startIndex) {
         case Single:
             removeTab(startIndex);
 
-            if ((newIndex != 0 || startIndex != 0) && newIndex >= startIndex) {
+            if (newIndex == 0) {
+                if (count > 1) {
+                    newIndex = 0;
+                } else {
+                    newIndex -= 1;
+                }
+            } else if (startIndex < newIndex) {
                 newIndex -= 1;
             }
             break;
         case Other:
         case ToRight:
-            for (i8 i = as<i8>(tabCount() - 1); i > startIndex; i--) {
+            for (i8 i = as<i8>(count - 1); i > startIndex; i--) {
                 removeTab(i);
             }
 
