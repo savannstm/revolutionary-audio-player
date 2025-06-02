@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.6.1
+
+-   Fixed panic when deleting the last tab.
+-   Changed behavior of dropping multiple folders to the application's window: now each of them is processed as a separate tab.
+-   When searching a track in a tree, the program doesn't set table's index to the found match and doesn't interrupt playback order.
+-   Fixed missing `.ac3` format association on Windows.
+-   Possibly implemented file associations for Linux.
+-   Fixed random panic related to peak visualizer when playing/switching tracks.
+-   Maybe slightly improved peak visualizer's performance.
+-   Fixed panic when finishing playing the last track in a playlist.
+
 ## v0.6.0
 
 -   Implemented simple peak visualizer with presets.
