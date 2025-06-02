@@ -2,7 +2,6 @@
 
 #include "aboutwindow.hpp"
 #include "aliases.hpp"
-#include "audiostreamer.hpp"
 #include "audioworker.hpp"
 #include "constants.hpp"
 #include "coverwindow.hpp"
@@ -433,7 +432,11 @@ void MainWindow::dropEvent(QDropEvent* event) {
 
     if (event->mimeData()->hasUrls()) {
         const QList<QUrl> urls = event->mimeData()->urls();
-        QStringList paths;
+        QStringList filePaths;
+        filePaths.reserve(urls.size());
+
+        QStringList dirPaths;
+        dirPaths.reserve(urls.size());
 
         for (const QUrl& url : urls) {
             const QString path = url.toLocalFile();
@@ -445,29 +448,45 @@ void MainWindow::dropEvent(QDropEvent* event) {
             const QFileInfo info = QFileInfo(path);
 
             if (info.isDir()) {
-                paths.append(path);
+                dirPaths.append(path);
                 continue;
             }
 
             const QString extension = info.suffix().toLower();
 
             if (ranges::contains(ALLOWED_FILE_EXTENSIONS, extension)) {
-                paths.append(path);
+                filePaths.append(path);
             }
         }
 
-        if (tree == nullptr ||
+        const bool outsideTree =
+            tree == nullptr ||
             !QRect(tree->mapToGlobal(QPoint(0, 0)), tree->size())
-                 .contains(dropPos)) {
-            QFileInfo info = QFileInfo(paths[0]);
-            bool pathIsDir = info.isDir();
+                 .contains(dropPos);
 
-            tree = playlistView->tree(playlistView->addTab(
-                pathIsDir ? info.fileName() : info.dir().dirName()
-            ));
+        if (outsideTree) {
+            for (const QString& dirPath : dirPaths) {
+                const QFileInfo info = QFileInfo(dirPath);
+                auto* newTree =
+                    playlistView->tree(playlistView->addTab(info.fileName()));
+                newTree->fillTable({ dirPath });
+            }
+        } else {
+            for (const QString& dirPath : dirPaths) {
+                tree->fillTable({ dirPath });
+            }
         }
 
-        tree->fillTable(paths);
+        if (!filePaths.isEmpty()) {
+            if (outsideTree) {
+                const QFileInfo info = QFileInfo(filePaths[0]);
+                tree = playlistView->tree(
+                    playlistView->addTab(info.dir().dirName())
+                );
+            }
+
+            tree->fillTable(filePaths);
+        }
     }
 }
 
