@@ -947,6 +947,10 @@ void MainWindow::searchTrack() {
 }
 
 void MainWindow::showSearchInput() {
+    if (trackTree == nullptr) {
+        return;
+    }
+
     searchTrackInput->move(trackTree->mapToGlobal(
         QPoint(trackTree->width() - searchTrackInput->width(), 0)
     ));
