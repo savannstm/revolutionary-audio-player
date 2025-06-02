@@ -933,7 +933,10 @@ void MainWindow::searchTrack() {
 
         const QModelIndex& firstMatch = searchMatches[searchMatchesPosition];
         trackTree->scrollTo(firstMatch, QTreeView::PositionAtCenter);
-        trackTree->setCurrentIndex(firstMatch);
+        trackTree->selectionModel()->select(
+            firstMatch,
+            QItemSelectionModel::Select | QItemSelectionModel::Rows
+        );
     } else {
         searchMatchesPosition++;
         if (searchMatchesPosition >= searchMatches.size()) {
@@ -942,7 +945,10 @@ void MainWindow::searchTrack() {
 
         const QModelIndex& match = searchMatches[searchMatchesPosition];
         trackTree->scrollTo(match, QTreeView::PositionAtCenter);
-        trackTree->setCurrentIndex(match);
+        trackTree->selectionModel()->select(
+            match,
+            QItemSelectionModel::Select | QItemSelectionModel::Rows
+        );
     }
 }
 
