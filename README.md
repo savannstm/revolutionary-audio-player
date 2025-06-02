@@ -22,8 +22,8 @@ The Revolutionary Audio Player, abbreviated RAP (which initially was named Rusty
 -   [x] Flexible playlist system, `.xspf` and `.m3u8` import/export.
 -   [x] Playlist searching.
 -   [x] Dock window with metadata.
+-   [x] Wave visualizer.
 -   [ ] `.cue` playing.
--   [ ] Wave visualizer.
 
 ## Why a new audio player?
 
