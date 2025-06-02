@@ -64,6 +64,7 @@ EqualizerMenu::EqualizerMenu(
     presetSelect->setValidator(new Invalidator(presetSelect));
 
     // TODO: Inefficient, connect to line edit directly.
+    // Although who cares
     connect(
         presetSelect,
         &QComboBox::editTextChanged,
@@ -353,7 +354,6 @@ void EqualizerMenu::selectPreset(i32 index) {
                     gain = PRESETS_10[index][idx];
                     break;
                 case EIGHTEEN_BANDS:
-                    // TODO
                     break;
                 case THIRTY_BANDS:
                     break;

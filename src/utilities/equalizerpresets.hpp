@@ -1,6 +1,9 @@
 #include "aliases.hpp"
 #include "constants.hpp"
 
+// TODO: Existing presets need to be adjusted, and 18- with 30-band versions
+// added
+
 /// 10 Bands
 
 // account for empty preset

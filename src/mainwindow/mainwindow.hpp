@@ -42,7 +42,6 @@ namespace Ui {
 QT_END_NAMESPACE
 
 // TODO: Support .cue
-// TODO: Wave visualizer
 // TODO: Add "play slice" thing
 
 class MainWindow : public QMainWindow {
