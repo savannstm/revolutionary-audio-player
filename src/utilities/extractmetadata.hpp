@@ -115,7 +115,19 @@ inline auto extractMetadata(const QString& filePath)
     metadata.emplace(Genre, getTag("genre"));
     metadata.emplace(Year, getTag("date"));
     metadata.emplace(Composer, getTag("composer"));
-    metadata.emplace(BPM, getTag("TBPM"));
+
+    // TODO: move this from here
+    constexpr array<cstr, 3> BPM_TAGS = { "BPM", "TBPM", "IBPM" };
+
+    for (const auto* bpmTag : BPM_TAGS) {
+        const auto tag = getTag(bpmTag);
+
+        if (!tag.isEmpty()) {
+            metadata.emplace(BPM, tag);
+            break;
+        }
+    }
+
     metadata.emplace(Language, getTag("language"));
     metadata.emplace(DiscNumber, getTag("disc"));
     metadata.emplace(Comment, getTag("comment"));
