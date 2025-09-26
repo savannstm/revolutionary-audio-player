@@ -410,8 +410,16 @@ void MainWindow::processArgs(const QStringList& args) {
         const u8 index = playlistView->addTab(tabLabel);
 
         TrackTree* tree = playlistView->tree(index);
-        tree->fillTable(args);
+        tree->fillTable(args, true);
         changePlaylist(as<i8>(index));
+
+        playlistView->setCurrentIndex(as<i8>(index));
+
+        connect(tree, &TrackTree::startPlaying, this, [&](const bool yes) {
+            if (yes) {
+                togglePlayback();
+            }
+        }, Qt::SingleShotConnection);
     }
 }
 

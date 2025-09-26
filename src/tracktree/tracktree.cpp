@@ -245,7 +245,7 @@ void TrackTree::sortByPath() {
     }
 }
 
-void TrackTree::fillTable(const QStringList& paths) {
+void TrackTree::fillTable(const QStringList& paths, const bool fromArgs) {
     QThreadPool::globalInstance()->start([=, this] {
         for (const QString& path : paths) {
             const QFileInfo info = QFileInfo(path);
@@ -296,6 +296,7 @@ void TrackTree::fillTable(const QStringList& paths) {
         }
 
         emit finishedFilling();
+        emit startPlaying(fromArgs && paths.size() == 1);
     });
 }
 

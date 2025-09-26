@@ -29,7 +29,7 @@ class TrackTree : public QTreeView {
     [[nodiscard]] auto rowMetadata(u16 row) const
         -> HashMap<TrackProperty, QString>;
     void sortByPath();
-    void fillTable(const QStringList& paths);
+    void fillTable(const QStringList& paths, bool fromArgs = false);
     auto deselect(i32 index = -1) -> QModelIndex;
 
    signals:
@@ -39,6 +39,7 @@ class TrackTree : public QTreeView {
     );
     void finishedFilling();
     void trackSelected(u32 oldIndex, u32 newIndex);
+    void startPlaying(bool yes);
 
    protected:
     void mouseDoubleClickEvent(QMouseEvent* event) override;
