@@ -103,7 +103,7 @@ void PlaylistTabBar::setCurrentIndex(const i8 index) {
         return;
     }
 
-    if (previousIndex != -1) {
+    if (previousIndex != -1 && tabs.size() > previousIndex) {
         tabs[previousIndex]->setChecked(false);
     }
 
