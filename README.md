@@ -1,7 +1,7 @@
 # revolutionary-audio-player/renaissance
 
 <p align="center">
-  <img src="./icons/rap-logo.png" alt="Description" width="256"/>
+    <img src="./icons/rap-logo.png" alt="Description" width="256"/>
 </p>
 
 The Revolutionary Audio Player, abbreviated RAP (which initially was named Rusty Audio Player and developed using gtk4-rs) and codenamed Renaissance is a **NEW GENERATION** :fire: _minimalistic_ and **_FULL FEATURED_** :trollface: audio player.
@@ -23,7 +23,8 @@ The Revolutionary Audio Player, abbreviated RAP (which initially was named Rusty
 -   [x] Playlist searching.
 -   [x] Dock window with metadata.
 -   [x] Wave visualizer.
--   [ ] `.cue` playing.
+-   [x] `.cue` playing.
+-   [x] You can select a **range to repeat**, when repeat mode is set to repeat a single track!
 
 ## Why a new audio player?
 
