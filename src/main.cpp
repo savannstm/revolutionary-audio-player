@@ -1,5 +1,5 @@
-#include "constants.hpp"
-#include "mainwindow.hpp"
+#include "Constants.hpp"
+#include "MainWindow.hpp"
 
 #include <QApplication>
 #include <QLocalSocket>
