@@ -1196,7 +1196,7 @@ MainWindow::updateProgressLabel(const u16 second, const QString& duration) {
 void MainWindow::updateVolume(const u16 value) {
     QString formattedVolume;
     formattedVolume.reserve(3);
-    formattedVolume += value;
+    formattedVolume += QString::number(value);
     formattedVolume += '%';
 
     volumeLabel->setText(formattedVolume);
