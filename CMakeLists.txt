@@ -134,10 +134,12 @@ if (UNIX AND NOT APPLE)
         -lXau
         -lXdmcp
         -lpthread
-        -ldrm
         -lintl
         -latomic
         -lm
+        -lavcodec
+        -lz
+        -lavutil
     )
 endif()
 
