@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.7.0
+
+-   Fix missing BPM metadata for different music formats
+-   Fixed panic when deleting tabs to the left
+-   Implemented `.cue` sheets playing
+-   Implemented a menu for selecting a range to repeat. It's accessible via right mouse button when repeat mode is set to repeat a single track
+-   Some performance minmaxxing
+
 ## v0.6.1
 
 -   Fixed panic when deleting the last tab.
