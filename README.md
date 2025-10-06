@@ -1,5 +1,7 @@
 # revolutionary-audio-player/renaissance
 
+[README на русском](./README-ru.md)
+
 <p align="center">
     <img src="./icons/rap-logo.png" alt="Description" width="256"/>
 </p>
@@ -42,18 +44,18 @@ You can get those in Releases section.
 
 ## Build
 
-You need a C++23 compatible compiler: `clang`, `gcc`, `msvc`.
+You need a C++23 compatible compiler: `clang`, `gcc`, `msvc`. The project uses CMake as build system.
 
-The project uses CMake as build system.
+You'll need `Qt6` (>=6.8.0), `FFmpeg` (>=7.0) and `rapidhash` to build the project.
 
-You'll need `Qt6`, `FFmpeg` and `rapidhash` to build the project.
+Clone the repository: `git clone https://github.com/savannstm/revolutionary-audio-player`.
 
-Default builds of the program include FFmpeg built with the following configuration: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-avfilter --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp,ac3,eac3 --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-filter=aformat,firequalizer,aresample,alimiter --enable-protocol=file --enable-zlib`
-
-Path to the `rapidhash` headers can be passed as `-DRAPIDHASH_INCLUDE_DIRS`.
-
-`build.ps1` PowerShell script and `build.sh` Bash script are used to build the project to `build` directory.
+From there you can use `build.ps1` (PowerShell) and `build.sh` (Bash) scripts to build the project into `build` directory.
 
 Script supports `-r` argument for building in `Release` mode.
 
 Build artifacts are output to `build/target` directory.
+
+Default builds of the program include FFmpeg built with the following configuration: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-avfilter --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp,ac3,eac3 --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-filter=aformat,firequalizer,aresample,alimiter --enable-protocol=file --enable-zlib`
+
+Path to the `rapidhash` headers can be passed as `-DRAPIDHASH_INCLUDE_DIRS`.

@@ -23,7 +23,8 @@
 -   [x] Поиск по плейлисту.
 -   [x] Боковое окно метаданными.
 -   [x] Визуализатор волн.
--   [ ] Воспроизведение `.cue`.
+-   [x] Воспроизведение `.cue`.
+-   [x] Возможность выбирать отрезок трека для его проигрывания.
 
 ## Зачем новый аудио плеер?
 
@@ -41,18 +42,18 @@ Windows билды также компилируются статически - 
 
 ## Билд
 
-Вам нужен C++23-совместимый компилятор: `clang`, `gcc`, `msvc`.
+Вам нужен C++23-совместимый компилятор: `clang`, `gcc`, `msvc`. Проект использует CMake как билд-систему.
 
-Проект использует CMake как билд-систему.
+Вам понадобятся `Qt6` (>=6.8.0), `FFmpeg` (>=7.0) и `rapidhash`, чтобы забилдить проект.
 
-Вам понадобятся `Qt6`, `FFmpeg` и `rapidhash`, чтобы забилдить проект.
+Клонируйте репозиторий: `git clone https://github.com/savannstm/revolutionary-audio-player`.
+
+Оттуда вы можете использовать скрипты `build.ps1` (PowerShell) и `build.sh` (Bash) для билда проекта в директорию `build`.
+
+Скрипт поддерживает аргумент `-r` для билда в режиме `Release`.
+
+Артефакты сборки выводятся в директорию `build/target`.
 
 Приложение было забилжено со следующей конфигурацией FFmpeg: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-avfilter --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp,ac3,eac3 --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska --enable-filter=aformat,firequalizer,aresample,alimiter --enable-protocol=file --enable-zlib`
 
 Путь к хедерам `rapidhash` может быть указан через `-DRAPIDHASH_INCLUDE_DIRS`.
-
-Скрипты PowerShell `build.ps1` и Bash `build.sh` используются для построения проекта в директорию `build`.
-
-Скрипт поддерживает аргумент `-r` для билдинга в `Release` моде.
-
-Забилденный говняк выводится в директорию `build/target`.
