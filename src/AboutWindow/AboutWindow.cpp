@@ -2,6 +2,8 @@
 
 #include "version.h"
 
+#include <libavutil/ffversion.h>
+
 auto AboutWindow::setupUi() -> Ui::AboutWindow* {
     auto* ui_ = new Ui::AboutWindow();
     ui_->setupUi(this);
@@ -17,6 +19,8 @@ AboutWindow::AboutWindow(MainWindow* parent) : QDialog(parent) {
     ui->iconLabel->setPixmap(
         QPixmap(QApplication::applicationDirPath() + "/icons/rap-logo.png")
     );
+    ui->qtVersionLabel->setText(u"Qt %1"_s.arg(QT_VERSION_STR));
+    ui->ffmpegVersionLabel->setText(u"FFmpeg %1"_s.arg(FFMPEG_VERSION));
 }
 
 AboutWindow::~AboutWindow() {
