@@ -68,14 +68,13 @@ void AudioStreamer::start(const QString& path) {
     const u8 channelCount = codecContext->ch_layout.nb_channels;
     const u16 sampleRate = codecContext->sample_rate;
 
-    secondsDuration = fCtxPtr->duration / AV_TIME_BASE;
-
     format_.setSampleRate(sampleRate);
     format_.setChannelCount(channelCount);
 
-    formatName = cCtxPtr->codec->name;
+    const string_view formatName = cCtxPtr->codec->name;
+    rawPCM = formatName.starts_with("pcm");
 
-    if (formatName.starts_with("pcm")) {
+    if (rawPCM) {
         // Ensure that we are at the very start of the data,
         // when reading raw PCM
         avio_seek(formatContext->pb, headerLength, SEEK_SET);
@@ -84,8 +83,6 @@ void AudioStreamer::start(const QString& path) {
             formatName.contains("24")
                 ? INT24_SIZE
                 : av_get_bytes_per_sample(codecContext->sample_fmt);
-        minBufferSize =
-            formatName.contains("24") ? MIN_BUFFER_SIZE_I24 : MIN_BUFFER_SIZE;
         fileKbps = sampleRate * channelCount * inputSampleSize;
     } else {
         // We only need packets and frames when decoding the encoded data
@@ -114,17 +111,12 @@ void AudioStreamer::start(const QString& path) {
 
         swrContext.reset(swrCtxPtr);
         swr_init(swrCtxPtr);
-
-        minBufferSize = MIN_BUFFER_SIZE;
     }
-
-    initializeFilters();
-    prepareBuffer();
 
     open(QIODevice::ReadOnly);
 }
 
-auto AudioStreamer::processFrame() -> bool {
+auto AudioStreamer::processFrame(i64 totalRead, str buf) -> i64 {
     const f64 timestamp =
         f64((frame->pts != AV_NOPTS_VALUE) ? frame->pts
                                            : frame->best_effort_timestamp);
@@ -138,10 +130,8 @@ auto AudioStreamer::processFrame() -> bool {
 
     const u32 bufferSize =
         frame->nb_samples * F32_SAMPLE_SIZE * frame->ch_layout.nb_channels;
-
-    buffer.append(ras<cstr>(frame->data[0]), bufferSize);
-    nextBufferSize = buffer.size();
-    return nextBufferSize >= minBufferSize;
+    memcpy(buf + totalRead, frame->data[0], bufferSize);
+    return bufferSize;
 }
 
 auto AudioStreamer::buildEqualizerArgs() const -> string {
@@ -152,7 +142,7 @@ auto AudioStreamer::buildEqualizerArgs() const -> string {
     constexpr u8 maxGainLength = 2;
 
     args.reserve(
-        as<usize>(bandCount) * (stringSize + maxFrequencyLength + maxGainLength)
+        usize(bandCount) * (stringSize + maxFrequencyLength + maxGainLength)
     );
 
     for (const auto [freq, gain] :
@@ -289,7 +279,7 @@ void AudioStreamer::initializeFilters() {
     }
 }
 
-void AudioStreamer::equalizeBuffer() {
+void AudioStreamer::equalizeBuffer(vector<u8>& buffer) {
     if (!equalizerEnabled_ || filterGraph == nullptr ||
         ranges::all_of(gains_, [](const i8 gain) { return gain == 0; })) {
         return;
@@ -335,7 +325,7 @@ void AudioStreamer::equalizeFrame() {
     frame.reset(filteredFrame);
 }
 
-void AudioStreamer::convertBuffer(const u32 bytesRead) {
+void AudioStreamer::convertBuffer(vector<u8>& buffer, const u32 bytesRead) {
     if (codecContext->sample_fmt == F32_SAMPLE_FORMAT) {
         return;
     }
@@ -349,7 +339,7 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
 
     switch (inputSampleSize) {
         case sizeof(i8): {
-            const i8* samples = ras<const i8*>(buffer.constData());
+            const i8* samples = ras<const i8*>(buffer.data());
 
             for (const u32 sample : range(0, sampleCount)) {
                 outBuffer.emplace_back(
@@ -359,7 +349,7 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
             break;
         }
         case sizeof(i16): {
-            const i16* samples = ras<const i16*>(buffer.constData());
+            const i16* samples = ras<const i16*>(buffer.data());
 
             for (const u32 sample : range(0, sampleCount)) {
                 outBuffer.emplace_back(
@@ -372,7 +362,7 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
             constexpr u8 I8_BIT = sizeof(i8) * CHAR_BIT;
             constexpr u8 I16_BIT = sizeof(i16) * CHAR_BIT;
 
-            const u8* samples = ras<const u8*>(buffer.constData());
+            const u8* samples = buffer.data();
 
             for (const u32 sample : range(0, sampleCount)) {
                 const u32 offset = sample * inputSampleSize;
@@ -389,7 +379,7 @@ void AudioStreamer::convertBuffer(const u32 bytesRead) {
             break;
         }
         case sizeof(i32): {
-            const i32* samples = ras<const i32*>(buffer.constData());
+            const i32* samples = ras<const i32*>(buffer.data());
 
             for (const u32 sample : range(0, sampleCount)) {
                 outBuffer.emplace_back(f32(samples[sample]) / f32(INT32_MAX));
@@ -419,41 +409,38 @@ void AudioStreamer::convertFrame() {
     frame.reset(newFrame);
 }
 
-void AudioStreamer::decodeRaw() {
+auto AudioStreamer::decodeRaw(str buf) -> i64 {
     if (avio_feof(formatContext->pb) != 0) {
-        return;
+        return 0;
     }
 
-    buffer.resize(minBufferSize);
+    const i32 size =
+        i32(inputSampleSize == sizeof(i8) + sizeof(i16) ? MIN_BUFFER_SIZE_I24
+                                                        : MIN_BUFFER_SIZE);
+    vector<u8> buffer;
+    buffer.resize(size);
 
-    const i32 bytesRead = avio_read(
-        formatContext->pb,
-        ras<u8*>(buffer.data()),
-        i32(minBufferSize)
-    );
+    const i32 bytesRead = avio_read(formatContext->pb, buffer.data(), size);
 
     if (bytesRead <= 0) {
-        return;
+        return 0;
     }
 
-    convertBuffer(bytesRead);
-    equalizeBuffer();
+    convertBuffer(buffer, bytesRead);
+    equalizeBuffer(buffer);
 
-    totalBytesRead += bytesRead;
-    playbackSecond = totalBytesRead / fileKbps;
-    nextBufferSize = buffer.size();
+    memcpy(buf, buffer.data(), size);
+
+    playbackSecond = avio_tell(formatContext->pb) / fileKbps;
+    return bytesRead;
 }
 
-void AudioStreamer::prepareBuffer() {
-    nextBufferSize = 0;
-
-    if (formatName.starts_with("pcm")) {
-        decodeRaw();
-        return;
+auto AudioStreamer::prepareBuffer(str buf) -> i64 {
+    if (rawPCM) {
+        return decodeRaw(buf);
     }
 
-    buffer.clear();
-    buffer.reserve(i32(MIN_BUFFER_SIZE * 2));
+    i64 totalRead = 0;
 
     while (av_read_frame(formatContext.get(), packet.get()) >= 0) {
         if (packet->stream_index != audioStreamIndex) {
@@ -476,29 +463,38 @@ void AudioStreamer::prepareBuffer() {
                 break;
             }
 
-            if (processFrame()) {
+            const i64 read = processFrame(totalRead, buf);
+            totalRead += read;
+
+            if (totalRead < MIN_BUFFER_SIZE) {
                 av_frame_unref(frame.get());
-                return;
+                break;
             }
+
+            return totalRead;
         }
     }
+
+    return 0;
 }
 
 auto AudioStreamer::readData(str data, const qi64 /* size */) -> qi64 {
-    const u32 bufferSize = buffer.size();
-    memcpy(data, buffer.constData(), bufferSize);
+    const i64 read = prepareBuffer(data);
 
-    emit samples(buffer, codecContext->sample_rate);
-    emit progressUpdate(playbackSecond);
-
-    initializeFilters();
-    prepareBuffer();
-
-    if (nextBufferSize == 0) {
+    if (read == 0) {
         emit streamEnded();
+    } else {
+        visualizerBuffer->resize(read);
+        memcpy(visualizerBuffer->data(), data, read);
+        emit buildPeaks(codecContext->sample_rate);
     }
 
-    return bufferSize;
+    if (playbackSecond != lastPlaybackSecond) {
+        emit progressUpdate(playbackSecond);
+        lastPlaybackSecond = playbackSecond;
+    }
+
+    return read;
 }
 
 auto AudioStreamer::reset() -> bool {
@@ -510,19 +506,6 @@ auto AudioStreamer::reset() -> bool {
     packet.reset();
     frame.reset();
     filterGraph.reset();
-
-    buffer.clear();
-
-    nextBufferSize = 0;
-    audioStreamIndex = 0;
-    secondsDuration = 0;
-    playbackSecond = 0;
-
-    totalBytesRead = 0;
-    inputSampleSize = 0;
-    fileKbps = 0;
-
-    formatName = "";
 
     return true;
 }
@@ -547,13 +530,6 @@ void AudioStreamer::seekSecond(const u16 second) {
         timestamp,
         AVSEEK_FLAG_ANY
     );
-
-    if (formatName.starts_with("pcm")) {
-        totalBytesRead = avio_tell(formatContext->pb);
-    }
-
-    initializeFilters();
-    prepareBuffer();
 }
 
 void AudioStreamer::setBandCount(const u8 bands) {

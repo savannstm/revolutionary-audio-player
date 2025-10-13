@@ -12,12 +12,16 @@ extern "C" {
 #include "Constants.hpp"
 #include "ExtractMetadata.hpp"
 #include "FFMpeg.hpp"
-#include "Log.hpp"
+#include "Logger.hpp"
 
 #include <QAudioFormat>
 #include <QIODevice>
 
 using namespace FFmpeg;
+
+// TODO: Playback stutters seem to only happen when I/O can't keep up
+// A solution for that is deque that asynchronously reads buffers, but that
+// requires thinking
 
 class AudioStreamer : public QIODevice {
     Q_OBJECT
@@ -30,11 +34,14 @@ class AudioStreamer : public QIODevice {
     };
 
     [[nodiscard]] constexpr auto bytesAvailable() const -> qi64 override {
-        return nextBufferSize;
+        // We don't care about how many bytes are there available since we're
+        // just reading the file until the end and handling EOF at the spot
+        return UINT16_MAX;
     };
 
     [[nodiscard]] constexpr auto atEnd() const -> bool override {
-        return nextBufferSize == 0;
+        // Same from `bytesAvailable` applies
+        return false;
     };
 
     void seekSecond(u16 second);
@@ -44,6 +51,8 @@ class AudioStreamer : public QIODevice {
     constexpr void setGain(const i8 dbGain, const u8 band) {
         gains_[band] = dbGain;
         changedBands = true;
+
+        initializeFilters();
     };
 
     [[nodiscard]] constexpr auto gain(const u8 band) const -> i8 {
@@ -66,16 +75,22 @@ class AudioStreamer : public QIODevice {
 
     constexpr void toggleEqualizer(const bool enabled) {
         equalizerEnabled_ = enabled;
+
+        if (equalizerEnabled_) {
+            initializeFilters();
+        }
     };
 
     [[nodiscard]] constexpr auto progress() const -> u16 {
         return playbackSecond;
     }
 
+    vector<u8>* visualizerBuffer = nullptr;
+
    signals:
     void progressUpdate(u16 second);
     void streamEnded();
-    void samples(const QByteArray& samples, u16 sampleRate);
+    void buildPeaks(u16 sampleRate);
 
    protected:
     auto readData(str data, qi64 maxSize) -> qi64 override;
@@ -85,16 +100,16 @@ class AudioStreamer : public QIODevice {
     };
 
    private:
-    inline void prepareBuffer();
-    inline void decodeRaw();
-    inline auto processFrame() -> bool;
+    inline auto prepareBuffer(str buf) -> i64;
+    inline auto decodeRaw(str buf) -> i64;
+    inline auto processFrame(i64 totalRead, str buf) -> i64;
     [[nodiscard]] inline auto second() const -> u16;
     inline void equalizeFrame();
-    inline void initializeFilters();
+    void initializeFilters();
     inline void convertFrame();
     [[nodiscard]] inline auto buildEqualizerArgs() const -> string;
-    inline void convertBuffer(u32 bytesRead);
-    inline void equalizeBuffer();
+    inline void convertBuffer(vector<u8>& buffer, u32 bytesRead);
+    inline void equalizeBuffer(vector<u8>& buffer);
 
     auto
     checkError(const i32 err, const bool resetStreamer, const bool resetFilters)
@@ -129,21 +144,15 @@ class AudioStreamer : public QIODevice {
     AVFilterContext* aformatContext = nullptr;
     AVFilterContext* abuffersinkContext = nullptr;
 
-    QByteArray buffer;
     QAudioFormat format_;
 
-    u32 nextBufferSize = 0;
     u8 audioStreamIndex = 0;
-    u16 secondsDuration = 0;
     u16 playbackSecond = 0;
+    u16 lastPlaybackSecond = 0;
 
-    // For raw formats
+    bool rawPCM = false;
     u8 inputSampleSize = 0;
-    u32 totalBytesRead = 0;
     u32 fileKbps = 0;
-    u32 minBufferSize = MIN_BUFFER_SIZE;
-
-    string_view formatName;
 
     u8 bandCount = TEN_BANDS;
 
