@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.8.0
+
+-   Making moves to try to fix occasional playback stuttering
+-   Added information about Qt and FFmpeg version to About window
+-   Separated playlists from settings. Now, playlists are stored in `rap-playlists.json`, while settings are in `rap-settings.json`
+-   Fixed incorrect display of progress time in some cases
+-   CUE fixes:
+    -   When switching tracks that are in the same playlist, the audio file now won't be reopened
+    -   Fixed playing one more second than track needs
+    -   Tracks are now properly saved/loaded
+-   Fixed some tracks repeating their start twice, because of a flow in logic that was introduced with CUE playing implementation
+-   More performance minmaxxing
+
 ## v0.7.0
 
 -   Fix missing BPM metadata for different music formats
