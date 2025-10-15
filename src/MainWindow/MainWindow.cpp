@@ -1213,16 +1213,9 @@ void MainWindow::showAboutWindow() {
 
 inline void
 MainWindow::updateProgressLabel(const u16 second, const QString& duration) {
-    const QString time = secsToMins(second);
-
-    if (second != 0 &&
-        time == trackDuration.left(trackDuration.indexOf(u'/'))) {
-        return;
-    }
-
     QString newTrackDuration;
     newTrackDuration.reserve(5 + 1 + 5);
-    newTrackDuration += time;
+    newTrackDuration += secsToMins(second);
     newTrackDuration += '/';
     newTrackDuration +=
         duration.isEmpty() ? trackDuration.slice(trackDuration.indexOf('/') + 1)
@@ -1230,7 +1223,7 @@ MainWindow::updateProgressLabel(const u16 second, const QString& duration) {
     trackDuration = newTrackDuration;
 
     progressLabel->setText(trackDuration);
-    progressLabelCloned->setText(trackDuration);
+    progressLabelTray->setText(trackDuration);
 }
 
 void MainWindow::updateVolume(const u16 value) {
