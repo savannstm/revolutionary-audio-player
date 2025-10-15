@@ -60,7 +60,7 @@ void PlaylistTabBar::insertTab(
 
     if (closable) {
         connect(tab, &PlaylistTab::removeTabRequested, this, [&, tab] {
-            removeTabs(Single, tabIndex(tab));
+            removeTabs(TabRemoveMode::Single, tabIndex(tab));
         });
 
         connect(tab, &PlaylistTab::clicked, this, [&, tab] {
@@ -134,14 +134,14 @@ void PlaylistTabBar::setTabLabel(const u8 index, const QString& label) {
 
 void PlaylistTabBar::removeTabs(const TabRemoveMode mode, const u8 startIndex) {
     const u8 count = tabCount();
-    if (mode != Single && count == 0) {
+    if (mode != TabRemoveMode::Single && count == 0) {
         return;
     }
 
     i8 newIndex = currentIndex_;
 
     switch (mode) {
-        case Single:
+        case TabRemoveMode::Single:
             removeTab(startIndex);
 
             if (newIndex == 0) {
@@ -154,16 +154,16 @@ void PlaylistTabBar::removeTabs(const TabRemoveMode mode, const u8 startIndex) {
                 newIndex -= 1;
             }
             break;
-        case Other:
-        case ToRight:
+        case TabRemoveMode::Other:
+        case TabRemoveMode::ToRight:
             for (i8 i = i8(count - 1); i > startIndex; i--) {
                 removeTab(i);
             }
 
-            if (mode == ToRight) {
+            if (mode == TabRemoveMode::ToRight) {
                 break;
             }
-        case ToLeft:
+        case TabRemoveMode::ToLeft:
             for (i8 i = i8(startIndex - 1); i >= 0; i--) {
                 if (i < newIndex) {
                     newIndex -= 1;

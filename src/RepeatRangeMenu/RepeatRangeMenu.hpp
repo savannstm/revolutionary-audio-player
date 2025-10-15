@@ -107,11 +107,12 @@ class RepeatRangeMenu : public QDialog {
     QHBoxLayout* endTimeLayout = new QHBoxLayout(endTimeContainer);
 
     QLabel* endTimeLabel = new QLabel(tr("End time:"), endTimeContainer);
-    CustomInput* endTimeInput = new CustomInput("00:00", endTimeContainer);
+    CustomInput* endTimeInput = new CustomInput(u"00:00"_s, endTimeContainer);
 
     QWidget* startTimeContainer = new QWidget(this);
     QHBoxLayout* startTimeLayout = new QHBoxLayout(startTimeContainer);
 
     QLabel* startTimeLabel = new QLabel(tr("Start time:"), startTimeContainer);
-    CustomInput* startTimeInput = new CustomInput("00:00", startTimeContainer);
+    CustomInput* startTimeInput =
+        new CustomInput(u"00:00"_s, startTimeContainer);
 };

@@ -15,7 +15,7 @@ auto main(i32 argCount, char* args[]) -> i32 {
 
     if (!sharedMemory.create(1)) {
         QLocalSocket socket;
-        socket.connectToServer("revolutionary-audio-player-server");
+        socket.connectToServer(u"revolutionary-audio-player-server"_s);
 
         if (socket.waitForConnected(SECOND_MS)) {
             if (argCount > 1) {
@@ -33,8 +33,8 @@ auto main(i32 argCount, char* args[]) -> i32 {
 
     std::locale::global(std::locale(".UTF-8"));
 
-    QApplication::setOrganizationName("savannstm");
-    QApplication::setApplicationName("revolutionary-audio-player");
+    QApplication::setOrganizationName(u"savannstm"_s);
+    QApplication::setApplicationName(u"revolutionary-audio-player"_s);
     QApplication::setWindowIcon(
         QIcon(QApplication::applicationDirPath() + "/icons/rap-logo.png")
     );

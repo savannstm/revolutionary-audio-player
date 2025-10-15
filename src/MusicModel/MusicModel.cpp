@@ -19,7 +19,7 @@ void MusicModel::setItem(
     QStandardItemModel::setItem(row, col, item);
 
     if (path) {
-        tracks.emplace(item->text());
+        tracks.insert(item->text());
     }
 }
 
@@ -28,7 +28,7 @@ auto MusicModel::itemFromIndex(const QModelIndex& index) const -> MusicItem* {
 }
 
 auto MusicModel::trackProperty(const u8 column) const -> TrackProperty {
-    return as<TrackProperty>(
+    return TrackProperty(
         headerData(column, Qt::Horizontal, PROPERTY_ROLE).toUInt()
     );
 }
@@ -40,7 +40,7 @@ auto MusicModel::removeRows(
 ) -> bool {
     for (const u16 idx : range(0, count)) {
         for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
-            if (trackProperty(column) == Title) {
+            if (trackProperty(column) == TrackProperty::Title) {
                 tracks.erase(this->item(row + idx, column)->text());
             }
         }

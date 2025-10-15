@@ -379,7 +379,7 @@ void EqualizerMenu::toggleEqualizer(const bool checked) {
 void EqualizerMenu::resetGains() {
     for (const auto& container : views::take(sliders, bandCount)) {
         container.slider->setValue(0);
-        container.dbInput->setText("0");
+        container.dbInput->setText(u"0"_s);
     }
 }
 

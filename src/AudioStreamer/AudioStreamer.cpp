@@ -89,28 +89,31 @@ void AudioStreamer::start(const QString& path) {
         packet = createPacket();
         frame = createFrame();
 
-        // We only use FFmpeg's swresample when decoding the encoded data, in
-        // raw formats we handle it manually
-        ::SwrContext* swrCtxPtr = swrContext.get();
+        if (codecContext->sample_fmt != F32_SAMPLE_FORMAT) {
+            // We only use FFmpeg's swresample when
+            // decoding the encoded data, in
+            // raw formats we handle it manually
+            ::SwrContext* swrCtxPtr = swrContext.get();
 
-        err = swr_alloc_set_opts2(
-            &swrCtxPtr,
-            &channelLayout,
-            F32_SAMPLE_FORMAT,
-            sampleRate,
-            &channelLayout,
-            codecContext->sample_fmt,
-            sampleRate,
-            0,
-            nullptr
-        );
+            err = swr_alloc_set_opts2(
+                &swrCtxPtr,
+                &channelLayout,
+                F32_SAMPLE_FORMAT,
+                sampleRate,
+                &channelLayout,
+                codecContext->sample_fmt,
+                sampleRate,
+                0,
+                nullptr
+            );
 
-        if (checkError(err, true, false)) {
-            return;
+            if (checkError(err, true, false)) {
+                return;
+            }
+
+            swrContext.reset(swrCtxPtr);
+            swr_init(swrCtxPtr);
         }
-
-        swrContext.reset(swrCtxPtr);
-        swr_init(swrCtxPtr);
     }
 
     open(QIODevice::ReadOnly);
@@ -484,14 +487,14 @@ auto AudioStreamer::readData(str data, const qi64 /* size */) -> qi64 {
     if (read == 0) {
         emit streamEnded();
     } else {
+        if (playbackSecond != lastPlaybackSecond) {
+            emit progressUpdate(playbackSecond);
+            lastPlaybackSecond = playbackSecond;
+        }
+
         visualizerBuffer->resize(read);
         memcpy(visualizerBuffer->data(), data, read);
         emit buildPeaks(codecContext->sample_rate);
-    }
-
-    if (playbackSecond != lastPlaybackSecond) {
-        emit progressUpdate(playbackSecond);
-        lastPlaybackSecond = playbackSecond;
     }
 
     return read;

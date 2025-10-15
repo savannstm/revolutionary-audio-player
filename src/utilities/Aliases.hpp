@@ -2,6 +2,7 @@
 
 #include <QString>
 #include <cstddef>
+#include <deque>
 #include <expected>
 #include <filesystem>
 #include <iostream>
@@ -48,6 +49,7 @@ using fs::path;
 using std::array;
 using std::cerr;
 using std::cout;
+using std::deque;
 using std::format;
 using std::make_shared;
 using std::make_unique;
@@ -114,5 +116,5 @@ constexpr auto find_index(const R& range, const T& value) -> isize {
 
 constexpr auto operator""_qsv(const char16_t* chr, const size_t size)
     -> QStringView {
-    return { chr, as<isize>(size) };
+    return { chr, isize(size) };
 }

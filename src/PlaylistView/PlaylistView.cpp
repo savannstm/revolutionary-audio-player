@@ -57,21 +57,21 @@ void PlaylistView::removePages(const TabRemoveMode mode, const u8 startIndex) {
     u8 count = 0;
 
     switch (mode) {
-        case Single:
+        case TabRemoveMode::Single:
             removePage(startIndex);
             count += 1;
             break;
-        case Other:
-        case ToRight:
+        case TabRemoveMode::Other:
+        case TabRemoveMode::ToRight:
             for (i8 i = i8(stackedWidget->count() - 1); i > startIndex; i--) {
                 removePage(i);
                 count += 1;
             }
 
-            if (mode == ToRight) {
+            if (mode == TabRemoveMode::ToRight) {
                 break;
             }
-        case ToLeft:
+        case TabRemoveMode::ToLeft:
             for (i8 i = i8(startIndex - 1); i >= 0; i--) {
                 removePage(i);
                 count += 1;
@@ -225,8 +225,8 @@ void PlaylistView::removeBackgroundImage(const u8 index) const {
     }
 
     QWidget* pageWidget = page(index);
-    auto* leftLabel = pageWidget->findChild<QLabel*>("leftLabel");
-    auto* rightLabel = pageWidget->findChild<QLabel*>("rightLabel");
+    auto* leftLabel = pageWidget->findChild<QLabel*>(u"leftLabel"_qsv);
+    auto* rightLabel = pageWidget->findChild<QLabel*>(u"rightLabel"_qsv);
 
     delete centerLabel;
     delete leftLabel;
@@ -236,9 +236,9 @@ void PlaylistView::removeBackgroundImage(const u8 index) const {
     leftLabel = new QLabel(pageWidget);
     rightLabel = new QLabel(pageWidget);
 
-    centerLabel->setObjectName("centerLabel");
-    leftLabel->setObjectName("leftLabel");
-    rightLabel->setObjectName("rightLabel");
+    centerLabel->setObjectName(u"centerLabel"_qsv);
+    leftLabel->setObjectName(u"leftLabel"_qsv);
+    rightLabel->setObjectName(u"rightLabel"_qsv);
 }
 
 void PlaylistView::setBackgroundImage(
@@ -272,8 +272,8 @@ void PlaylistView::setBackgroundImage(
     centerLabel->lower();
     centerLabel->show();
 
-    auto* leftLabel = pageWidget->findChild<QLabel*>("leftLabel");
-    auto* rightLabel = pageWidget->findChild<QLabel*>("rightLabel");
+    auto* leftLabel = pageWidget->findChild<QLabel*>(u"leftLabel"_qsv);
+    auto* rightLabel = pageWidget->findChild<QLabel*>(u"rightLabel"_qsv);
 
     const u16 sideWidth = (layoutWidth - centerPixmap.width()) / 2;
 
@@ -317,7 +317,7 @@ void PlaylistView::setBackgroundImage(
 }
 
 auto PlaylistView::currentTree() const -> TrackTree* {
-    return stackedWidget->currentWidget()->findChild<TrackTree*>("tree");
+    return stackedWidget->currentWidget()->findChild<TrackTree*>(u"tree"_qsv);
 }
 
 auto PlaylistView::tree(const u8 index) const -> TrackTree* {
@@ -327,15 +327,17 @@ auto PlaylistView::tree(const u8 index) const -> TrackTree* {
         return nullptr;
     }
 
-    return widget->findChild<TrackTree*>("tree");
+    return widget->findChild<TrackTree*>(u"tree"_qsv);
 }
 
 auto PlaylistView::currentBackgroundImage() const -> QLabel* {
-    return stackedWidget->currentWidget()->findChild<QLabel*>("centerLabel");
+    return stackedWidget->currentWidget()->findChild<QLabel*>(
+        u"centerLabel"_qsv
+    );
 }
 
 auto PlaylistView::backgroundImage(const u8 index) const -> QLabel* {
-    return stackedWidget->widget(index)->findChild<QLabel*>("centerLabel");
+    return stackedWidget->widget(index)->findChild<QLabel*>(u"centerLabel"_qsv);
 }
 
 auto PlaylistView::currentPage() const -> QWidget* {

@@ -2,7 +2,7 @@
 
 #include "Constants.hpp"
 #include "ExtractMetadata.hpp"
-#include "Log.hpp"
+#include "Logger.hpp"
 
 #include <QMenu>
 #include <QPixmap>

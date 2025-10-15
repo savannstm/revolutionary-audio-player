@@ -42,6 +42,8 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
+// TODO: File associations for XSPF, M3U and CUE playlists
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
@@ -167,8 +169,8 @@ class MainWindow : public QMainWindow {
     CustomSlider* progressSlider = ui->progressSlider;
 
     // UI - Icons
-    QIcon pauseIcon = QIcon::fromTheme("media-playback-pause");
-    QIcon startIcon = QIcon::fromTheme("media-playback-start");
+    QIcon pauseIcon = QIcon::fromTheme(u"media-playback-pause"_s);
+    QIcon startIcon = QIcon::fromTheme(u"media-playback-start"_s);
 
     // Actions & Menus
     QAction* actionOpenFile = ui->actionOpenFile;
@@ -228,7 +230,7 @@ class MainWindow : public QMainWindow {
     CustomInput* searchTrackInput = new CustomInput(this);
     QVector<QModelIndex> searchMatches;
     isize searchMatchesPosition = 0;
-    QShortcut* searchShortcut = new QShortcut(QKeySequence("Ctrl+F"), this);
+    QShortcut* searchShortcut = new QShortcut(QKeySequence(u"Ctrl+F"_s), this);
     QString previousSearchPrompt;
 
     // Miscellaneous

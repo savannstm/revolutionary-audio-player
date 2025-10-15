@@ -23,7 +23,7 @@ class Logger {
 
     static void init() {
         if (!logFile.isOpen()) {
-            logFile.setFileName("rap.log");
+            logFile.setFileName(u"rap.log"_s);
             logFile.open(
                 QIODevice::Append | QIODevice::Text | QIODevice::Truncate
             );
@@ -50,13 +50,13 @@ class Logger {
         QString loggingLevelString;
         switch (level) {
             case LogLevel::Info:
-                loggingLevelString = "INFO";
+                loggingLevelString = u"INFO"_s;
                 break;
             case LogLevel::Warning:
-                loggingLevelString = "WARNING";
+                loggingLevelString = u"WARNING"_s;
                 break;
             case LogLevel::Error:
-                loggingLevelString = "ERROR";
+                loggingLevelString = u"ERROR"_s;
                 break;
         }
 

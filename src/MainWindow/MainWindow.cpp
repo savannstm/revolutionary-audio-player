@@ -31,7 +31,6 @@
 #include <QShortcut>
 #include <QWidgetAction>
 #include <QXmlStreamReader>
-#include <qnamespace.h>
 
 MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     QMainWindow(parent) {
@@ -110,14 +109,14 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     );
 
     connect(
-        progressSliderCloned,
+        progressSliderTray,
         &CustomSlider::sliderReleased,
         this,
         &MainWindow::updatePlaybackPosition
     );
 
     connect(
-        progressSliderCloned,
+        progressSliderTray,
         &CustomSlider::valueChanged,
         this,
         [&](const u16 value) { MainWindow::updateProgressLabel(value); }
@@ -126,12 +125,12 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     connect(
         progressSlider,
         &CustomSlider::valueChanged,
-        progressSliderCloned,
+        progressSliderTray,
         &CustomSlider::setValue
     );
 
     connect(
-        progressSliderCloned,
+        progressSliderTray,
         &CustomSlider::valueChanged,
         progressSlider,
         &CustomSlider::setValue
@@ -147,12 +146,12 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     connect(
         volumeSlider,
         &CustomSlider::valueChanged,
-        volumeSliderCloned,
+        volumeSliderTray,
         &CustomSlider::setValue
     );
 
     connect(
-        volumeSliderCloned,
+        volumeSliderTray,
         &CustomSlider::valueChanged,
         volumeSlider,
         &CustomSlider::setValue
@@ -240,11 +239,11 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
         }
 
         switch (mode) {
-            case Single:
+            case TabRemoveMode::Single:
                 playingPlaylist -= 1;
                 break;
-            case ToLeft:
-            case Other:
+            case TabRemoveMode::ToLeft:
+            case TabRemoveMode::Other:
                 playingPlaylist = i8(playingPlaylist - count);
                 break;
             default:
@@ -378,9 +377,9 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
 
     server->listen(u"revolutionary-audio-player-server"_s);
 
-    progressLabelCloned->setText(trackDuration);
-    progressSliderCloned->setRange(0, 0);
-    volumeSliderCloned->setRange(0, MAX_VOLUME);
+    progressLabelTray->setText(trackDuration);
+    progressSliderTray->setRange(0, 0);
+    volumeSliderTray->setRange(0, MAX_VOLUME);
 
     searchMatches.reserve(MINIMUM_MATCHES_NUMBER);
 
@@ -686,9 +685,11 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
     const u8 dockWidgetIndex = mainArea->indexOf(dockWidget);
 
     if (mainAreaOrientation == Qt::Horizontal) {
-        dockWidgetPosition = dockWidgetIndex == 0 ? Left : Right;
+        dockWidgetPosition = dockWidgetIndex == 0 ? DockWidgetPosition::Left
+                                                  : DockWidgetPosition::Right;
     } else {
-        dockWidgetPosition = dockWidgetIndex == 0 ? Top : Bottom;
+        dockWidgetPosition = dockWidgetIndex == 0 ? DockWidgetPosition::Top
+                                                  : DockWidgetPosition::Bottom;
     }
 
     settings->dockWidgetSettings.position = dockWidgetPosition;
@@ -708,8 +709,8 @@ void MainWindow::retranslate(const QLocale::Language language) {
     translator = new QTranslator(this);
     const bool success = translator->load(
         QLocale(language),
-        "rap",
-        ".",
+        u"rap"_s,
+        u"."_s,
         QApplication::applicationDirPath() + "/translations"
     );
 
@@ -758,7 +759,7 @@ void MainWindow::initializeSettings() {
 
 void MainWindow::loadSettings() {
     volumeSlider->setValue(settings->volume);
-    volumeSliderCloned->setValue(settings->volume);
+    volumeSliderTray->setValue(settings->volume);
 
     QString formattedVolume;
     formattedVolume.reserve(4);
@@ -806,22 +807,22 @@ void MainWindow::moveDockWidget(const DockWidgetPosition dockWidgetPosition) {
     u8 targetIndex;
 
     switch (dockWidgetPosition) {
-        case Left:
+        case DockWidgetPosition::Left:
             targetMainOrientation = Qt::Horizontal;
             targetDockOrientation = Qt::Vertical;
             targetIndex = 0;
             break;
-        case Right:
+        case DockWidgetPosition::Right:
             targetMainOrientation = Qt::Horizontal;
             targetDockOrientation = Qt::Vertical;
             targetIndex = 1;
             break;
-        case Top:
+        case DockWidgetPosition::Top:
             targetMainOrientation = Qt::Vertical;
             targetDockOrientation = Qt::Horizontal;
             targetIndex = 0;
             break;
-        case Bottom:
+        case DockWidgetPosition::Bottom:
             targetMainOrientation = Qt::Vertical;
             targetDockOrientation = Qt::Horizontal;
             targetIndex = 1;
@@ -995,7 +996,7 @@ void MainWindow::searchTrack() {
             if (iter != SEARCH_PROPERTIES.end()) {
                 const usize index =
                     ranges::distance(SEARCH_PROPERTIES.begin(), iter);
-                property = as<TrackProperty>(index);
+                property = TrackProperty(index);
             } else {
                 searchTrackInput->clear();
                 searchTrackInput->setPlaceholderText(tr("Incorrect property!"));
@@ -1067,7 +1068,7 @@ void MainWindow::showSearchInput() {
 
 void MainWindow::onAudioProgressUpdated(u16 seconds) {
     const bool draggingSlider =
-        progressSlider->isSliderDown() || progressSliderCloned->isSliderDown();
+        progressSlider->isSliderDown() || progressSliderTray->isSliderDown();
 
     if (!draggingSlider) {
         if (repeat == RepeatMode::Track) {
@@ -1107,7 +1108,7 @@ void MainWindow::onAudioProgressUpdated(u16 seconds) {
 
 void MainWindow::playNext() {
     switch (repeat) {
-        case Track:
+        case RepeatMode::Track:
             QMetaObject::invokeMethod(
                 audioWorker,
                 &AudioWorker::seekSecond,
@@ -1228,12 +1229,12 @@ MainWindow::updateProgressLabel(const u16 second, const QString& duration) {
 
 void MainWindow::updateVolume(const u16 value) {
     QString formattedVolume;
-    formattedVolume.reserve(3);
+    formattedVolume.reserve(4);
     formattedVolume += QString::number(value);
     formattedVolume += '%';
 
     volumeLabel->setText(formattedVolume);
-    volumeLabelCloned->setText(formattedVolume);
+    volumeLabelTray->setText(formattedVolume);
     audioWorker->setVolume(f32(value) / 100.0F);
 }
 
@@ -1338,8 +1339,8 @@ void MainWindow::setupTrayIcon() {
     auto* volumeSliderContainer = new QWidget(trayIconMenu);
     auto* volumeSliderLayout = new QHBoxLayout(volumeSliderContainer);
 
-    volumeSliderLayout->addWidget(volumeSliderCloned);
-    volumeSliderLayout->addWidget(volumeLabelCloned);
+    volumeSliderLayout->addWidget(volumeSliderTray);
+    volumeSliderLayout->addWidget(volumeLabelTray);
 
     volumeSliderAction->setDefaultWidget(volumeSliderContainer);
 
@@ -1348,8 +1349,8 @@ void MainWindow::setupTrayIcon() {
     auto* progressSliderContainer = new QWidget(trayIconMenu);
     auto* progressSliderLayout = new QHBoxLayout(progressSliderContainer);
 
-    progressSliderLayout->addWidget(progressSliderCloned);
-    progressSliderLayout->addWidget(progressLabelCloned);
+    progressSliderLayout->addWidget(progressSliderTray);
+    progressSliderLayout->addWidget(progressLabelTray);
 
     progressSliderAction->setDefaultWidget(progressSliderContainer);
 
@@ -1448,20 +1449,20 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
         metadata[TrackProperty::Title].size()
     ));
     artistAndTrack += metadata[TrackProperty::Artist];
-    artistAndTrack += u" - ";
+    artistAndTrack += u" - "_qsv;
     artistAndTrack += metadata[TrackProperty::Title];
     trackLabel->setText(artistAndTrack);
 
     QString windowTitle;
     windowTitle.reserve(isize(sizeof("RAP: ") - 1) + artistAndTrack.size());
-    windowTitle += u"RAP: ";
+    windowTitle += u"RAP: "_qsv;
     windowTitle += artistAndTrack;
     setWindowTitle(windowTitle);
 
     for (const u8 property : range(1, TRACK_PROPERTY_COUNT - 1)) {
         dockMetadataTree
             ->itemFromIndex(dockMetadataTree->model()->index(property - 1, 0))
-            ->setText(1, metadata[as<TrackProperty>(property)]);
+            ->setText(1, metadata[TrackProperty(property)]);
     }
 
     QPixmap cover;
@@ -1518,7 +1519,9 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     repeatRangeMenu->setDuration(seconds);
     repeatRangeMenu->setStartSecond(0);
     progressSlider->setRange(0, seconds);
-    progressSliderCloned->setRange(0, seconds);
+    progressSliderTray->setRange(0, seconds);
+    progressSlider->setValue(0);
+    progressSliderTray->setValue(0);
     updateProgressLabel(0, metadata[TrackProperty::Duration]);
 
     dockCoverLabel->clear();
@@ -1677,11 +1680,11 @@ void MainWindow::stopPlayback() {
     audioWorker->stop();
     trackLabel->clear();
     progressSlider->setRange(0, 0);
-    progressSliderCloned->setRange(0, 0);
-    updateProgressLabel(0, "00:00");
+    progressSliderTray->setRange(0, 0);
+    updateProgressLabel(0, u"00:00"_s);
     playButton->setIcon(startIcon);
     actionTogglePlayback->setText(tr("Play"));
-    setWindowTitle("RAP");
+    setWindowTitle(u"RAP"_s);
 
     dockCoverLabel->clear();
 
@@ -1751,12 +1754,12 @@ void MainWindow::importPlaylist(const bool createNewTab) {
             }
         };
 
-        if (extension == u"xspf"_qsv) {
+        if (extension == EXT_XSPF) {
             QXmlStreamReader xml = QXmlStreamReader(&file);
 
             while (!xml.atEnd()) {
                 if (xml.readNext() == QXmlStreamReader::StartElement &&
-                    xml.name() == "location") {
+                    xml.name() == u"location"_qsv) {
                     appendIfExists(xml.readElementText());
                 }
             }
@@ -1765,7 +1768,7 @@ void MainWindow::importPlaylist(const bool createNewTab) {
                 QMessageBox::warning(this, tr("Error"), xml.errorString());
                 return;
             }
-        } else if (extension == u"m3u"_qsv || extension == u"m3u8"_qsv) {
+        } else if (extension == EXT_M3U || extension == EXT_M3U8) {
             QTextStream input = QTextStream(&file);
 
             while (!input.atEnd()) {
@@ -1788,7 +1791,7 @@ void MainWindow::importPlaylist(const bool createNewTab) {
 
         const i8 currentIndex = playlistView->currentIndex();
         const u8 index = (createNewTab || currentIndex == -1)
-                             ? playlistView->addTab(filePathInfo.fileName())
+                             ? playlistView->addTab(fileInfo.fileName())
                              : currentIndex;
 
         playlistView->tree(index)->fillTable(filePaths);
@@ -1812,11 +1815,10 @@ void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
 
     const auto& tabLabel = playlistView->tabLabel(index);
     outputPath.reserve(1 + tabLabel.size() + 1 + 4);
-    outputPath += u"/";
+    outputPath += '/';
     outputPath += tabLabel;
-    outputPath += u".";
-    outputPath +=
-        playlistType == PlaylistFileType::XSPF ? u"xspf"_qsv : u"m3u8"_qsv;
+    outputPath += '.';
+    outputPath += playlistType == PlaylistFileType::XSPF ? EXT_XSPF : EXT_M3U8;
 
     if (QFile::exists(outputPath)) {
         const auto pressedButton = QMessageBox::warning(
@@ -1860,43 +1862,43 @@ void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
 static constexpr auto getXSPFTag(const TrackProperty property) -> QStringView {
     switch (property) {
         case TrackProperty::Title:
-            return u"title";
+            return u"title"_qsv;
         case TrackProperty::Artist:
-            return u"creator";
+            return u"creator"_qsv;
         case TrackProperty::Album:
-            return u"album";
+            return u"album"_qsv;
         case TrackProperty::AlbumArtist:
-            return u"albumArtist";
+            return u"albumArtist"_qsv;
         case TrackProperty::Genre:
-            return u"genre";
+            return u"genre"_qsv;
         case TrackProperty::Duration:
-            return u"duration";
+            return u"duration"_qsv;
         case TrackProperty::TrackNumber:
-            return u"trackNum";
+            return u"trackNum"_qsv;
         case TrackProperty::Comment:
-            return u"annotation";
+            return u"annotation"_qsv;
         case TrackProperty::Path:
-            return u"location";
+            return u"location"_qsv;
         case TrackProperty::Composer:
-            return u"composer";
+            return u"composer"_qsv;
         case TrackProperty::Publisher:
-            return u"publisher";
+            return u"publisher"_qsv;
         case TrackProperty::Year:
-            return u"year";
+            return u"year"_qsv;
         case TrackProperty::BPM:
-            return u"bpm";
+            return u"bpm"_qsv;
         case TrackProperty::Language:
-            return u"language";
+            return u"language"_qsv;
         case TrackProperty::DiscNumber:
-            return u"disc";
+            return u"disc"_qsv;
         case TrackProperty::Bitrate:
-            return u"bitrate";
+            return u"bitrate"_qsv;
         case TrackProperty::SampleRate:
-            return u"samplerate";
+            return u"samplerate"_qsv;
         case TrackProperty::Channels:
-            return u"channels";
+            return u"channels"_qsv;
         case TrackProperty::Format:
-            return u"format";
+            return u"format"_qsv;
         default:
             return {};
             break;
@@ -2006,9 +2008,11 @@ void MainWindow::adjustPlaylistView() {
     const u8 dockWidgetIndex = mainArea->indexOf(dockWidget);
 
     if (mainAreaOrientation == Qt::Horizontal) {
-        dockWidgetPosition = dockWidgetIndex == 0 ? Left : Right;
+        dockWidgetPosition = dockWidgetIndex == 0 ? DockWidgetPosition::Left
+                                                  : DockWidgetPosition::Right;
     } else {
-        dockWidgetPosition = dockWidgetIndex == 0 ? Top : Bottom;
+        dockWidgetPosition = dockWidgetIndex == 0 ? DockWidgetPosition::Top
+                                                  : DockWidgetPosition::Bottom;
     }
 
     const i8 currentIndex = playlistView->currentIndex();
@@ -2111,7 +2115,7 @@ auto MainWindow::constructAudioFileFilter() -> QString {
     filter += tr("Audio/Video Files (");
 
     for (const QStringView extension : ALLOWED_FILE_EXTENSIONS) {
-        filter += u"*.";
+        filter += u"*."_qsv;
         filter += extension;
         filter += ' ';
     }

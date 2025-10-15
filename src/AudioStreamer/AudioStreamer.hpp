@@ -20,6 +20,7 @@ extern "C" {
 using namespace FFmpeg;
 
 // TODO: Playback stutters seem to only happen when I/O can't keep up
+// When tested with tracks located on HDD, stutters, on SSD it doesn't
 // A solution for that is deque that asynchronously reads buffers, but that
 // requires thinking
 

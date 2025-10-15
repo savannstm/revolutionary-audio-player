@@ -6,7 +6,7 @@
 
 #include "Aliases.hpp"
 #include "Constants.hpp"
-#include "Log.hpp"
+#include "Logger.hpp"
 
 #include <windows.h>
 
@@ -238,15 +238,15 @@ auto removeRegistryEntry(HKEY root, const wstring_view entry) -> bool {
 inline void
 createFileAssociationsOS(const QString& appPath_, const QString& iconPath_) {
     const wstring_view appPath = { ras<wcstr>(appPath_.utf16()),
-                                   as<usize>(appPath_.size()) };
+                                   usize(appPath_.size()) };
 
     const wstring_view iconPath = { ras<wcstr>(iconPath_.utf16()),
-                                    as<usize>(iconPath_.size()) };
+                                    usize(iconPath_.size()) };
 
     for (const u8 idx : range(0, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT)) {
         const QStringView extension = ALLOWED_MUSIC_FILE_EXTENSIONS[idx];
         const wstring_view wextension = { ras<wcstr>(extension.utf16()),
-                                          as<usize>(extension.size()) };
+                                          usize(extension.size()) };
 
         const wstring_view progId = PROG_IDS[idx];
         const wstring_view extensionEntry = EXTENSION_ENTRIES[idx];
@@ -381,7 +381,7 @@ inline void removeFileAssociationsOS() {
 
 inline void createContextMenuEntryOS(const QString& appPath_) {
     const wstring_view appPath = { ras<wcstr>(appPath_.utf16()),
-                                   as<usize>(appPath_.size()) };
+                                   usize(appPath_.size()) };
 
     constexpr wstring_view shellEntryNameKey = L"Open directory in RAP";
     setRegistryValue(

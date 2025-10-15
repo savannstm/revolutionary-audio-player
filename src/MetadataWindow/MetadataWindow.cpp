@@ -16,7 +16,7 @@ MetadataWindow::MetadataWindow(
          views::drop(views::enumerate(trackPropertiesLabels()), 1)) {
         auto* item = new QTreeWidgetItem(treeWidget);
         item->setText(0, label);
-        item->setText(1, metadata[as<TrackProperty>(idx)]);
+        item->setText(1, metadata[TrackProperty(idx)]);
         treeWidget->addTopLevelItem(item);
     }
 
