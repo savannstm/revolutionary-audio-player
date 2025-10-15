@@ -1096,12 +1096,11 @@ void MainWindow::onAudioProgressUpdated(u16 seconds) {
         if (CUEOffset != UINT16_MAX) {
             seconds -= CUEOffset;
 
-            if (seconds == secsDuration + 1) {
+            if (seconds == secsDuration) {
                 playNext();
             }
         }
 
-        updateProgressLabel(seconds, duration);
         progressSlider->setValue(seconds);
     }
 }
