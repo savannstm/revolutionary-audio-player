@@ -41,41 +41,16 @@ auto toStringList(const QJsonArray& jsonArray) -> QStringList {
     return list;
 }
 
-// TabObject implementation
-TabObject::TabObject(const QJsonObject& obj) {
-    label = obj["label"].toString();
-    backgroundImagePath = obj["backgroundImagePath"].toString();
-    tracks = toStringList(obj["tracks"].toArray());
-    order = toStringList(obj["order"].toArray());
-    columnProperties = fromJsonArray<TrackProperty, TRACK_PROPERTY_COUNT>(
-        obj["columnProperties"].toArray()
-    );
-    columnStates = fromJsonArray<bool, TRACK_PROPERTY_COUNT>(
-        obj["columnStates"].toArray()
-    );
-}
-
-auto TabObject::stringify() const -> QJsonObject {
-    QJsonObject json;
-    json["label"] = label;
-    json["backgroundImagePath"] = backgroundImagePath;
-    json["tracks"] = QJsonArray::fromStringList(tracks);
-    json["order"] = QJsonArray::fromStringList(order);
-    json["columnProperties"] = toJsonArray(columnProperties);
-    json["columnStates"] = toJsonArray(columnStates);
-    return json;
-}
-
 // EqualizerSettings implementation
 EqualizerSettings::EqualizerSettings(const QJsonObject& obj) {
-    enabled = obj["enabled"].toBool();
-    bandIndex = obj["bandIndex"].toInt();
-    presetIndex = obj["presetIndex"].toInt();
+    enabled = obj[u"enabled"_qsv].toBool();
+    bandIndex = obj[u"bandIndex"_qsv].toInt();
+    presetIndex = obj[u"presetIndex"_qsv].toInt();
 
     if (obj.contains("presets")) {
-        const QJsonObject presetsObj = obj["presets"].toObject();
+        const QJsonObject presetsObj = obj[u"presets"_qsv].toObject();
 
-        for (const QString& bandKey : { "10", "18", "30" }) {
+        for (const QStringView bandKey : { u"10"_qsv, u"18"_qsv, u"30"_qsv }) {
             if (presetsObj.contains(bandKey)) {
                 const QJsonObject bandPresetsObj =
                     presetsObj[bandKey].toObject();
@@ -103,9 +78,9 @@ EqualizerSettings::EqualizerSettings(const QJsonObject& obj) {
 
 auto EqualizerSettings::stringify() const -> QJsonObject {
     QJsonObject json;
-    json["enabled"] = enabled;
-    json["bandIndex"] = bandIndex;
-    json["presetIndex"] = presetIndex;
+    json[u"enabled"_qsv] = enabled;
+    json[u"bandIndex"_qsv] = bandIndex;
+    json[u"presetIndex"_qsv] = presetIndex;
 
     QJsonObject presetsObj;
 
@@ -125,7 +100,7 @@ auto EqualizerSettings::stringify() const -> QJsonObject {
         presetsObj[QString::number(bandKey)] = bandPresetsObj;
     }
 
-    json["presets"] = presetsObj;
+    json[u"presets"_qsv] = presetsObj;
     return json;
 }
 
@@ -141,96 +116,90 @@ SettingsFlags::SettingsFlags() {
 }
 
 SettingsFlags::SettingsFlags(const QJsonObject& obj) {
-    applicationStyle = as<Style>(obj["applicationStyle"].toInt());
-    playlistNaming = as<PlaylistNaming>(obj["playlistNaming"].toInt());
-    contextMenuEntryEnabled = obj["contextMenuEntryEnabled"].toBool();
-    fileAssociationsEnabled = obj["fileAssociationsEnabled"].toBool();
-    prioritizeExternalCover = obj["prioritizeExternalCover"].toBool();
-    autoSetBackground = obj["autoSetBackground"].toBool();
+    applicationStyle = as<Style>(obj[u"applicationStyle"_qsv].toInt());
+    playlistNaming = as<PlaylistNaming>(obj[u"playlistNaming"_qsv].toInt());
+    contextMenuEntryEnabled = obj[u"contextMenuEntryEnabled"_qsv].toBool();
+    fileAssociationsEnabled = obj[u"fileAssociationsEnabled"_qsv].toBool();
+    prioritizeExternalCover = obj[u"prioritizeExternalCover"_qsv].toBool();
+    autoSetBackground = obj[u"autoSetBackground"_qsv].toBool();
 }
 
 auto SettingsFlags::stringify() const -> QJsonObject {
     QJsonObject json;
-    json["applicationStyle"] = applicationStyle;
-    json["playlistNaming"] = playlistNaming;
-    json["contextMenuEntryEnabled"] = contextMenuEntryEnabled;
-    json["fileAssociationsEnabled"] = fileAssociationsEnabled;
-    json["prioritizeExternalCover"] = prioritizeExternalCover;
-    json["autoSetBackground"] = autoSetBackground;
+    json[u"applicationStyle"_qsv] = applicationStyle;
+    json[u"playlistNaming"_qsv] = playlistNaming;
+    json[u"contextMenuEntryEnabled"_qsv] = contextMenuEntryEnabled;
+    json[u"fileAssociationsEnabled"_qsv] = fileAssociationsEnabled;
+    json[u"prioritizeExternalCover"_qsv] = prioritizeExternalCover;
+    json[u"autoSetBackground"_qsv] = autoSetBackground;
     return json;
 }
 
 // DockWidgetSettings implementation
 DockWidgetSettings::DockWidgetSettings(const QJsonObject& obj) {
-    position = as<DockWidgetPosition>(obj["position"].toInt());
-    size = obj["size"].toInt();
-    imageSize = obj["imageSize"].toInt();
+    position = as<DockWidgetPosition>(obj[u"position"_qsv].toInt());
+    size = obj[u"size"_qsv].toInt();
+    imageSize = obj[u"imageSize"_qsv].toInt();
 }
 
 auto DockWidgetSettings::stringify() const -> QJsonObject {
     QJsonObject json;
-    json["size"] = size;
-    json["position"] = position;
-    json["imageSize"] = imageSize;
+    json[u"size"_qsv] = size;
+    json[u"position"_qsv] = position;
+    json[u"imageSize"_qsv] = imageSize;
     return json;
 }
 
 PeakVisualizerSettings::PeakVisualizerSettings(const QJsonObject& obj) {
-    hidden = obj["hidden"].toBool();
-    mode = as<PeakVisualizerMode>(obj["mode"].toInt());
-    preset = as<QGradient::Preset>(obj["preset"].toInt());
+    hidden = obj[u"hidden"_qsv].toBool();
+    mode = as<PeakVisualizerMode>(obj[u"mode"_qsv].toInt());
+    preset = as<QGradient::Preset>(obj[u"preset"_qsv].toInt());
 }
 
 auto PeakVisualizerSettings::stringify() const -> QJsonObject {
     QJsonObject json;
-    json["hidden"] = hidden;
-    json["mode"] = mode;
-    json["preset"] = preset;
+    json[u"hidden"_qsv] = hidden;
+    json[u"mode"_qsv] = mode;
+    json[u"preset"_qsv] = preset;
     return json;
 }
 
 // Settings implementation
 Settings::Settings(const QJsonObject& settingsObject) {
-    lastOpenedDirectory = settingsObject["lastOpenedDirectory"].toString();
+    lastOpenedDirectory = settingsObject[u"lastOpenedDirectory"_qsv].toString();
 
-    if (settingsObject.contains("volume")) {
-        volume = settingsObject["volume"].toInt();
+    if (settingsObject.contains(u"volume"_qsv)) {
+        volume = settingsObject[u"volume"_qsv].toInt();
     }
 
-    if (settingsObject.contains("currentTab")) {
-        currentTab = i8(settingsObject["currentTab"].toInt());
+    if (settingsObject.contains(u"currentTab"_qsv)) {
+        currentTab = i8(settingsObject[u"currentTab"_qsv].toInt());
     }
 
-    if (settingsObject.contains("language")) {
-        language = as<QLocale::Language>(settingsObject["language"].toInt());
+    if (settingsObject.contains(u"language"_qsv)) {
+        language =
+            as<QLocale::Language>(settingsObject[u"language"_qsv].toInt());
     }
 
-    if (settingsObject.contains("equalizerSettings")) {
-        equalizerSettings =
-            EqualizerSettings(settingsObject["equalizerSettings"].toObject());
+    if (settingsObject.contains(u"equalizerSettings"_qsv)) {
+        equalizerSettings = EqualizerSettings(
+            settingsObject[u"equalizerSettings"_qsv].toObject()
+        );
     }
 
-    if (settingsObject.contains("tabs")) {
-        const QJsonArray array = settingsObject["tabs"].toArray();
-        tabs.reserve(array.size());
-
-        for (const auto& tab : array) {
-            tabs.emplace_back(tab.toObject());
-        }
+    if (settingsObject.contains(u"flags"_qsv)) {
+        flags = SettingsFlags(settingsObject[u"flags"_qsv].toObject());
     }
 
-    if (settingsObject.contains("flags")) {
-        flags = SettingsFlags(settingsObject["flags"].toObject());
-    }
-
-    if (settingsObject.contains("dockWidget")) {
+    if (settingsObject.contains(u"dockWidget"_qsv)) {
         dockWidgetSettings =
-            DockWidgetSettings(settingsObject["dockWidget"].toObject());
+            DockWidgetSettings(settingsObject[u"dockWidget"_qsv].toObject());
     }
 
-    if (settingsObject.contains("outputDevice")) {
+    if (settingsObject.contains(u"outputDevice"_qsv)) {
         const auto outputDevices = QMediaDevices::audioOutputs();
-        const QString requiredName = settingsObject["outputDevice"].toString();
+        const QString requiredName =
+            settingsObject[u"outputDevice"_qsv].toString();
 
         for (const auto& device : outputDevices) {
             if (device.description() == requiredName) {
@@ -239,31 +208,25 @@ Settings::Settings(const QJsonObject& settingsObject) {
         }
     }
 
-    if (settingsObject.contains("peakVisualizerSettings")) {
+    if (settingsObject.contains(u"peakVisualizerSettings"_qsv)) {
         peakVisualizerSettings = PeakVisualizerSettings(
-            settingsObject["peakVisualizerSettings"].toObject()
+            settingsObject[u"peakVisualizerSettings"_qsv].toObject()
         );
     }
 }
 
 auto Settings::stringify() const -> QJsonObject {
     QJsonObject json;
-    json["equalizerSettings"] = equalizerSettings.stringify();
-    json["lastOpenedDirectory"] = lastOpenedDirectory;
+    json[u"equalizerSettings"_qsv] = equalizerSettings.stringify();
+    json[u"lastOpenedDirectory"_qsv] = lastOpenedDirectory;
 
-    QJsonArray array;
-    for (const auto& tab : tabs) {
-        array.append(tab.stringify());
-    }
-
-    json["tabs"] = array;
-    json["volume"] = volume;
-    json["currentTab"] = currentTab;
-    json["language"] = language;
-    json["flags"] = flags.stringify();
-    json["dockWidget"] = dockWidgetSettings.stringify();
-    json["outputDevice"] = outputDevice.description();
-    json["peakVisualizerSettings"] = peakVisualizerSettings.stringify();
+    json[u"volume"_qsv] = volume;
+    json[u"currentTab"_qsv] = currentTab;
+    json[u"language"_qsv] = language;
+    json[u"flags"_qsv] = flags.stringify();
+    json[u"dockWidget"_qsv] = dockWidgetSettings.stringify();
+    json[u"outputDevice"_qsv] = outputDevice.description();
+    json[u"peakVisualizerSettings"_qsv] = peakVisualizerSettings.stringify();
 
     return json;
 }
@@ -271,4 +234,39 @@ auto Settings::stringify() const -> QJsonObject {
 void Settings::save(QFile& file) const {
     file.write(QJsonDocument(stringify()).toJson(QJsonDocument::Compact));
     file.close();
+}
+
+PlaylistObject::PlaylistObject(const QJsonObject& obj) {
+    label = obj[u"label"_qsv].toString();
+    backgroundImagePath = obj[u"backgroundImagePath"_qsv].toString();
+    tracks = toStringList(obj[u"tracks"_qsv].toArray());
+    order = toStringList(obj[u"order"_qsv].toArray());
+    columnProperties = fromJsonArray<TrackProperty, TRACK_PROPERTY_COUNT>(
+        obj[u"columnProperties"_qsv].toArray()
+    );
+    columnStates = fromJsonArray<bool, TRACK_PROPERTY_COUNT>(
+        obj[u"columnStates"_qsv].toArray()
+    );
+    cueFilePaths = toStringList(obj[u"cueFilePaths"_qsv].toArray());
+
+    cueOffsets.reserve(tracks.size());
+
+    const auto cueOffsetsArray = obj[u"cueOffsets"_qsv].toArray();
+
+    for (const auto& element : cueOffsetsArray) {
+        cueOffsets.append(element.toVariant());
+    }
+}
+
+auto PlaylistObject::stringify() const -> QJsonObject {
+    QJsonObject json;
+    json[u"label"_qsv] = label;
+    json[u"backgroundImagePath"_qsv] = backgroundImagePath;
+    json[u"tracks"_qsv] = QJsonArray::fromStringList(tracks);
+    json[u"order"_qsv] = QJsonArray::fromStringList(order);
+    json[u"columnProperties"_qsv] = toJsonArray(columnProperties);
+    json[u"columnStates"_qsv] = toJsonArray(columnStates);
+    json[u"cueOffsets"_qsv] = toJsonArray(cueOffsets);
+    json[u"cueFilePaths"_qsv] = toJsonArray(cueFilePaths);
+    return json;
 }

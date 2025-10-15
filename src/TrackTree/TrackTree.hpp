@@ -36,10 +36,15 @@ class TrackTree : public QTreeView {
     [[nodiscard]] auto rowMetadata(u16 row) const
         -> HashMap<TrackProperty, QString>;
     void sortByPath();
-    void fillTable(const QStringList& paths, bool fromArgs = false);
+    void fillTable(
+        const QStringList& paths,
+        const QList<QVariant>& cueOffsets = {},
+        bool fromArgs = false
+    );
     void fillTableCUE(
         HashMap<TrackProperty, QString>& metadata,
-        const QList<CUETrack>& tracks
+        const QList<CUETrack>& tracks,
+        const QString& cueFilePath
     );
     auto deselect(i32 index = -1) -> QModelIndex;
 
@@ -64,7 +69,8 @@ class TrackTree : public QTreeView {
     inline void addFile(const HashMap<TrackProperty, QString>& metadata);
     inline void addFileCUE(
         const CUETrack& track,
-        const HashMap<TrackProperty, QString>& metadata
+        const HashMap<TrackProperty, QString>& metadata,
+        const QString& cueFilePath
     );
     inline void handleHeaderPress(u8 index, Qt::MouseButton button);
     inline void resetSorting(i32 /* unused */, Qt::SortOrder sortOrder);

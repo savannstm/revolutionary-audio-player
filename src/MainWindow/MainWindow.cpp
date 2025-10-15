@@ -428,7 +428,7 @@ void MainWindow::processArgs(const QStringList& args) {
         const u8 index = playlistView->addTab(tabLabel);
 
         TrackTree* tree = playlistView->tree(index);
-        tree->fillTable(args, true);
+        tree->fillTable(args, {}, true);
         changePlaylist(i8(index));
 
         playlistView->setCurrentIndex(i8(index));
@@ -539,16 +539,90 @@ void MainWindow::updatePlaybackPosition() {
     updateProgressLabel(second / SECOND_MS);
 }
 
-auto MainWindow::saveSettings() -> result<bool, QString> {
-    if (!settingsFile.open(QIODevice::WriteOnly)) {
-        return err(settingsFile.errorString());
+void MainWindow::loadPlaylists() {
+    QFile playlistsFile =
+        QFile(settings->playlistsPath + "/rap-playlists.json");
+
+    if (!playlistsFile.open(QFile::ReadOnly)) {
+        return;
     }
 
-    const u8 tabCount = playlistView->tabCount();
+    QJsonArray playlistsArray =
+        QJsonDocument::fromJson(playlistsFile.readAll()).array();
 
-    settings->currentTab = playlistView->currentIndex();
-    settings->volume = volumeSlider->value();
-    settings->tabs = vector<TabObject>(tabCount);
+    for (const auto& playlistObject : playlistsArray) {
+        const PlaylistObject playlist =
+            PlaylistObject(playlistObject.toObject());
+
+        const u8 index = playlistView->addTab(
+            playlist.label,
+            playlist.columnProperties,
+            playlist.columnStates
+        );
+
+        auto* tree = playlistView->tree(index);
+        tree->fillTable(playlist.tracks, playlist.cueOffsets);
+
+        if (!playlist.order.empty()) {
+            connect(
+                tree,
+                &TrackTree::fillingFinished,
+                this,
+                [=](const bool /* ignore */) {
+                for (const u16 track : range(0, tree->model()->rowCount())) {
+                    tree->model()
+                        ->item(track, TrackProperty::Order)
+                        ->setData(playlist.order[track], Qt::EditRole);
+                }
+            },
+                Qt::SingleShotConnection
+            );
+        }
+
+        const QString& imagePath = playlist.backgroundImagePath;
+
+        if (!imagePath.isEmpty()) {
+            const QString extension =
+                imagePath.sliced(imagePath.lastIndexOf('.') + 1);
+
+            QImage image;
+
+            if (ranges::contains(ALLOWED_MUSIC_FILE_EXTENSIONS, extension)) {
+                const auto extracted = extractCover(imagePath.toUtf8().data());
+
+                if (!extracted) {
+                    LOG_WARN(extracted.error());
+                    return;
+                }
+
+                const vector<u8>& coverBytes = extracted.value();
+
+                image.loadFromData(coverBytes.data(), i32(coverBytes.size()));
+            } else {
+                if (!QFile::exists(imagePath)) {
+                    return;
+                }
+
+                image.load(imagePath);
+            }
+
+            QTimer::singleShot(SECOND_MS, [=, this] {
+                playlistView->setBackgroundImage(index, image, imagePath);
+            });
+        }
+    }
+}
+
+auto MainWindow::savePlaylists() -> result<bool, QString> {
+    QFile playlistsFile =
+        QFile(settings->playlistsPath + "/rap-playlists.json");
+
+    if (!playlistsFile.open(QIODevice::WriteOnly)) {
+        return err(playlistsFile.errorString());
+    }
+
+    QJsonArray playlistsArray;
+    const u8 tabCount = playlistView->tabCount();
 
     for (const u8 tab : range(0, tabCount)) {
         auto* tree = playlistView->tree(tab);
@@ -556,27 +630,54 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
 
         const u16 rowCount = model->rowCount();
 
-        TabObject& tabObject = settings->tabs[tab];
-        tabObject.label = playlistView->tabLabel(tab);
-        tabObject.backgroundImagePath = playlistView->backgroundImagePath(tab);
-        tabObject.tracks = QStringList(rowCount);
-        tabObject.order = QStringList(rowCount);
+        PlaylistObject playlistObject = PlaylistObject(rowCount);
+        playlistObject.label = playlistView->tabLabel(tab);
+        playlistObject.backgroundImagePath =
+            playlistView->backgroundImagePath(tab);
 
         for (const u16 row : range(0, rowCount)) {
             const HashMap<TrackProperty, QString> rowMetadata =
                 tree->rowMetadata(row);
-            tabObject.tracks[row] = rowMetadata[TrackProperty::Path];
-            tabObject.order[row] = rowMetadata[TrackProperty::Order];
+            const auto& item = model->item(row, 0);
+
+            playlistObject.tracks.append(
+                item->data(CUE_FILE_PATH_ROLE).isValid()
+                    ? item->data(CUE_FILE_PATH_ROLE).toString()
+                    : rowMetadata[TrackProperty::Path]
+            );
+            playlistObject.order.append(rowMetadata[TrackProperty::Order]);
+            playlistObject.cueOffsets.append(
+                model->item(row, 0)->data(CUE_OFFSET_ROLE)
+            );
         }
 
         for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
-            tabObject.columnProperties[column] = as<TrackProperty>(
+            playlistObject.columnProperties[column] = TrackProperty(
                 model->headerData(column, Qt::Horizontal, PROPERTY_ROLE)
                     .toUInt()
             );
-            tabObject.columnStates[column] = tree->isColumnHidden(column);
+            playlistObject.columnStates[column] = tree->isColumnHidden(column);
         }
+
+        playlistsArray.append(playlistObject.stringify());
     }
+
+    playlistsFile.write(
+        QJsonDocument(playlistsArray).toJson(QJsonDocument::Compact)
+    );
+    playlistsFile.close();
+    return true;
+}
+
+auto MainWindow::saveSettings() -> result<bool, QString> {
+    QFile settingsFile = QFile(settings->settingsPath + "/rap-settings.json");
+
+    if (!settingsFile.open(QIODevice::WriteOnly)) {
+        return err(settingsFile.errorString());
+    }
+
+    settings->currentTab = playlistView->currentIndex();
+    settings->volume = volumeSlider->value();
 
     equalizerMenu->saveSettings();
 
@@ -595,9 +696,9 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
     settings->dockWidgetSettings.imageSize = dockCoverLabel->height();
 
     peakVisualizer->saveSettings(settings->peakVisualizerSettings);
-
     settings->save(settingsFile);
-    return true;
+
+    return savePlaylists();
 }
 
 void MainWindow::retranslate(const QLocale::Language language) {
@@ -639,6 +740,10 @@ void MainWindow::retranslate(const QLocale::Language language) {
 }
 
 void MainWindow::initializeSettings() {
+    // TODO: Check for registry entry with settingsPath
+    QFile settingsFile =
+        QFile(QApplication::applicationDirPath() + "/rap-settings.json");
+
     if (!settingsFile.open(QIODevice::ReadOnly)) {
         settings = make_shared<Settings>();
     } else {
@@ -660,73 +765,9 @@ void MainWindow::loadSettings() {
     formattedVolume += QString::number(settings->volume);
     formattedVolume += '%';
     volumeLabel->setText(formattedVolume);
-    volumeLabelCloned->setText(formattedVolume);
+    volumeLabelTray->setText(formattedVolume);
 
-    if (!settings->tabs.empty()) {
-        for (const auto& tabObject : settings->tabs) {
-            const u8 index = playlistView->addTab(
-                tabObject.label,
-                tabObject.columnProperties,
-                tabObject.columnStates
-            );
-
-            auto* tree = playlistView->tree(index);
-            tree->fillTable(tabObject.tracks);
-
-            if (tabObject.order.empty()) {
-                continue;
-            }
-
-            connect(
-                tree,
-                &TrackTree::fillingFinished,
-                this,
-                [=](const bool /* ignore */) {
-                for (const u16 track : range(0, tree->model()->rowCount())) {
-                    tree->model()
-                        ->item(track, TrackProperty::Order)
-                        ->setData(tabObject.order[track], Qt::EditRole);
-                }
-            },
-                Qt::SingleShotConnection
-            );
-
-            const QString& imagePath = tabObject.backgroundImagePath;
-
-            if (imagePath.isEmpty()) {
-                continue;
-            }
-
-            const QString extension =
-                imagePath.sliced(imagePath.lastIndexOf('.') + 1);
-
-            QImage image;
-
-            if (ranges::contains(ALLOWED_MUSIC_FILE_EXTENSIONS, extension)) {
-                const auto extracted = extractCover(imagePath.toUtf8().data());
-
-                if (!extracted) {
-                    LOG_WARN(extracted.error());
-                    return;
-                }
-
-                const vector<u8>& coverBytes = extracted.value();
-
-                image.loadFromData(coverBytes.data(), i32(coverBytes.size()));
-            } else {
-                if (!QFile::exists(imagePath)) {
-                    return;
-                }
-
-                image.load(imagePath);
-            }
-
-            QTimer::singleShot(SECOND_MS, [=, this] {
-                playlistView->setBackgroundImage(index, image, imagePath);
-            });
-        }
-    }
-
+    loadPlaylists();
     playlistView->setCurrentIndex(settings->currentTab);
     equalizerMenu->loadSettings();
 
@@ -1394,6 +1435,19 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     const HashMap<TrackProperty, QString> metadata =
         tree->rowMetadata(index.row());
 
+    const bool playingCUE =
+        metadata[TrackProperty::Format].toLower().endsWith(EXT_CUE);
+
+    if (playingCUE) {
+        CUEOffset =
+            tree->model()->item(index.row(), 0)->data(CUE_OFFSET_ROLE).toUInt();
+    }
+
+    togglePlayback(
+        metadata[TrackProperty::Path],
+        playingCUE ? CUEOffset : UINT16_MAX
+    );
+
     tree->model()->itemFromIndex(index)->setData(startIcon, Qt::DecorationRole);
 
     QString artistAndTrack;
@@ -1475,20 +1529,8 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     progressSliderCloned->setRange(0, seconds);
     updateProgressLabel(0, metadata[TrackProperty::Duration]);
 
-    const bool playingCUE = metadata[TrackProperty::Format].endsWith(u"CUE");
-
-    if (playingCUE) {
-        CUEOffset =
-            tree->model()->item(index.row(), 0)->data(PROPERTY_ROLE).toUInt();
-        qDebug() << CUEOffset;
-    } else {
-        CUEOffset = UINT16_MAX;
-    }
-
     dockCoverLabel->clear();
     dockCoverLabel->setPixmap(cover);
-
-    togglePlayback(metadata[TrackProperty::Path], playingCUE ? CUEOffset : 0);
 }
 
 void MainWindow::togglePlayback(const QString& path, const u16 startSecond) {
@@ -1647,13 +1689,6 @@ void MainWindow::stopPlayback() {
     }
 }
 
-template <usize N>
-constexpr auto sliceValue(const QString& line, const char (&key)[N])
-    -> QString {
-    constexpr u32 keyLen = N - 1;
-    return line.sliced(keyLen + 1, line.size() - keyLen - 2);
-}
-
 void MainWindow::importPlaylist(const bool createNewTab) {
     const QString filter =
         tr("XSPF/M3U/CUE Playlist (*.xspf *.m3u8 *.m3u *.cue)");
@@ -1670,9 +1705,9 @@ void MainWindow::importPlaylist(const bool createNewTab) {
 
     const QString filePath = fileUrl.toLocalFile();
 
-    const QFileInfo filePathInfo = QFileInfo(filePath);
-    const QString dirPath = filePathInfo.absolutePath() + '/';
-    const QString extension = filePathInfo.suffix().toLower();
+    const QFileInfo fileInfo = QFileInfo(filePath);
+    const QString dirPath = fileInfo.absolutePath() + '/';
+    const QString extension = fileInfo.suffix().toLower();
 
     QFile file = QFile(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -1680,87 +1715,9 @@ void MainWindow::importPlaylist(const bool createNewTab) {
         return;
     }
 
-    if (extension == u"cue"_qsv) {
-        QTextStream input = QTextStream(&file);
-
-        bool listingTracks = false;
-        u16 offset = 0;
-
-        std::optional<CUETrack> track;
-        QList<CUETrack> tracks;
-
-        HashMap<TrackProperty, QString> metadata;
-
-        auto addTrack = [&tracks, &track] {
-            if (track) {
-                tracks.emplace_back(std::move(*track));
-                track.reset();
-            }
-        };
-
-        while (!input.atEnd()) {
-            const QString line = input.readLine().trimmed();
-
-            if (listingTracks) {
-                if (line.startsWith("TRACK")) {
-                    addTrack();
-                    track = CUETrack{ .trackNumber =
-                                          line.sliced(sizeof("TRACK"), 2) };
-                } else if (line.startsWith("TITLE")) {
-                    track->title = sliceValue(line, "TITLE ");
-                } else if (line.startsWith("PERFORMER")) {
-                    track->artist = sliceValue(line, "PERFORMER ");
-                } else if (line.startsWith("INDEX 01")) {
-                    track->offset =
-                        timeToSecs(line.sliced(sizeof("INDEX 01"), 5));
-                }
-            } else {
-                if (line.startsWith("PERFORMER")) {
-                    metadata.emplace(
-                        TrackProperty::Artist,
-                        sliceValue(line, "PERFORMER ")
-                    );
-                } else if (line.startsWith("TITLE")) {
-                    metadata.emplace(
-                        TrackProperty::Album,
-                        sliceValue(line, "TITLE ")
-                    );
-                } else if (line.startsWith("REM DATE")) {
-                    metadata.emplace(
-                        TrackProperty::Year,
-                        line.sliced(sizeof("REM DATE"))
-                    );
-                } else if (line.startsWith("REM GENRE")) {
-                    metadata.emplace(
-                        TrackProperty::Genre,
-                        sliceValue(line, "REM GENRE ")
-                    );
-                } else if (line.startsWith("FILE")) {
-                    listingTracks = true;
-
-                    const QString filename = line.sliced(
-                        line.indexOf('"') + 1,
-                        line.lastIndexOf('"') - line.indexOf('"') - 1
-                    );
-                    const QString path = filePathInfo.dir().filePath(filename);
-
-                    auto extracted = extractMetadata(path).value();
-                    extracted.insert_or_assign(TrackProperty::Path, path);
-
-                    for (const auto& [key, value] : metadata) {
-                        extracted.insert_or_assign(key, value);
-                    }
-
-                    metadata = std::move(extracted);
-                    metadata.insert_or_assign(
-                        TrackProperty::Format,
-                        metadata[TrackProperty::Format] + "/CUE"
-                    );
-                }
-            }
-        }
-
-        addTrack();
+    if (extension == EXT_CUE) {
+        CueInfo info = parseCUE(file, fileInfo);
+        auto& metadata = info.metadata;
 
         QString tabName;
         tabName.reserve(isize(
@@ -1768,7 +1725,7 @@ void MainWindow::importPlaylist(const bool createNewTab) {
             metadata[TrackProperty::Title].size()
         ));
         tabName += metadata[TrackProperty::Artist];
-        tabName += u" - ";
+        tabName += u" - "_qsv;
         tabName += metadata[TrackProperty::Title];
 
         const i8 currentIndex = playlistView->currentIndex();
@@ -1776,7 +1733,9 @@ void MainWindow::importPlaylist(const bool createNewTab) {
                              ? playlistView->addTab(tabName)
                              : currentIndex;
 
-        playlistView->tree(index)->fillTableCUE(metadata, tracks);
+        playlistView->tree(index)
+            ->fillTableCUE(metadata, info.tracks, info.cueFilePath);
+
     } else {
         QStringList filePaths;
         filePaths.reserve(MINIMUM_TRACK_COUNT);

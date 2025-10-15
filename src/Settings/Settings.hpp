@@ -4,10 +4,12 @@
 #include "Constants.hpp"
 #include "Enums.hpp"
 
+#include <QApplication>
 #include <QAudioDevice>
 #include <QFile>
 #include <QGradient>
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QMediaDevices>
 
 template <typename T>
@@ -17,21 +19,6 @@ template <typename T, u16 N>
 auto fromJsonArray(const QJsonArray& jsonArray) -> array<T, N>;
 
 auto toStringList(const QJsonArray& jsonArray) -> QStringList;
-
-class TabObject {
-   public:
-    explicit TabObject() = default;
-    explicit TabObject(const QJsonObject& obj);
-
-    [[nodiscard]] auto stringify() const -> QJsonObject;
-
-    QString label;
-    QString backgroundImagePath;
-    QStringList tracks;
-    QStringList order;
-    array<TrackProperty, TRACK_PROPERTY_COUNT> columnProperties;
-    array<bool, TRACK_PROPERTY_COUNT> columnStates;
-};
 
 class EqualizerSettings {
    public:
@@ -91,10 +78,11 @@ class PeakVisualizerSettings {
     [[nodiscard]] auto stringify() const -> QJsonObject;
 
     bool hidden = false;
-    PeakVisualizerMode mode = DBFS;
+    PeakVisualizerMode mode = PeakVisualizerMode::DBFS;
     QGradient::Preset preset = QGradient::MorpheusDen;
 };
 
+// TODO: Allow selecting custom locations for settings and playlists
 class Settings {
    public:
     explicit Settings() = default;
@@ -103,14 +91,40 @@ class Settings {
     [[nodiscard]] auto stringify() const -> QJsonObject;
     void save(QFile& file) const;
 
-    EqualizerSettings equalizerSettings;
-    QString lastOpenedDirectory;
-    vector<TabObject> tabs;
+    QString settingsPath = QApplication::applicationDirPath();
+    QString playlistsPath = QApplication::applicationDirPath();
+
     u8 volume = MAX_VOLUME;
     i8 currentTab = -1;
+    QString lastOpenedDirectory;
+    QAudioDevice outputDevice = QMediaDevices::defaultAudioOutput();
     QLocale::Language language = QLocale().language();
     SettingsFlags flags;
+    EqualizerSettings equalizerSettings;
     DockWidgetSettings dockWidgetSettings;
-    QAudioDevice outputDevice = QMediaDevices::defaultAudioOutput();
     PeakVisualizerSettings peakVisualizerSettings;
+};
+
+class PlaylistObject {
+   public:
+    explicit PlaylistObject(const u16 rowCount) {
+        tracks.reserve(rowCount);
+        order.reserve(rowCount);
+        cueOffsets.reserve(rowCount);
+        cueFilePaths.reserve(rowCount);
+    };
+
+    explicit PlaylistObject(const QJsonObject& obj);
+
+    [[nodiscard]] auto stringify() const -> QJsonObject;
+
+    QString label;
+    QString backgroundImagePath;
+    QStringList tracks;
+    QStringList order;
+    QList<QVariant> cueOffsets;
+    QStringList cueFilePaths;
+
+    array<TrackProperty, TRACK_PROPERTY_COUNT> columnProperties;
+    array<bool, TRACK_PROPERTY_COUNT> columnStates;
 };

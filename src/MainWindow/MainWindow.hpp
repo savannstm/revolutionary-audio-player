@@ -59,6 +59,8 @@ class MainWindow : public QMainWindow {
 
    private:
     inline auto saveSettings() -> result<bool, QString>;
+    inline auto savePlaylists() -> result<bool, QString>;
+    inline void loadPlaylists();
     inline void initializeSettings();
     inline void loadSettings();
     inline void advancePlaylist(Direction direction);
@@ -132,11 +134,11 @@ class MainWindow : public QMainWindow {
     // Tray Icon
     QSystemTrayIcon* trayIcon = new QSystemTrayIcon(this);
     OptionMenu* trayIconMenu = new OptionMenu(this);
-    QLabel* progressLabelCloned = new QLabel(trayIconMenu);
-    QLabel* volumeLabelCloned = new QLabel(trayIconMenu);
-    CustomSlider* volumeSliderCloned =
+    QLabel* progressLabelTray = new QLabel(trayIconMenu);
+    QLabel* volumeLabelTray = new QLabel(trayIconMenu);
+    CustomSlider* volumeSliderTray =
         new CustomSlider(Qt::Horizontal, trayIconMenu);
-    CustomSlider* progressSliderCloned =
+    CustomSlider* progressSliderTray =
         new CustomSlider(Qt::Horizontal, trayIconMenu);
 
     // Labels
@@ -229,11 +231,8 @@ class MainWindow : public QMainWindow {
     QShortcut* searchShortcut = new QShortcut(QKeySequence("Ctrl+F"), this);
     QString previousSearchPrompt;
 
-    // Settings
-    QFile settingsFile =
-        QFile(QApplication::applicationDirPath() + "/rap-settings.json");
-
     // Miscellaneous
+    QString currentTrack;
     u16 CUEOffset = UINT16_MAX;
     RepeatRangeMenu* repeatRangeMenu = new RepeatRangeMenu(this);
     EqualizerMenu* equalizerMenu = nullptr;

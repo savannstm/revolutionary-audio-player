@@ -6,6 +6,16 @@
 #include "Enums.hpp"
 #include "FFMpeg.hpp"
 #include "RapidHasher.hpp"
+#include "TrackTree.hpp"
+
+#include <QDir>
+#include <QFileInfo>
+
+struct CueInfo {
+    HashMap<TrackProperty, QString> metadata;
+    QList<CUETrack> tracks;
+    QString cueFilePath;
+};
 
 using namespace FFmpeg;
 
@@ -29,6 +39,7 @@ FFmpegError(const cstr file, const i32 line, const cstr func, const i32 err)
 
 #define FFMPEG_ERROR(err) FFmpegError(__FILE__, __LINE__, __func__, err)
 
+//? FIXME: Is it really needed?
 inline auto roundBitrate(const u32 bitrate) -> QString {
     const u32 kbps = bitrate / KB_BYTES;
 
@@ -92,7 +103,7 @@ inline auto extractMetadata(const QString& filePath)
     };
 
     HashMap<TrackProperty, QString> metadata;
-    metadata.emplace(TrackProperty::Path, filePath);
+    metadata.insert_or_assign(TrackProperty::Path, filePath);
 
     const QString titleTag = getTag("title");
 
@@ -103,54 +114,60 @@ inline auto extractMetadata(const QString& filePath)
             lastIndex = filePath.lastIndexOf('\\');
         }
 
-        metadata.emplace(TrackProperty::Title, filePath.sliced(lastIndex + 1));
+        metadata.insert_or_assign(
+            TrackProperty::Title,
+            filePath.sliced(lastIndex + 1)
+        );
     } else {
-        metadata.emplace(TrackProperty::Title, titleTag);
+        metadata.insert_or_assign(TrackProperty::Title, titleTag);
     }
 
-    metadata.emplace(TrackProperty::Artist, getTag("artist"));
-    metadata.emplace(TrackProperty::Album, getTag("album"));
-    metadata.emplace(TrackProperty::TrackNumber, getTag("track"));
-    metadata.emplace(TrackProperty::AlbumArtist, getTag("album_artist"));
-    metadata.emplace(TrackProperty::Genre, getTag("genre"));
-    metadata.emplace(TrackProperty::Year, getTag("date"));
-    metadata.emplace(TrackProperty::Composer, getTag("composer"));
+    metadata.insert_or_assign(TrackProperty::Artist, getTag("artist"));
+    metadata.insert_or_assign(TrackProperty::Album, getTag("album"));
+    metadata.insert_or_assign(TrackProperty::TrackNumber, getTag("track"));
+    metadata.insert_or_assign(
+        TrackProperty::AlbumArtist,
+        getTag("album_artist")
+    );
+    metadata.insert_or_assign(TrackProperty::Genre, getTag("genre"));
+    metadata.insert_or_assign(TrackProperty::Year, getTag("date"));
+    metadata.insert_or_assign(TrackProperty::Composer, getTag("composer"));
 
     for (const auto* bpmTag : BPM_TAGS) {
         const auto tag = getTag(bpmTag);
 
         if (!tag.isEmpty()) {
-            metadata.emplace(TrackProperty::BPM, tag);
+            metadata.insert_or_assign(TrackProperty::BPM, tag);
             break;
         }
     }
-    metadata.emplace(TrackProperty::BPM, "");
+    metadata.insert_or_assign(TrackProperty::BPM, "");
 
-    metadata.emplace(TrackProperty::Language, getTag("language"));
-    metadata.emplace(TrackProperty::DiscNumber, getTag("disc"));
-    metadata.emplace(TrackProperty::Comment, getTag("comment"));
-    metadata.emplace(TrackProperty::Publisher, getTag("publisher"));
-    metadata.emplace(
+    metadata.insert_or_assign(TrackProperty::Language, getTag("language"));
+    metadata.insert_or_assign(TrackProperty::DiscNumber, getTag("disc"));
+    metadata.insert_or_assign(TrackProperty::Comment, getTag("comment"));
+    metadata.insert_or_assign(TrackProperty::Publisher, getTag("publisher"));
+    metadata.insert_or_assign(
         TrackProperty::Duration,
         secsToMins(formatContext->duration / AV_TIME_BASE)
     );
-    metadata.emplace(
+    metadata.insert_or_assign(
         TrackProperty::Bitrate,
         roundBitrate(formatContext->bit_rate)
     );
 
-    metadata.emplace(
+    metadata.insert_or_assign(
         TrackProperty::SampleRate,
         QString::number(audioStream->codecpar->sample_rate)
     );
 
-    metadata.emplace(
+    metadata.insert_or_assign(
         TrackProperty::Channels,
         QString::number(audioStream->codecpar->ch_layout.nb_channels)
     );
 
     const QString formatName = formatContext->iformat->name;
-    metadata.emplace(TrackProperty::Format, formatName.toUpper());
+    metadata.insert_or_assign(TrackProperty::Format, formatName.toUpper());
 
     return metadata;
 }
@@ -192,7 +209,7 @@ inline auto extractCover(cstr path) -> result<vector<u8>, QString> {
         }
     }
 
-    const i8 attachmentStreamIndex = i8(errorCode);
+    const u8 attachmentStreamIndex = u8(errorCode);
     const AVStream* attachmentStream =
         formatContext->streams[attachmentStreamIndex];
 
@@ -208,4 +225,97 @@ inline auto extractCover(cstr path) -> result<vector<u8>, QString> {
     );
 
     return coverBytes;
+}
+
+template <usize N>
+constexpr auto sliceValue(const QString& line, const char (&key)[N])
+    -> QString {
+    constexpr u32 keyLen = N - 1;
+    return line.sliced(keyLen + 1, line.size() - keyLen - 2);
+}
+
+inline auto parseCUE(QFile& cueFile, const QFileInfo& fileInfo) -> CueInfo {
+    QTextStream input = QTextStream(&cueFile);
+
+    bool listingTracks = false;
+    u16 offset = 0;
+
+    std::optional<CUETrack> track;
+    QList<CUETrack> tracks;
+
+    HashMap<TrackProperty, QString> metadata;
+
+    auto addTrack = [&tracks, &track] {
+        if (track) {
+            tracks.emplace_back(std::move(*track));
+            track.reset();
+        }
+    };
+
+    while (!input.atEnd()) {
+        const QString line = input.readLine().trimmed();
+
+        if (listingTracks) {
+            if (line.startsWith(u"TRACK"_qsv)) {
+                addTrack();
+                track =
+                    CUETrack{ .trackNumber = line.sliced(sizeof("TRACK"), 2) };
+            } else if (line.startsWith(u"TITLE"_qsv)) {
+                track->title = sliceValue(line, "TITLE ");
+            } else if (line.startsWith(u"PERFORMER"_qsv)) {
+                track->artist = sliceValue(line, "PERFORMER ");
+            } else if (line.startsWith(u"INDEX 01"_qsv)) {
+                track->offset = timeToSecs(line.sliced(sizeof("INDEX 01"), 5));
+            }
+        } else {
+            if (line.startsWith(u"PERFORMER"_qsv)) {
+                metadata.insert_or_assign(
+                    TrackProperty::Artist,
+                    sliceValue(line, "PERFORMER ")
+                );
+            } else if (line.startsWith(u"TITLE"_qsv)) {
+                metadata.insert_or_assign(
+                    TrackProperty::Album,
+                    sliceValue(line, "TITLE ")
+                );
+            } else if (line.startsWith(u"REM DATE"_qsv)) {
+                metadata.insert_or_assign(
+                    TrackProperty::Year,
+                    line.sliced(sizeof("REM DATE"))
+                );
+            } else if (line.startsWith(u"REM GENRE"_qsv)) {
+                metadata.insert_or_assign(
+                    TrackProperty::Genre,
+                    sliceValue(line, "REM GENRE ")
+                );
+            } else if (line.startsWith(u"FILE"_qsv)) {
+                listingTracks = true;
+
+                const QString filename = line.sliced(
+                    line.indexOf('"') + 1,
+                    line.lastIndexOf('"') - line.indexOf('"') - 1
+                );
+                const QString path = fileInfo.dir().filePath(filename);
+
+                auto extracted = extractMetadata(path).value();
+                extracted.insert_or_assign(TrackProperty::Path, path);
+
+                for (const auto& [key, value] : metadata) {
+                    extracted.insert_or_assign(key, value);
+                }
+
+                metadata = std::move(extracted);
+                metadata.insert_or_assign(
+                    TrackProperty::Format,
+                    metadata[TrackProperty::Format] + "/CUE"
+                );
+            }
+        }
+    }
+
+    addTrack();
+
+    return { .metadata = metadata,
+             .tracks = tracks,
+             .cueFilePath = fileInfo.filePath() };
 }

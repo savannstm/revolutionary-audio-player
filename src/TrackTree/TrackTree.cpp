@@ -1,9 +1,10 @@
 #include "TrackTree.hpp"
 
+#include "Constants.hpp"
 #include "DurationConversions.hpp"
 #include "Enums.hpp"
 #include "ExtractMetadata.hpp"
-#include "Log.hpp"
+#include "Logger.hpp"
 #include "MusicItem.hpp"
 #include "OptionMenu.hpp"
 #include "RapidHasher.hpp"
@@ -161,7 +162,7 @@ void TrackTree::dropEvent(QDropEvent* event) {
     for (const u16 row : range(0, musicModel->rowCount())) {
         auto* item = new QStandardItem();
         item->setData(row, Qt::EditRole);
-        musicModel->setItem(row, Order, item);
+        musicModel->setItem(row, TrackProperty::Order, item);
     }
 
     event->acceptProposedAction();
@@ -187,7 +188,10 @@ auto TrackTree::rowMetadata(const u16 row) const
         const QModelIndex index = musicModel->index(row, column);
 
         if (index.isValid()) {
-            result.emplace(headerProperty, musicModel->data(index).toString());
+            result.insert_or_assign(
+                headerProperty,
+                musicModel->data(index).toString()
+            );
         }
     }
 
@@ -207,7 +211,7 @@ void TrackTree::addFile(const HashMap<TrackProperty, QString>& metadata) {
 
             for (const auto& [idx, chr] :
                  views::enumerate(metadata[headerProperty])) {
-                if (idx == 0 && chr == u'0') {
+                if (idx == 0 && chr == '0') {
                     continue;
                 }
 
@@ -233,7 +237,8 @@ void TrackTree::addFile(const HashMap<TrackProperty, QString>& metadata) {
 
 void TrackTree::addFileCUE(
     const CUETrack& track,
-    const HashMap<TrackProperty, QString>& metadata
+    const HashMap<TrackProperty, QString>& metadata,
+    const QString& cueFilePath
 ) {
     const u16 row = musicModel->rowCount();
 
@@ -242,7 +247,8 @@ void TrackTree::addFileCUE(
         auto* item = new MusicItem();
 
         if (column == 0) {
-            item->setData(track.offset, PROPERTY_ROLE);
+            item->setData(track.offset, CUE_OFFSET_ROLE);
+            item->setData(cueFilePath, CUE_FILE_PATH_ROLE);
         }
 
         if (headerProperty == TrackProperty::TrackNumber) {
@@ -277,22 +283,89 @@ void TrackTree::addFileCUE(
 
 void TrackTree::sortByPath() {
     for (u8 column = TRACK_PROPERTY_COUNT - 1; column >= 0; column--) {
-        if (musicModel->trackProperty(column) == Path) {
+        if (musicModel->trackProperty(column) == TrackProperty::Path) {
             sortByColumn(column, Qt::AscendingOrder);
             break;
         }
     }
 }
 
-void TrackTree::fillTable(const QStringList& paths, const bool fromArgs) {
+void TrackTree::fillTable(
+    const QStringList& paths,
+    const QList<QVariant>& cueOffsets,
+    const bool fromArgs
+) {
     QThreadPool::globalInstance()->start([=, this] {
-        for (const QString& path : paths) {
-            const QFileInfo info = QFileInfo(path);
+        map<QString, CueInfo> cueInfos;
+        QString totalDuration;
 
-            if (info.isFile() && !ranges::contains(
-                                     ALLOWED_FILE_EXTENSIONS,
-                                     info.suffix().toLower()
-                                 )) {
+        for (const u16 idx : range(0, paths.size())) {
+            const auto& path = paths[idx];
+            const QFileInfo info = QFileInfo(path);
+            const QString extension = info.suffix().toLower();
+
+            if (extension == EXT_CUE) {
+                if (!cueInfos.contains(path)) {
+                    QFile cueFile = QFile(path);
+                    cueFile.open(QFile::ReadOnly);
+                    cueInfos.emplace(path, parseCUE(cueFile, info));
+                    cueFile.close();
+                }
+
+                if (cueInfos.contains(path)) {
+                    const auto& cueOffset = cueOffsets[idx];
+
+                    if (totalDuration.isEmpty()) {
+                        totalDuration =
+                            cueInfos[path].metadata[TrackProperty::Duration];
+                    }
+
+                    const auto& tracks = cueInfos[path].tracks;
+                    const auto& offsets =
+                        views::transform(tracks, [&](const auto& track) {
+                        return track.offset;
+                    });
+
+                    const isize idx = find_index(offsets, cueOffset);
+
+                    if (idx != -1) {
+                        const auto& track = tracks[idx];
+                        auto& metadata = cueInfos[path].metadata;
+
+                        metadata.insert_or_assign(
+                            TrackProperty::TrackNumber,
+                            track.trackNumber
+                        );
+                        metadata.insert_or_assign(
+                            TrackProperty::Title,
+                            track.title
+                        );
+                        metadata.insert_or_assign(
+                            TrackProperty::Artist,
+                            track.artist
+                        );
+
+                        const u16 offset = track.offset;
+                        const u16 endTime = idx < tracks.size() - 1
+                                                ? tracks[idx + 1].offset
+                                                : timeToSecs(totalDuration);
+
+                        const QString duration = secsToMins(endTime - offset);
+
+                        metadata.insert_or_assign(
+                            TrackProperty::Duration,
+                            duration
+                        );
+
+                        addFileCUE(track, metadata, path);
+                    }
+                }
+
+                continue;
+            }
+
+            if (info.isFile() &&
+                !ranges::contains(ALLOWED_FILE_EXTENSIONS, extension)) {
                 continue;
             }
 
@@ -351,7 +424,8 @@ void TrackTree::fillTable(const QStringList& paths, const bool fromArgs) {
 
 void TrackTree::fillTableCUE(
     HashMap<TrackProperty, QString>& metadata,
-    const QList<CUETrack>& tracks
+    const QList<CUETrack>& tracks,
+    const QString& cueFilePath
 ) {
     const QString totalDuration = metadata[TrackProperty::Duration];
 
@@ -371,7 +445,7 @@ void TrackTree::fillTableCUE(
 
         metadata.insert_or_assign(TrackProperty::Duration, duration);
 
-        addFileCUE(track, metadata);
+        addFileCUE(track, metadata, cueFilePath);
     }
 
     QMetaObject::invokeMethod(this, &TrackTree::postFill, Qt::QueuedConnection);

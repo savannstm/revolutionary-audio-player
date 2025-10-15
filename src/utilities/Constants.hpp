@@ -107,6 +107,10 @@ constexpr u8 TRACK_TREE_ROW_HEIGHT = 18;
 // Role for custom properties in Qt models
 constexpr u16 PROPERTY_ROLE = Qt::UserRole + 1;
 
+// Roles for CUE tracks
+constexpr u16 CUE_OFFSET_ROLE = Qt::UserRole + 2;
+constexpr u16 CUE_FILE_PATH_ROLE = Qt::UserRole + 3;
+
 consteval auto constructStates() -> array<bool, TRACK_PROPERTY_COUNT> {
     array<bool, TRACK_PROPERTY_COUNT> properties;
 
@@ -122,7 +126,7 @@ consteval auto constructProperties()
     array<TrackProperty, TRACK_PROPERTY_COUNT> properties;
 
     for (const u8 property : range(0, TRACK_PROPERTY_COUNT)) {
-        properties[property] = as<TrackProperty>(property);
+        properties[property] = TrackProperty(property);
     }
 
     return properties;
@@ -153,6 +157,12 @@ constexpr QStringView EXT_MKA = u"mka";
 constexpr QStringView EXT_ALAC = u"alac";
 constexpr QStringView EXT_MOV = u"mov";
 constexpr QStringView EXT_AC3 = u"ac3";
+
+// Allowed playlists
+constexpr QStringView EXT_CUE = u"cue";
+constexpr QStringView EXT_M3U = u"m3u";
+constexpr QStringView EXT_M3U8 = u"m3u8";
+constexpr QStringView EXT_XSPF = u"xspf";
 
 constexpr u8 ALLOWED_FILE_EXTENSIONS_COUNT = 13;
 constexpr array<QStringView, ALLOWED_FILE_EXTENSIONS_COUNT>
