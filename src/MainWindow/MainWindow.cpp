@@ -536,7 +536,7 @@ void MainWindow::updatePlaybackPosition() {
         second
     );
 
-    updateProgressLabel(second / SECOND_MS);
+    updateProgressLabel(second);
 }
 
 void MainWindow::loadPlaylists() {
