@@ -10,7 +10,10 @@ class AudioWorker : public QObject {
     Q_OBJECT
 
    public:
-    explicit AudioWorker(QObject* parent = nullptr);
+    explicit AudioWorker(
+        vector<u8>* visualizerBuffer,
+        QObject* parent = nullptr
+    );
 
     ~AudioWorker() override;
 
@@ -88,7 +91,7 @@ class AudioWorker : public QObject {
     void progressUpdated(u16 second);
     void streamEnded();
     void volumeChanged(f64 gain);
-    void samples(const QByteArray& samples, u16 sampleRate);
+    void buildPeaks(u16 sampleRate);
 
    private:
     void rebuildAudioSink(bool playing);

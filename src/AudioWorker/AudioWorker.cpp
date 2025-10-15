@@ -4,9 +4,11 @@
 
 #include <QtAudio>
 
-AudioWorker::AudioWorker(QObject* parent) : QObject(parent) {
+AudioWorker::AudioWorker(vector<u8>* visualizerBuffer, QObject* parent) :
+    QObject(parent) {
     moveToThread(workerThread);
     workerThread->start();
+    audioStreamer->visualizerBuffer = visualizerBuffer;
 
     connect(
         audioStreamer,
@@ -24,9 +26,9 @@ AudioWorker::AudioWorker(QObject* parent) : QObject(parent) {
 
     connect(
         audioStreamer,
-        &AudioStreamer::samples,
+        &AudioStreamer::buildPeaks,
         this,
-        &AudioWorker::samples
+        &AudioWorker::buildPeaks
     );
 }
 

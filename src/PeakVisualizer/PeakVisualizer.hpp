@@ -7,13 +7,14 @@
 
 #include <QWidget>
 
+// TODO: Make different presets (18, 30 peaks)
 class PeakVisualizer : public QWidget {
     Q_OBJECT
 
    public:
     explicit PeakVisualizer(QWidget* parent = nullptr);
 
-    void processSamples(const QByteArray& byteSamples, u16 sampleRate);
+    void buildPeaks(u16 sampleRate);
 
     constexpr void setMode(const PeakVisualizerMode mode_) { mode = mode_; }
 
@@ -36,6 +37,8 @@ class PeakVisualizer : public QWidget {
         settings.mode = mode;
     }
 
+    vector<u8>* buffer = new vector<u8>();
+
    protected:
     void paintEvent(QPaintEvent* event) override;
 
@@ -51,7 +54,7 @@ class PeakVisualizer : public QWidget {
     u16 fftOutputSampleCount = 0;
 
     array<f32, TEN_BANDS> peaks;
-    PeakVisualizerMode mode = DBFS;
+    PeakVisualizerMode mode = PeakVisualizerMode::DBFS;
     QGradient gradient = QGradient(QGradient::MorpheusDen);
     QGradient::Preset gradientPreset = QGradient::MorpheusDen;
 };

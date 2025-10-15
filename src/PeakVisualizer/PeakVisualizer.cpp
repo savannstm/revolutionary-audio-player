@@ -26,8 +26,8 @@ PeakVisualizer::PeakVisualizer(QWidget* parent) : QWidget(parent) {
         auto* dBFSAction = modeMenu->addAction(tr("dBFS"));
         dBFSAction->setCheckable(true);
 
-        mode == Relative ? relativeAction->setChecked(true)
-                         : dBFSAction->setChecked(true);
+        mode == PeakVisualizerMode::Relative ? relativeAction->setChecked(true)
+                                             : dBFSAction->setChecked(true);
 
         menu->addMenu(modeMenu);
 
@@ -72,23 +72,20 @@ PeakVisualizer::PeakVisualizer(QWidget* parent) : QWidget(parent) {
         if (selectedAction == hideAction) {
             hide();
         } else if (selectedAction == relativeAction) {
-            mode = Relative;
+            mode = PeakVisualizerMode::Relative;
         } else {
-            mode = DBFS;
+            mode = PeakVisualizerMode::DBFS;
         }
     });
 }
 
-void PeakVisualizer::processSamples(
-    const QByteArray& byteSamples,
-    const u16 sampleRate
-) {
-    if (isHidden() || byteSamples.isEmpty()) {
+void PeakVisualizer::buildPeaks(const u16 sampleRate) {
+    if (isHidden() || buffer->empty()) {
         return;
     }
 
     // Measure the sample count
-    const u16 sampleCount = byteSamples.size() / F32_SAMPLE_SIZE;
+    const u16 sampleCount = buffer->size() / F32_SAMPLE_SIZE;
 
     // Inners of FFmpeg's FFT don't allow sizes less than 512
     if (sampleCount < MIN_SAMPLE_COUNT) {
@@ -96,13 +93,13 @@ void PeakVisualizer::processSamples(
     }
 
     // Compute size that is any power of 2
-    const u16 fftSampleCount = u16(1 << u16(log2f(sampleCount)));
+    const u16 fftSampleCount = u16(1 << av_log2_16bit(sampleCount));
 
     // Copy only those samples, that will be used in FFT
     vector<f32> samples = vector<f32>(fftSampleCount);
     memcpy(
         samples.data(),
-        byteSamples.constData(),
+        buffer->data(),
         i32(fftSampleCount * F32_SAMPLE_SIZE)
     );
 
@@ -176,7 +173,7 @@ void PeakVisualizer::paintEvent(QPaintEvent* /* event */) {
 
     f32 maxPeak = 1;
 
-    if (mode == Relative) {
+    if (mode == PeakVisualizerMode::Relative) {
         maxPeak = *ranges::max_element(peaks);
 
         if (maxPeak == 0) {
@@ -187,7 +184,7 @@ void PeakVisualizer::paintEvent(QPaintEvent* /* event */) {
     for (const auto [band, peak] : views::enumerate(peaks)) {
         f32 normalizedPeak;
 
-        if (mode == Relative) {
+        if (mode == PeakVisualizerMode::Relative) {
             normalizedPeak = peak / maxPeak;
         } else {
             constexpr f32 MIN_DBFS = -60;

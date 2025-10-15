@@ -219,7 +219,8 @@ class MainWindow : public QMainWindow {
 
     // Threads
     QThreadPool* threadPool = new QThreadPool();
-    AudioWorker* audioWorker = new AudioWorker();
+    PeakVisualizer* peakVisualizer = new PeakVisualizer(this);
+    AudioWorker* audioWorker = new AudioWorker(peakVisualizer->buffer);
 
     // Search
     CustomInput* searchTrackInput = new CustomInput(this);
@@ -242,5 +243,4 @@ class MainWindow : public QMainWindow {
     QLocalServer* server = new QLocalServer(this);
     QAudioDevice previousDefaultAudioDevice =
         QMediaDevices::defaultAudioOutput();
-    PeakVisualizer* peakVisualizer = new PeakVisualizer(this);
 };

@@ -329,9 +329,9 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
 
     connect(
         audioWorker,
-        &AudioWorker::samples,
+        &AudioWorker::buildPeaks,
         peakVisualizer,
-        &PeakVisualizer::processSamples
+        &PeakVisualizer::buildPeaks
     );
 
     connect(
