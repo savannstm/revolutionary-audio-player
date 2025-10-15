@@ -1527,6 +1527,16 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
 
 void MainWindow::togglePlayback(const QString& path, const u16 startSecond) {
     if (!path.isEmpty()) {
+        if (currentTrack == path) {
+            QMetaObject::invokeMethod(
+                audioWorker,
+                &AudioWorker::seekSecond,
+                Qt::QueuedConnection,
+                startSecond
+            );
+            return;
+        }
+
         QMetaObject::invokeMethod(
             audioWorker,
             &AudioWorker::start,
@@ -1534,6 +1544,7 @@ void MainWindow::togglePlayback(const QString& path, const u16 startSecond) {
             path,
             startSecond
         );
+        currentTrack = path;
         playButton->setIcon(pauseIcon);
         playButton->setToolTip(tr("Pause"));
         actionTogglePlayback->setText(tr("Pause"));
