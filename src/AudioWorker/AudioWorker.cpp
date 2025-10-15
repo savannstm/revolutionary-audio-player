@@ -41,7 +41,7 @@ AudioWorker::~AudioWorker() {
     delete workerThread;
 }
 
-void AudioWorker::start(const QString& path, const u32 startSecond) {
+void AudioWorker::start(const QString& path, const u16 startSecond) {
     if (audioSink != nullptr) {
         audioSink->stop();
         delete audioSink;
@@ -53,7 +53,7 @@ void AudioWorker::start(const QString& path, const u32 startSecond) {
     audioSink->setVolume(volumeGain);
     audioSink->start(audioStreamer);
 
-    if (startSecond != UINT32_MAX) {
+    if (startSecond != UINT16_MAX) {
         audioStreamer->seekSecond(startSecond);
     }
 }

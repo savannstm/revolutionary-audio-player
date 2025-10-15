@@ -17,7 +17,7 @@ class AudioWorker : public QObject {
 
     ~AudioWorker() override;
 
-    void start(const QString& path, u32 startSecond = UINT32_MAX);
+    void start(const QString& path, u16 startSecond = UINT16_MAX);
 
     void stop() {
         if (audioSink != nullptr) {
