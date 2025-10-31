@@ -4,3 +4,8 @@
 /CMakeLists.txt.user
 /.vscode
 /dist
+
+# We won't drop visualizer presets/textures to the repository,
+# because they're not the part of the program. Each person, who
+# builds the program must include their own presets and textures.
+/visualizer
