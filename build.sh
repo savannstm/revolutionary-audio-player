@@ -10,7 +10,6 @@ Options:
     -c                      Configure only (no build)
     -r                      Build in Release configuration
     -m                      Build in MinSizeRel configuration
-    --static                Build executable statically.
     --cflags <flags>        Specify flags when running 'cmake .' command
     --bflags <flags>        Specify flags when running 'cmake --build .' command
     --help                  Show this help message
@@ -19,7 +18,6 @@ EOF
 
 build_config="Debug"
 configure_only=false
-static=false
 cflags=""
 bflags=""
 
@@ -39,10 +37,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -m)
             build_config="MinSizeRel"
-            shift
-            ;;
-        --static)
-            static=true
             shift
             ;;
         --cflags)
@@ -76,10 +70,6 @@ fi
 cmake_args="-B build"
 if [[ -n "$cflags" ]]; then
     cmake_args="$cmake_args $cflags"
-fi
-
-if $static; then
-    cmake_args="$cmake_args -DBUILD_STATIC=ON"
 fi
 
 cmake $cmake_args
