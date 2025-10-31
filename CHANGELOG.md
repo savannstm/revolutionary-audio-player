@@ -1,5 +1,42 @@
 # Changelog
 
+## v0.9.0
+
+### Changes
+
+-   Fixed our Linux builds. Now they're not statically built, and depend on glibc, xcb, wayland, and PulseAudio
+-   Migrated from using QtMultimedia for audio output and device managment to `miniaudio` library. This mainly improves building process, but also may help with performance
+-   Implemented Winamp-style visualizer using incredible `projectM` library. Information about getting presets can be found at [Visualizer Presets](./README.md#visualizer-presets) README section
+-   Moved `Settings` menu bar option to `File` menu
+-   Fixed `rap.log` file being created in current working directory, instead of in the root of the program
+-   Fixed BPM metadata field always being empty
+-   Added an ability to toggle fullscreen in cover window with F11 key
+-   Tested support for different sample rates and channel layouts. Seamless playback guaranteed for formats up to 384 KHz and 8 (7.1) channels
+-   Fixed not setting the current index to the correct item when adding tracks to playlists
+-   Fixed inability to re-add deleted tracks to the playlist
+-   Fixed `.ac3` files not opening in the program because `.ac3` format container demuxer was absent
+-   Added Drag & Drop for playlist files
+-   When enabling file associations in settings, playlist files now will also be associated with the player
+-   Fixed context menu entry on Linux, so now it works only for directories
+-   Fixed panic when opening directories through context menu entry
+-   #2 Fixed - now selecting multiple directories via system context menu entry opens them all
+-   More logs to `rap.log` file
+-   From now on, binary executable files of the player will be compressed by UPX with `--best` flag, and thus the size will be reduced by ~2x times. It won't impact performance, although may trigger some antiviruses
+
+### Broken
+
+-   Peak visualization for formats with more than 2 channels
+-   #1 Playback stutters still occur, it will be fully addressed in the next version
+
+### Coming in v0.10.0
+
+-   We'll try to completely fix playback stutters
+-   Settings will be split into sections, allowing finer control over them
+-   We'll fix visualization for >2 channel formats
+-   Custom location for settings file
+-   Hot reload for available output devices in settings
+-   18 and 30 band default presets
+
 ## v0.8.0
 
 -   Making moves to try to fix occasional playback stuttering
