@@ -12,6 +12,8 @@
 #include <cmath>
 
 constexpr u16 DEFAULT_MAX = 100;
+constexpr u16 MINIMUM_WIDTH = 128;
+constexpr u16 MINIMUM_HEIGHT = 48;
 
 class RangeSlider : public QWidget {
     Q_OBJECT
@@ -39,8 +41,8 @@ class RangeSlider : public QWidget {
         }
 
         minimumValue = minimum;
-        lowVal = std::max(lowVal, minimumValue);
-        highVal = std::max(highVal, minimumValue);
+        lowVal = std::max<u16>(lowVal, minimumValue);
+        highVal = std::max<u16>(highVal, minimumValue);
         update();
         emit minimumChanged(minimumValue);
     }
@@ -51,23 +53,23 @@ class RangeSlider : public QWidget {
         }
 
         maximumValue = maximum;
-        lowVal = std::min(lowVal, maximumValue);
-        highVal = std::min(highVal, maximumValue);
+        lowVal = std::min<u16>(lowVal, maximumValue);
+        highVal = std::min<u16>(highVal, maximumValue);
 
         update();
         emit maximumChanged(maximumValue);
     }
 
-    void setRange(u16 min, u16 max) {
-        if (min > max) {
-            std::swap(min, max);
+    void setRange(u16 minVal, u16 maxVal) {
+        if (minVal > maxVal) {
+            std::swap(minVal, maxVal);
         }
 
-        minimumValue = min;
-        maximumValue = max;
-        lowVal = std::max(lowVal, min);
-        highVal = std::min(highVal, max);
-        lowVal = std::min(lowVal, highVal);
+        minimumValue = minVal;
+        maximumValue = maxVal;
+        lowVal = std::max<u16>(lowVal, minVal);
+        highVal = std::min<u16>(highVal, maxVal);
+        lowVal = std::min<u16>(lowVal, highVal);
 
         update();
         emit minimumChanged(minimumValue);
@@ -108,8 +110,8 @@ class RangeSlider : public QWidget {
     void rangeChanged(u16 low, u16 high);
 
    protected:
-    [[nodiscard]] auto sizeHint() const -> QSize override {
-        return { 160, 48 };
+    [[nodiscard]] auto minimumSizeHint() const -> QSize override {
+        return { MINIMUM_WIDTH, MINIMUM_HEIGHT };
     }
 
     void paintEvent(QPaintEvent* /* event */) override {
@@ -174,9 +176,9 @@ class RangeSlider : public QWidget {
             const u16 value = posToValue(newPos);
 
             if (dragging == Dragging::Low) {
-                setLowValue(qMin(value, highVal));
+                setLowValue(std::min<u16>(value, highVal));
             } else if (dragging == Dragging::High) {
-                setHighValue(qMax(value, lowVal));
+                setHighValue(std::max<u16>(value, lowVal));
             }
 
             event->accept();
@@ -188,14 +190,17 @@ class RangeSlider : public QWidget {
     }
 
     void keyPressEvent(QKeyEvent* event) override {
-        const u16 step = qMax(1, (maximumValue - minimumValue) / 100);
-        const u16 bigStep = qMax(1, (maximumValue - minimumValue) / 10);
+        const u16 step = std::max<u16>(1, (maximumValue - minimumValue) / 100);
+        const u16 bigStep =
+            std::max<u16>(1, (maximumValue - minimumValue) / 10);
 
+        const bool shift = (event->modifiers() & Qt::ShiftModifier) != 0;
         bool handled = true;
+
         switch (event->key()) {
             case Qt::Key_Left:
             case Qt::Key_Down:
-                if ((event->modifiers() & Qt::ShiftModifier) != 0) {
+                if (shift) {
                     setHighValue(highVal - step);
                 } else {
                     setLowValue(lowVal - step);
@@ -203,35 +208,35 @@ class RangeSlider : public QWidget {
                 break;
             case Qt::Key_Right:
             case Qt::Key_Up:
-                if ((event->modifiers() & Qt::ShiftModifier) != 0) {
+                if (shift) {
                     setHighValue(highVal + step);
                 } else {
                     setLowValue(lowVal + step);
                 }
                 break;
             case Qt::Key_PageUp:
-                if ((event->modifiers() & Qt::ShiftModifier) != 0) {
+                if (shift) {
                     setHighValue(highVal + bigStep);
                 } else {
                     setLowValue(lowVal + bigStep);
                 }
                 break;
             case Qt::Key_PageDown:
-                if ((event->modifiers() & Qt::ShiftModifier) != 0) {
+                if (shift) {
                     setHighValue(highVal - bigStep);
                 } else {
                     setLowValue(lowVal - bigStep);
                 }
                 break;
             case Qt::Key_Home:
-                if ((event->modifiers() & Qt::ShiftModifier) != 0) {
+                if (shift) {
                     setHighValue(maximumValue);
                 } else {
                     setLowValue(minimumValue);
                 }
                 break;
             case Qt::Key_End:
-                if ((event->modifiers() & Qt::ShiftModifier) != 0) {
+                if (shift) {
                     setHighValue(maximumValue);
                 } else {
                     setLowValue(maximumValue);
@@ -276,8 +281,8 @@ class RangeSlider : public QWidget {
         const QPoint aPos = posToPoint(lowVal);
         const QPoint bPos = posToPoint(highVal);
 
-        const u16 left = qMin(aPos.x(), bPos.x());
-        const u16 right = qMax(aPos.x(), bPos.x());
+        const u16 left = std::min<u16>(aPos.x(), bPos.x());
+        const u16 right = std::max<u16>(aPos.x(), bPos.x());
         return { left, gRect.top(), right - left, gRect.height() };
     }
 
@@ -294,8 +299,8 @@ class RangeSlider : public QWidget {
     }
 
     [[nodiscard]] auto posToPoint(const u16 value) const -> QPoint {
-        QRect gRect = grooveRect();
-        u16 xPos = valueToPos(value);
+        const QRect gRect = grooveRect();
+        const u16 xPos = valueToPos(value);
         return { xPos, gRect.center().y() };
     }
 

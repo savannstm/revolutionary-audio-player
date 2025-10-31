@@ -19,8 +19,6 @@ struct CueInfo {
 
 using namespace FFmpeg;
 
-constexpr array<cstr, 3> BPM_TAGS = { "BPM", "TBPM", "IBPM" };
-
 inline auto
 FFmpegError(const cstr file, const i32 line, const cstr func, const i32 err)
     -> QString {
@@ -141,7 +139,8 @@ inline auto extractMetadata(const QString& filePath)
             break;
         }
     }
-    metadata.insert_or_assign(TrackProperty::BPM, "");
+
+    metadata.emplace(TrackProperty::BPM, "");
 
     metadata.insert_or_assign(TrackProperty::Language, getTag("language"));
     metadata.insert_or_assign(TrackProperty::DiscNumber, getTag("disc"));
@@ -245,7 +244,7 @@ inline auto parseCUE(QFile& cueFile, const QFileInfo& fileInfo) -> CueInfo {
 
     HashMap<TrackProperty, QString> metadata;
 
-    auto addTrack = [&tracks, &track] {
+    auto addTrack = [&tracks, &track] -> void {
         if (track) {
             tracks.emplace_back(std::move(*track));
             track.reset();

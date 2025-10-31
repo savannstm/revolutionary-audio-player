@@ -9,8 +9,8 @@
 inline void
 createFileAssociationsOS(const QString& appPath, const QString& iconPath) {}
 
+inline void removeFileAssociationsOS() {}
+
 inline void createContextMenuEntryOS(const QString& appPath_) {}
 
 inline void removeContextMenuEntryOS() {}
-
-inline void removeFileAssociationsOS() {}

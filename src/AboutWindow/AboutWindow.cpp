@@ -4,6 +4,10 @@
 
 #include <libavutil/ffversion.h>
 
+#ifdef PROJECTM
+#include <projectM-4/version.h>
+#endif
+
 auto AboutWindow::setupUi() -> Ui::AboutWindow* {
     auto* ui_ = new Ui::AboutWindow();
     ui_->setupUi(this);
@@ -11,7 +15,7 @@ auto AboutWindow::setupUi() -> Ui::AboutWindow* {
 }
 
 AboutWindow::AboutWindow(MainWindow* parent) : QDialog(parent) {
-    connect(parent, &MainWindow::retranslated, this, [&] {
+    connect(parent, &MainWindow::retranslated, this, [&] -> void {
         ui->retranslateUi(this);
     });
 
@@ -21,6 +25,12 @@ AboutWindow::AboutWindow(MainWindow* parent) : QDialog(parent) {
     );
     ui->qtVersionLabel->setText(u"Qt %1"_s.arg(QT_VERSION_STR));
     ui->ffmpegVersionLabel->setText(u"FFmpeg %1"_s.arg(FFMPEG_VERSION));
+
+#ifdef PROJECTM
+    ui->projectMVersionLabel->setText(
+        u"ProjectM %1"_s.arg(PROJECTM_VERSION_STRING)
+    );
+#endif
 }
 
 AboutWindow::~AboutWindow() {

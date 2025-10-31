@@ -1,3 +1,5 @@
+#define MINIAUDIO_IMPLEMENTATION
+
 #include "Constants.hpp"
 #include "MainWindow.hpp"
 
@@ -6,6 +8,10 @@
 #include <QSharedMemory>
 
 auto main(i32 argCount, char* args[]) -> i32 {
+#ifdef PROJECTM
+    QApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+#endif
+
     const auto app = QApplication(argCount, args);
 
     QSharedMemory sharedMemory;
@@ -31,7 +37,18 @@ auto main(i32 argCount, char* args[]) -> i32 {
         return 0;
     }
 
-    std::locale::global(std::locale(".UTF-8"));
+//! We specifically initialize the lowest required OpenGL version (3.3) with
+//! compatibility profile, for wider range of supported systems.
+#ifdef PROJECTM
+    QSurfaceFormat fmt;
+    fmt.setRenderableType(QSurfaceFormat::OpenGL);
+    fmt.setVersion(3, 3);
+    fmt.setProfile(QSurfaceFormat::CompatibilityProfile);
+    QSurfaceFormat::setDefaultFormat(fmt);
+#endif
+
+    // Use system default locale
+    std::locale::global(std::locale(""));
 
     QApplication::setOrganizationName(u"savannstm"_s);
     QApplication::setApplicationName(u"revolutionary-audio-player"_s);
@@ -39,7 +56,7 @@ auto main(i32 argCount, char* args[]) -> i32 {
         QIcon(QApplication::applicationDirPath() + "/icons/rap-logo.png")
     );
 
-    MainWindow window(paths);
+    MainWindow window = MainWindow(paths);
     window.showMaximized();
 
     return QApplication::exec();

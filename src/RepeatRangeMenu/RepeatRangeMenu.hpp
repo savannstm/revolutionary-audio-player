@@ -35,7 +35,7 @@ class RepeatRangeMenu : public QDialog {
             rangeSlider,
             &RangeSlider::lowValueChanged,
             this,
-            [&](const u16 second) {
+            [&](const u16 second) -> void {
             startTimeInput->setText(secsToMins(second));
             startSecond_ = second;
         }
@@ -45,33 +45,38 @@ class RepeatRangeMenu : public QDialog {
             rangeSlider,
             &RangeSlider::highValueChanged,
             this,
-            [&](const u16 second) {
+            [&](const u16 second) -> void {
             endTimeInput->setText(secsToMins(second));
             endSecond_ = second;
         }
         );
 
-        connect(startTimeInput, &CustomInput::editingFinished, this, [&] {
+        connect(
+            startTimeInput,
+            &CustomInput::editingFinished,
+            this,
+            [&] -> void {
             rangeSlider->setLowValue(timeToSecs(startTimeInput->text()));
-        });
+        }
+        );
 
-        connect(startTimeInput, &CustomInput::inputRejected, this, [&] {
+        connect(startTimeInput, &CustomInput::inputRejected, this, [&] -> void {
             startTimeInput->setText(secsToMins(rangeSlider->lowValue()));
         });
 
-        connect(startTimeInput, &CustomInput::unfocused, this, [&] {
+        connect(startTimeInput, &CustomInput::unfocused, this, [&] -> void {
             startTimeInput->setText(secsToMins(rangeSlider->lowValue()));
         });
 
-        connect(endTimeInput, &CustomInput::editingFinished, this, [&] {
+        connect(endTimeInput, &CustomInput::editingFinished, this, [&] -> void {
             rangeSlider->setHighValue(timeToSecs(endTimeInput->text()));
         });
 
-        connect(endTimeInput, &CustomInput::inputRejected, this, [&] {
+        connect(endTimeInput, &CustomInput::inputRejected, this, [&] -> void {
             endTimeInput->setText(secsToMins(rangeSlider->highValue()));
         });
 
-        connect(endTimeInput, &CustomInput::unfocused, this, [&] {
+        connect(endTimeInput, &CustomInput::unfocused, this, [&] -> void {
             endTimeInput->setText(secsToMins(rangeSlider->highValue()));
         });
     }

@@ -18,7 +18,7 @@ inline void createFileAssociationsOS(const QString& appPath, QString iconPath) {
     );
     QFile desktopFile = QFile(desktopEntryPath);
 
-    if (!desktopFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    if (!desktopFile.open(QFile::WriteOnly | QFile::Text)) {
         return;
     }
 
@@ -32,7 +32,7 @@ inline void createFileAssociationsOS(const QString& appPath, QString iconPath) {
     stream << "Icon=" << iconPath << '\n';
     stream << "Categories=AudioVideo;\n";
 
-    for (const QStringView extension : ALLOWED_MUSIC_FILE_EXTENSIONS) {
+    for (const QStringView extension : ALLOWED_MUSIC_EXTENSIONS) {
         stream << "MimeType=" << "audio/x-" << extension << ';' << '\n';
     }
 
@@ -42,11 +42,29 @@ inline void createFileAssociationsOS(const QString& appPath, QString iconPath) {
         QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)
     ));
 
-    for (const QStringView extension : ALLOWED_MUSIC_FILE_EXTENSIONS) {
+    for (const QStringView extension : ALLOWED_MUSIC_EXTENSIONS) {
         QProcess::execute(
             u"xdg-mime default rap.desktop audio/x-%1"_s.arg(extension)
         );
     }
+}
+
+inline void removeFileAssociationsOS() {
+    const QString desktopEntryPath = u"%1/rap.desktop"_s.arg(
+        QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)
+    );
+
+    QFile::remove(desktopEntryPath);
+
+    for (const QStringView extension : ALLOWED_MUSIC_EXTENSIONS) {
+        QProcess::execute(
+            uR"(xdg-mime default "" audio/x-%1)"_s.arg(extension)
+        );
+    }
+
+    QProcess::execute(u"update-desktop-database %1"_s.arg(
+        QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)
+    ));
 }
 
 inline void createContextMenuEntryOS(const QString& appPath) {
@@ -57,31 +75,24 @@ inline void createContextMenuEntryOS(const QString& appPath) {
     QDir().mkpath(actionsDirPath);
 
     const QString contextMenuPath =
-        u"%1/rap-open.desktop"_s.arg(actionsDirPath);
-    QFile contextFile = QFile(contextMenuPath);
+        u"%1/rap-open-dir.desktop"_s.arg(actionsDirPath);
+    QFile contextFile(contextMenuPath);
 
-    if (!contextFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    if (!contextFile.open(QFile::WriteOnly | QFile::Text)) {
         return;
     }
 
-    QTextStream stream = QTextStream(&contextFile);
+    QTextStream stream(&contextFile);
     stream.setEncoding(QStringConverter::Utf8);
+
     stream << "[Desktop Entry]\n";
     stream << "Type=Action\n";
-    stream << "Name=Open with RAP\n";
-    stream << "Icon=audio-x-generic\n";
+    stream << "Name=Open Folder with RAP\n";
+    stream << "Icon=folder\n";
     stream << "Profiles=default;\n\n";
 
     stream << "[X-Action-Profile default]\n";
-    stream << "MimeTypes=";
-    for (const u8 idx : range(0, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT)) {
-        stream << "audio/x-" << ALLOWED_MUSIC_FILE_EXTENSIONS[idx];
-
-        if (idx != ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT - 1) {
-            stream << ';';
-        }
-    }
-    stream << '\n';
+    stream << "MimeTypes=inode/directory;\n";
     stream << "Exec=" << appPath << " %f\n";
 
     contextFile.close();
@@ -89,28 +100,11 @@ inline void createContextMenuEntryOS(const QString& appPath) {
 
 inline void removeContextMenuEntryOS() {
     const QString contextMenuPath =
-        u"%1/file-manager/actions/rap-open.desktop"_s.arg(
+        u"%1/file-manager/actions/rap-open-dir.desktop"_s.arg(
             QStandardPaths::writableLocation(
                 QStandardPaths::GenericDataLocation
             )
         );
+
     QFile::remove(contextMenuPath);
-}
-
-inline void removeFileAssociationsOS() {
-    const QString desktopEntryPath = u"%1/rap.desktop"_s.arg(
-        QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)
-    );
-
-    QFile::remove(desktopEntryPath);
-
-    for (const QStringView extension : ALLOWED_MUSIC_FILE_EXTENSIONS) {
-        QProcess::execute(
-            uR"(xdg-mime default "" audio/x-%1)"_s.arg(extension)
-        );
-    }
-
-    QProcess::execute(u"update-desktop-database %1"_s.arg(
-        QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation)
-    ));
 }

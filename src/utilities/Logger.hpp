@@ -2,9 +2,11 @@
 
 #include "Aliases.hpp"
 
+#include <QApplication>
 #include <QDebug>
 #include <QFile>
 #include <QIODevice>
+#include <QMessageBox>
 #include <QMutex>
 #include <QTextStream>
 #include <QTime>
@@ -23,10 +25,22 @@ class Logger {
 
     static void init() {
         if (!logFile.isOpen()) {
-            logFile.setFileName(u"rap.log"_s);
-            logFile.open(
-                QIODevice::Append | QIODevice::Text | QIODevice::Truncate
+            logFile.setFileName(
+                QApplication::applicationDirPath() + "/rap.log"
             );
+
+            if (!logFile.open(
+                    QIODevice::Append | QIODevice::Text | QIODevice::Truncate
+                )) {
+                QMessageBox::critical(
+                    nullptr,
+                    QObject::tr("Failed to initialize logger"),
+                    QObject::tr(
+                        "Logs won't be written to `rap.log` file: %1. Good luck out there."
+                    )
+                        .arg(logFile.errorString())
+                );
+            };
 
             stream.setDevice(&logFile);
             stream.setEncoding(QStringConverter::Utf8);

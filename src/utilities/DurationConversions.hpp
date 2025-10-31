@@ -15,11 +15,11 @@ inline auto timeToSecs(const QString& time) -> u16 {
         const u16 hours = parts[0].toUInt();
         const u16 minutes = parts[1].toUInt();
         const u16 secs = parts[2].toUInt();
-        seconds = hours * HOUR_SECONDS + minutes * MINUTE_SECONDS + secs;
+        seconds = (hours * HOUR_SECONDS) + (minutes * MINUTE_SECONDS) + secs;
     } else if (parts.size() == 2) {
         const u16 minutes = parts[0].toUInt();
         const u16 secs = parts[1].toUInt();
-        seconds = minutes * MINUTE_SECONDS + secs;
+        seconds = (minutes * MINUTE_SECONDS) + secs;
     }
 
     return seconds;

@@ -1,17 +1,24 @@
 #pragma once
 
 #include "AudioStreamer.hpp"
+#include "Settings.hpp"
 
-#include <QAudioSink>
 #include <QObject>
-#include <QThread>
+#include <miniaudio.h>
+
+enum PlaybackAction : u8 {
+    None,
+    Seek,
+};
 
 class AudioWorker : public QObject {
     Q_OBJECT
 
    public:
     explicit AudioWorker(
-        vector<u8>* visualizerBuffer,
+        shared_ptr<Settings>,
+        f32* peakVisualizerBuffer,
+        f32* visualizerBufferData,
         QObject* parent = nullptr
     );
 
@@ -20,85 +27,84 @@ class AudioWorker : public QObject {
     void start(const QString& path, u16 startSecond = UINT16_MAX);
 
     void stop() {
-        if (audioSink != nullptr) {
-            audioSink->stop();
-        }
-    }
-
-    void suspend() {
-        if (audioSink != nullptr) {
-            audioSink->suspend();
+        if (deviceInitialized) {
+            ma_device_stop(&device);
         }
     }
 
     void resume() {
-        if (audioSink != nullptr) {
-            audioSink->resume();
+        if (deviceInitialized) {
+            ma_device_start(&device);
         }
     }
 
-    void seekSecond(const u16 second) { audioStreamer->seekSecond(second); }
+    void seekSecond(const u16 second) {
+        seekTargetSecond = second;
+        playbackAction.store(PlaybackAction::Seek, std::memory_order_release);
+    }
 
-    void setVolume(const f64 gain) {
-        volumeGain = gain;
+    constexpr void setVolume(const f32 volume) {
+        volume_ = volume;
 
-        if (audioSink != nullptr) {
-            audioSink->setVolume(gain);
+        if (deviceInitialized) {
+            ma_device_set_master_volume(&device, volume);
         }
     }
 
-    constexpr void setGain(const i8 dbGain, const u8 band) {
-        audioStreamer->setGain(dbGain, band);
+    [[nodiscard]] auto state() const -> ma_device_state {
+        return ma_device_get_state(&device);
     }
 
-    [[nodiscard]] constexpr auto gain(const u8 band) const -> i8 {
-        return audioStreamer->gain(band);
-    }
+    void changeAudioDevice() {
+        if (deviceInitialized) {
+            const bool started = state() == ma_device_state_started;
 
-    [[nodiscard]] constexpr auto gains() const -> const GainArray& {
-        return audioStreamer->gains();
-    }
+            ma_device_uninit(&device);
 
-    [[nodiscard]] constexpr auto equalizerEnabled() const -> bool {
-        return audioStreamer->equalizerEnabled();
-    }
-
-    constexpr void toggleEqualizer(const bool enabled) {
-        audioStreamer->toggleEqualizer(enabled);
-    }
-
-    [[nodiscard]] auto state() const -> QAudio::State {
-        if (audioSink != nullptr) {
-            return audioSink->state();
+            if (started) {
+                startDevice();
+            }
         }
-
-        return QAudio::IdleState;
     }
 
-    void setBandCount(const u8 count) { audioStreamer->setBandCount(count); }
+    void changeGain(const u8 band) { audioStreamer->changeGain(band); }
 
-    [[nodiscard]] constexpr auto frequencies() const -> const FrequencyArray& {
-        return audioStreamer->frequencies();
+    void togglePeakVisualizer(const bool enabled) {
+        audioStreamer->togglePeakVisualizer(enabled);
     }
 
-    void changeAudioDevice(const QAudioDevice& device_, const bool playing) {
-        device = device_;
-        rebuildAudioSink(playing);
+    void toggleVisualizer(const bool enabled) {
+        audioStreamer->toggleVisualizer(enabled);
+    }
+
+    [[nodiscard]] auto channels() -> AudioChannels {
+        return audioStreamer->channels();
     }
 
    signals:
-    void finished();
     void progressUpdated(u16 second);
+    void processedSamples();
     void streamEnded();
-    void volumeChanged(f64 gain);
-    void buildPeaks(u16 sampleRate);
+    void audioProperties(u32 sampleRate, AudioChannels channels);
 
    private:
-    void rebuildAudioSink(bool playing);
+    static inline void dataCallback(
+        ma_device* device,
+        void* output,
+        const void* /* input */,
+        u32 sampleCount
+    );
 
-    QThread* workerThread = new QThread();
-    AudioStreamer* audioStreamer = new AudioStreamer(this);
-    QAudioSink* audioSink = nullptr;
-    f64 volumeGain = 1.0;
-    QAudioDevice device;
+    void startDevice();
+
+    shared_ptr<Settings> settings;
+    AudioStreamer* audioStreamer = nullptr;
+
+    ma_device device;
+    ma_device_config deviceConfig;
+    bool deviceInitialized = false;
+    f32 volume_ = 1.0F;
+
+    atomic<PlaybackAction> playbackAction = PlaybackAction::None;
+    u16 seekTargetSecond = 0;
 };

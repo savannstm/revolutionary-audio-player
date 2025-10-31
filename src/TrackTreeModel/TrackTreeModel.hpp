@@ -7,11 +7,11 @@
 
 #include <QStandardItemModel>
 
-class MusicModel : public QStandardItemModel {
+class TrackTreeModel : public QStandardItemModel {
     Q_OBJECT
 
    public:
-    explicit MusicModel(QObject* parent = nullptr);
+    explicit TrackTreeModel(QObject* parent = nullptr);
 
     void setItem(u16 row, u16 column, QStandardItem* item, bool path = false);
 

@@ -5,12 +5,11 @@
 #include "Enums.hpp"
 
 #include <QApplication>
-#include <QAudioDevice>
 #include <QFile>
 #include <QGradient>
 #include <QJsonArray>
 #include <QJsonObject>
-#include <QMediaDevices>
+#include <miniaudio.h>
 
 template <typename T>
 auto toJsonArray(const T& container) -> QJsonArray;
@@ -33,6 +32,10 @@ class EqualizerSettings {
     QMap<u16, QMap<QString, QVector<i8>>> presets = { { TEN_BANDS, {} },
                                                       { EIGHTEEN_BANDS, {} },
                                                       { THIRTY_BANDS, {} } };
+
+    u8 bandCount = TEN_BANDS;
+    array<i8, MAX_BANDS_COUNT> gains;
+    const f32* frequencies = nullptr;
 };
 
 class SettingsFlags {
@@ -83,6 +86,8 @@ class PeakVisualizerSettings {
 };
 
 // TODO: Allow selecting custom locations for settings and playlists
+// TODO: Configurable default columns for new playlists
+// TODO: Configurable associations for different file types
 class Settings {
    public:
     explicit Settings() = default;
@@ -97,7 +102,8 @@ class Settings {
     u8 volume = MAX_VOLUME;
     i8 currentTab = -1;
     QString lastOpenedDirectory;
-    QAudioDevice outputDevice = QMediaDevices::defaultAudioOutput();
+    QString outputDevice;
+    optional<ma_device_id> outputDeviceID;
     QLocale::Language language = QLocale().language();
     SettingsFlags flags;
     EqualizerSettings equalizerSettings;

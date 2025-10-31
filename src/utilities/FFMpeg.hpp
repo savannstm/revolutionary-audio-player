@@ -5,7 +5,6 @@ extern "C" {
 #include <libavfilter/avfilter.h>
 #include <libavformat/avformat.h>
 #include <libavutil/tx.h>
-#include <libswresample/swresample.h>
 }
 
 #include "Aliases.hpp"
@@ -19,27 +18,16 @@ namespace FFmpeg {
 
     struct CodecContextDeleter {
         void operator()(AVCodecContext* ctx) const {
-            avcodec_flush_buffers(ctx);
             avcodec_free_context(&ctx);
         }
     };
 
-    struct SwrContextDeleter {
-        void operator()(SwrContext* ctx) const { swr_free(&ctx); }
-    };
-
     struct PacketDeleter {
-        void operator()(AVPacket* pkt) const {
-            av_packet_unref(pkt);
-            av_packet_free(&pkt);
-        }
+        void operator()(AVPacket* pkt) const { av_packet_free(&pkt); }
     };
 
     struct FrameDeleter {
-        void operator()(AVFrame* frame) const {
-            av_frame_unref(frame);
-            av_frame_free(&frame);
-        }
+        void operator()(AVFrame* frame) const { av_frame_free(&frame); }
     };
 
     struct FilterGraphDeleter {
@@ -56,7 +44,6 @@ namespace FFmpeg {
 
     using FormatContext = unique_ptr<AVFormatContext, FormatContextDeleter>;
     using CodecContext = unique_ptr<AVCodecContext, CodecContextDeleter>;
-    using SwrContext = unique_ptr<SwrContext, SwrContextDeleter>;
     using Packet = unique_ptr<AVPacket, PacketDeleter>;
     using Frame = unique_ptr<AVFrame, FrameDeleter>;
     using FilterGraph = unique_ptr<AVFilterGraph, FilterGraphDeleter>;

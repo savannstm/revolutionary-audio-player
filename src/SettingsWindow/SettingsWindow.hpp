@@ -16,6 +16,9 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
+// TODO: Add hot-reload of available output devices?
+// TODO: Refactor settings into sections
+
 class SettingsWindow : public QDialog {
     Q_OBJECT
 
@@ -29,14 +32,19 @@ class SettingsWindow : public QDialog {
     static void removeFileAssociations();
 
    signals:
-    void audioDeviceChanged(const QAudioDevice& device);
+    void audioDeviceChanged();
 
    private:
     auto setupUi() -> Ui::SettingsWindow*;
+    inline auto fetchDevices() -> ma_result;
 
     Ui::SettingsWindow* ui = setupUi();
 
     shared_ptr<Settings> settings;
+
+    ma_context context;
+    ma_context_config config = ma_context_config_init();
+    span<ma_device_info> playbackDevices;
 
     QComboBox* styleSelect = ui->styleSelect;
     QComboBox* playlistNamingSelect = ui->playlistNamingSelect;
@@ -45,6 +53,4 @@ class SettingsWindow : public QDialog {
     QComboBox* outputDeviceSelect = ui->outputDeviceSelect;
     QCheckBox* prioritizeExternalCheckbox = ui->prioritizeExternalCheckbox;
     QCheckBox* backgroundImageCheckbox = ui->backgroundImageCheckbox;
-
-    const QList<QAudioDevice> devices = QMediaDevices::audioOutputs();
 };

@@ -73,34 +73,36 @@ void CoverWindow::showContextMenu(const QPoint& pos) {
     delete menu;
 
     if (selectedAction == maximizeAction) {
-        if (isFullscreen) {
-            setWindowFlag(Qt::FramelessWindowHint, false);
-            showNormal();
-            resize(originalPixmap.size());
-
-            const QScreen* currentScreen = screen();
-
-            if (currentScreen == nullptr) {
-                currentScreen = QGuiApplication::primaryScreen();
-            }
-
-            const QRect screenGeometry = currentScreen->availableGeometry();
-            const QSize windowSize = size();
-
-            const i32 xPos =
-                screenGeometry.x() +
-                ((screenGeometry.width() - windowSize.width()) / 2);
-            const i32 yPos =
-                screenGeometry.y() +
-                ((screenGeometry.height() - windowSize.height()) / 2);
-
-            move(xPos, yPos);
-        } else {
-            setWindowFlag(Qt::FramelessWindowHint, true);
-            showFullScreen();
-        }
+        toggleFullscreen(isFullscreen);
     } else if (selectedAction == alwaysOnTopAction) {
         setWindowFlag(Qt::WindowStaysOnTopHint, !isOnTop);
         show();
+    }
+}
+
+void CoverWindow::toggleFullscreen(const bool isFullscreen) {
+    if (isFullscreen) {
+        setWindowFlag(Qt::FramelessWindowHint, false);
+        showNormal();
+        resize(originalPixmap.size());
+
+        const QScreen* currentScreen = screen();
+
+        if (currentScreen == nullptr) {
+            currentScreen = QApplication::primaryScreen();
+        }
+
+        const QRect screenGeometry = currentScreen->availableGeometry();
+        const QSize windowSize = size();
+
+        const i32 xPos = screenGeometry.x() +
+                         ((screenGeometry.width() - windowSize.width()) / 2);
+        const i32 yPos = screenGeometry.y() +
+                         ((screenGeometry.height() - windowSize.height()) / 2);
+
+        move(xPos, yPos);
+    } else {
+        setWindowFlag(Qt::FramelessWindowHint, true);
+        showFullScreen();
     }
 }

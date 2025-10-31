@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <atomic>
 #include <cstddef>
 #include <deque>
 #include <expected>
@@ -8,6 +9,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <qtypes.h>
 #include <ranges>
 #include <set>
@@ -47,13 +49,17 @@ using wcstr = const wchar*;
 
 using fs::path;
 using std::array;
+using std::atomic;
 using std::cerr;
 using std::cout;
 using std::deque;
+using std::expected;
 using std::format;
 using std::make_shared;
 using std::make_unique;
 using std::map;
+using std::nullopt;
+using std::optional;
 using std::println;
 using std::set;
 using std::shared_ptr;

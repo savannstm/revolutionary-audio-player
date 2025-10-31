@@ -180,7 +180,7 @@ auto PlaylistView::createPage(
         header,
         &MusicHeader::sectionMoved,
         this,
-        [=](const u8, const u8 oldIndex, const u8 newIndex) {
+        [=](const u8, const u8 oldIndex, const u8 newIndex) -> void {
         const QVariant oldProperty =
             pageTreeModel->headerData(oldIndex, Qt::Horizontal, PROPERTY_ROLE);
 

@@ -197,15 +197,33 @@ Settings::Settings(const QJsonObject& settingsObject) {
     }
 
     if (settingsObject.contains(u"outputDevice"_qsv)) {
-        const auto outputDevices = QMediaDevices::audioOutputs();
-        const QString requiredName =
-            settingsObject[u"outputDevice"_qsv].toString();
+        outputDevice = settingsObject[u"outputDevice"_qsv].toString();
 
-        for (const auto& device : outputDevices) {
-            if (device.description() == requiredName) {
-                outputDevice = device;
+        ma_context context;
+        ma_context_config config = ma_context_config_init();
+        span<ma_device_info> playbackDevices;
+        ma_context_init(nullptr, -1, &config, &context);
+
+        ma_device_info* playbackInfos = nullptr;
+        u32 playbackCount = 0;
+
+        if (ma_context_get_devices(
+                &context,
+                &playbackInfos,
+                &playbackCount,
+                nullptr,
+                nullptr
+            ) != MA_SUCCESS) {}
+
+        playbackDevices = span<ma_device_info>(playbackInfos, playbackCount);
+
+        for (const auto& device : playbackDevices) {
+            if (outputDevice == device.name) {
+                outputDeviceID = device.id;
             }
         }
+
+        ma_context_uninit(&context);
     }
 
     if (settingsObject.contains(u"peakVisualizerSettings"_qsv)) {
@@ -225,7 +243,7 @@ auto Settings::stringify() const -> QJsonObject {
     json[u"language"_qsv] = language;
     json[u"flags"_qsv] = flags.stringify();
     json[u"dockWidget"_qsv] = dockWidgetSettings.stringify();
-    json[u"outputDevice"_qsv] = outputDevice.description();
+    json[u"outputDevice"_qsv] = outputDevice;
     json[u"peakVisualizerSettings"_qsv] = peakVisualizerSettings.stringify();
 
     return json;

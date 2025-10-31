@@ -1,6 +1,5 @@
 #pragma once
 
-#include "AudioWorker.hpp"
 #include "Constants.hpp"
 #include "CustomInput.hpp"
 #include "Settings.hpp"
@@ -33,9 +32,8 @@ class EqualizerMenu : public QDialog {
 
    public:
     explicit EqualizerMenu(
-        QWidget* parent,
-        AudioWorker* audioWorker_,
-        shared_ptr<Settings> settings_
+        shared_ptr<Settings> settings,
+        QWidget* parent = nullptr
     );
 
     ~EqualizerMenu() override { delete ui; }
@@ -46,15 +44,18 @@ class EqualizerMenu : public QDialog {
     void retranslate() {
         ui->retranslateUi(this);
 
-        if (audioWorker->equalizerEnabled()) {
+        if (eqSettings.enabled) {
             toggleButton->setText(tr("Enabled"));
         }
 
-        const FrequencyArray frequencies = audioWorker->frequencies();
+        const span<const f32> frequencies = span(
+            getFrequenciesForBands(eqSettings.bandCount),
+            eqSettings.bandCount
+        );
 
         for (const auto& [container, frequency] : views::zip(
-                 views::take(sliders, bandCount),
-                 views::take(frequencies, bandCount)
+                 views::take(sliders, eqSettings.bandCount),
+                 views::take(frequencies, eqSettings.bandCount)
              )) {
             container.dbLabel->setText(tr("dB"));
             container.hzLabel->setText(tr("%1 Hz").arg(frequency));
@@ -70,19 +71,22 @@ class EqualizerMenu : public QDialog {
         presetSelect->setCurrentIndex(settings->equalizerSettings.presetIndex);
     }
 
+   signals:
+    void gainChanged(u8 band);
+
    private:
     inline void updateGain(
         const QString& string,
         QSlider* slider,
         CustomInput* input,
         u8 band
-    ) const;
+    );
 
-    inline void onDbInputRejected(u8 band) const;
-    inline void onDbInputEditingFinished(u8 band) const;
-    inline void onDbInputUnfocused(u8 band) const;
+    inline void onDbInputRejected(u8 band);
+    inline void onDbInputEditingFinished(u8 band);
+    inline void onDbInputUnfocused(u8 band);
 
-    inline void onSliderValueChanged(i8 value, u8 band) const;
+    inline void onSliderValueChanged(i8 gain, u8 band);
 
     inline void selectPreset(i32 index);
     inline void toggleEqualizer(bool checked);
@@ -100,20 +104,15 @@ class EqualizerMenu : public QDialog {
         return ui_;
     }
 
-    inline auto createSliderElement(
-        u8 band,
-        const FrequencyArray& frequencies,
-        QWidget* parent
-    ) const -> SliderContainer;
+    inline auto createSliderElement(u8 band, QWidget* parent)
+        -> SliderContainer;
 
-    AudioWorker* audioWorker;
     Ui::EqualizerMenu* ui = setupUi();
 
-    u8 bandCount = TEN_BANDS;
     u8 previousPresetIndex = 0;
 
     shared_ptr<Settings> settings;
-    EqualizerSettings& eqSettings = settings->equalizerSettings;
+    EqualizerSettings& eqSettings;
 
     QVBoxLayout* layout = ui->verticalLayout;
 

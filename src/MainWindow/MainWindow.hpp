@@ -3,6 +3,7 @@
 #include "ActionButton.hpp"
 #include "Aliases.hpp"
 #include "AudioWorker.hpp"
+#include "Constants.hpp"
 #include "CustomInput.hpp"
 #include "CustomSlider.hpp"
 #include "DockWidget.hpp"
@@ -10,7 +11,6 @@
 #include "IconTextButton.hpp"
 #include "IndexSet.hpp"
 #include "MusicHeader.hpp"
-#include "MusicModel.hpp"
 #include "OptionMenu.hpp"
 #include "PeakVisualizer.hpp"
 #include "PlaylistView.hpp"
@@ -18,7 +18,12 @@
 #include "ScaledLabel.hpp"
 #include "Settings.hpp"
 #include "TrackTree.hpp"
+#include "TrackTreeModel.hpp"
 #include "ui_mainwindow.h"
+
+#ifdef PROJECTM
+#include "VisualizerWindow.hpp"
+#endif
 
 #include <QAction>
 #include <QApplication>
@@ -42,7 +47,7 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
-// TODO: File associations for XSPF, M3U and CUE playlists
+// TODO: Fix FFT for visualizers, when there's >2 channels
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -86,7 +91,7 @@ class MainWindow : public QMainWindow {
     inline void processDroppedFiles(const QStringList& files);
     inline void
     updateProgressLabel(u16 second, const QString& duration = QString());
-    inline void updateVolume(u16 value);
+    inline void updateVolume(u8 value);
     inline void cancelSearchInput();
     inline void toggleEqualizerMenu(bool checked);
     inline void toggleRepeat();
@@ -102,7 +107,7 @@ class MainWindow : public QMainWindow {
     inline void moveDockWidget(DockWidgetPosition dockWidgetPosition);
     inline void processArgs(const QStringList& args);
     inline void focus();
-    inline void importPlaylist(bool createNewTab);
+    inline void importPlaylist(bool createNewTab, QString filePath = QString());
     inline void exportPlaylist();
     inline void adjustPlaylistView();
     inline void adjustPlaylistTabBar(
@@ -153,7 +158,7 @@ class MainWindow : public QMainWindow {
     PlaylistTabBar* playlistTabBar = playlistView->tabBar();
     TrackTree* trackTree = nullptr;
     MusicHeader* trackTreeHeader = nullptr;
-    MusicModel* trackTreeModel = nullptr;
+    TrackTreeModel* trackTreeModel = nullptr;
 
     // UI - Buttons
     ActionButton* playButton = ui->playButton;
@@ -176,6 +181,8 @@ class MainWindow : public QMainWindow {
     QAction* actionOpenFile = ui->actionOpenFile;
     QAction* actionOpenFolder = ui->actionOpenFolder;
     QAction* actionOpenPlaylist = ui->actionOpenPlaylist;
+    QAction* actionSettings = ui->actionSettings;
+    QAction* actionVisualizer = ui->actionVisualizer;
     QAction* actionExit = ui->actionExit;
 
     QAction* actionAddFile = ui->actionAddFile;
@@ -184,8 +191,6 @@ class MainWindow : public QMainWindow {
 
     QAction* actionExportXSPFPlaylist = ui->actionExportXSPFPlaylist;
     QAction* actionExportM3U8Playlist = ui->actionExportM3U8Playlist;
-
-    QAction* actionSettings = ui->actionSettings;
 
     QAction* actionRussian = ui->actionRussian;
     QAction* actionEnglish = ui->actionEnglish;
@@ -209,12 +214,12 @@ class MainWindow : public QMainWindow {
     QTranslator* translator = new QTranslator(this);
 
     // Control Logic
-    RepeatMode repeat = RepeatMode::Off;
     bool random = false;
+    RepeatMode repeat = RepeatMode::Off;
     Direction forwardDirection = Direction::Forward;
     Direction backwardDirection = Direction::Backward;
-    IndexSet playHistory;
     i8 playingPlaylist = -1;
+    IndexSet playHistory;
 
     QSplitter* mainArea = ui->mainArea;
     DockWidget* dockWidget = ui->dockWidget;
@@ -223,8 +228,15 @@ class MainWindow : public QMainWindow {
 
     // Threads
     QThreadPool* threadPool = new QThreadPool();
-    PeakVisualizer* peakVisualizer = new PeakVisualizer(this);
-    AudioWorker* audioWorker = new AudioWorker(peakVisualizer->buffer);
+
+    // Audio
+    array<f32, MIN_BUFFER_SIZE / F32_SAMPLE_SIZE> visualizerBuffer;
+    array<f32, MIN_BUFFER_SIZE / F32_SAMPLE_SIZE> peakVisualizerBuffer;
+
+    PeakVisualizer* peakVisualizer =
+        new PeakVisualizer(peakVisualizerBuffer.data(), this);
+
+    AudioWorker* audioWorker = nullptr;
 
     // Search
     CustomInput* searchTrackInput = new CustomInput(this);
@@ -236,12 +248,16 @@ class MainWindow : public QMainWindow {
     // Miscellaneous
     QString currentTrack;
     u16 CUEOffset = UINT16_MAX;
-    RepeatRangeMenu* repeatRangeMenu = new RepeatRangeMenu(this);
-    EqualizerMenu* equalizerMenu = nullptr;
-    u8 sortIndicatorCleared;
+
     std::random_device seed;
     std::mt19937 rng = std::mt19937(seed());
+
     QLocalServer* server = new QLocalServer(this);
-    QAudioDevice previousDefaultAudioDevice =
-        QMediaDevices::defaultAudioOutput();
+
+    RepeatRangeMenu* repeatRangeMenu = new RepeatRangeMenu(this);
+    EqualizerMenu* equalizerMenu = nullptr;
+
+#ifdef PROJECTM
+    VisualizerWindow* visualizerWindow = nullptr;
+#endif
 };

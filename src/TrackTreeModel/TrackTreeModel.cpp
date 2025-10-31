@@ -1,16 +1,14 @@
-#include "MusicModel.hpp"
+#include "TrackTreeModel.hpp"
 
 #include "Constants.hpp"
 #include "Enums.hpp"
 #include "MusicItem.hpp"
 
-#include <Qt>
-
-MusicModel::MusicModel(QObject* parent) : QStandardItemModel(parent) {
+TrackTreeModel::TrackTreeModel(QObject* parent) : QStandardItemModel(parent) {
     tracks.reserve(MINIMUM_TRACK_COUNT);
 }
 
-void MusicModel::setItem(
+void TrackTreeModel::setItem(
     const u16 row,
     const u16 col,
     QStandardItem* item,
@@ -23,25 +21,26 @@ void MusicModel::setItem(
     }
 }
 
-auto MusicModel::itemFromIndex(const QModelIndex& index) const -> MusicItem* {
+auto TrackTreeModel::itemFromIndex(const QModelIndex& index) const
+    -> MusicItem* {
     return as<MusicItem*>(QStandardItemModel::itemFromIndex(index));
 }
 
-auto MusicModel::trackProperty(const u8 column) const -> TrackProperty {
+auto TrackTreeModel::trackProperty(const u8 column) const -> TrackProperty {
     return TrackProperty(
         headerData(column, Qt::Horizontal, PROPERTY_ROLE).toUInt()
     );
 }
 
-auto MusicModel::removeRows(
+auto TrackTreeModel::removeRows(
     const i32 row,
     const i32 count,
     const QModelIndex& parent
 ) -> bool {
-    for (const u16 idx : range(0, count)) {
+    for (const u16 rowIdx : range(0, count)) {
         for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
-            if (trackProperty(column) == TrackProperty::Title) {
-                tracks.erase(this->item(row + idx, column)->text());
+            if (trackProperty(column) == TrackProperty::Path) {
+                tracks.erase(this->item(row + rowIdx, column)->text());
             }
         }
     }

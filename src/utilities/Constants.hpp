@@ -8,11 +8,37 @@
 #include <QSize>
 
 // Audio Constants
-constexpr u16 MIN_BUFFER_SIZE = 4096;
-constexpr u16 MIN_BUFFER_SIZE_I24 = 4098;
+enum SampleSize : u8 {
+    U8 = 1,
+    S16,
+    S24,
+    S32
+};
+
+enum AudioChannels : u8 {
+    Zero = 0,
+    Mono = 1,
+    Stereo = 2,
+    Quad = 4,
+    Surround51 = 6,
+    Surround71 = 8,
+};
 
 constexpr u8 F32_SAMPLE_SIZE = sizeof(f32);
+
+constexpr u16 DESIRED_SAMPLE_COUNT = 2048;
+constexpr u16 MIN_BUFFER_SIZE = DESIRED_SAMPLE_COUNT * F32_SAMPLE_SIZE;
+
+static_assert(
+    MIN_BUFFER_SIZE % 4 == 0,
+    "Required to produce 0. Otherwise, samples will be corrupted when playing tracks, since samples may be 16-bit and 32-bit."
+);
+
+constexpr u16 MIN_BUFFER_SIZE_3BYTES = MIN_BUFFER_SIZE - (MIN_BUFFER_SIZE / 4);
+
 constexpr AVSampleFormat F32_SAMPLE_FORMAT = AV_SAMPLE_FMT_FLT;
+constexpr AVSampleFormat F32P_SAMPLE_FORMAT = AV_SAMPLE_FMT_FLTP;
+
 constexpr cstr F32_SAMPLE_FORMAT_NAME = "flt";
 
 // Equalizer gain range (in dB)
@@ -32,20 +58,7 @@ constexpr u8 FIVE_BANDS = 5;
 constexpr u8 THREE_BANDS = 3;
 
 // Frequency sets per band count
-constexpr array<f32, THIRTY_BANDS> THIRTY_BAND_FREQUENCIES = {
-    25,   31.5, 40,   50,   63,   80,   100,   125,   160,   200,
-    250,  315,  400,  500,  630,  800,  1000,  1250,  1600,  2000,
-    2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000
-};
-
-constexpr array<f32, EIGHTEEN_BANDS> EIGHTEEN_BAND_FREQUENCIES = {
-    20,   31.5, 50,   80,   125,  200,  315,   500,   800,
-    1250, 2000, 3150, 5000, 6300, 8000, 10000, 12500, 16000
-};
-
-constexpr array<f32, TEN_BANDS> TEN_BAND_FREQUENCIES = { 31.5, 63,   125,  250,
-                                                         500,  1000, 2000, 4000,
-                                                         8000, 16000 };
+constexpr array<f32, THREE_BANDS> THREE_BAND_FREQUENCIES = { 100, 1000, 10000 };
 
 constexpr array<f32, FIVE_BANDS> FIVE_BAND_FREQUENCIES = { 63,
                                                            250,
@@ -53,7 +66,37 @@ constexpr array<f32, FIVE_BANDS> FIVE_BAND_FREQUENCIES = { 63,
                                                            4000,
                                                            16000 };
 
-constexpr array<f32, THREE_BANDS> THREE_BAND_FREQUENCIES = { 100, 1000, 10000 };
+constexpr array<f32, TEN_BANDS> TEN_BAND_FREQUENCIES = { 31.5, 63,   125,  250,
+                                                         500,  1000, 2000, 4000,
+                                                         8000, 16000 };
+
+constexpr array<f32, EIGHTEEN_BANDS> EIGHTEEN_BAND_FREQUENCIES = {
+    20,   31.5, 50,   80,   125,  200,  315,   500,   800,
+    1250, 2000, 3150, 5000, 6300, 8000, 10000, 12500, 16000
+};
+
+constexpr array<f32, THIRTY_BANDS> THIRTY_BAND_FREQUENCIES = {
+    25,   31.5, 40,   50,   63,   80,   100,   125,   160,   200,
+    250,  315,  400,  500,  630,  800,  1000,  1250,  1600,  2000,
+    2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000
+};
+
+constexpr auto getFrequenciesForBands(const u8 bands) -> const f32* {
+    switch (bands) {
+        case THREE_BANDS:
+            return THREE_BAND_FREQUENCIES.data();
+        case FIVE_BANDS:
+            return FIVE_BAND_FREQUENCIES.data();
+        case TEN_BANDS:
+            return TEN_BAND_FREQUENCIES.data();
+        case EIGHTEEN_BANDS:
+            return EIGHTEEN_BAND_FREQUENCIES.data();
+        case THIRTY_BANDS:
+            return THIRTY_BAND_FREQUENCIES.data();
+        default:
+            return nullptr;
+    }
+}
 
 // Standard bitrates (in kbps)
 constexpr array<u16, 17> STANDARD_BITRATES = { 32,  40,  48,  56,  64,  80,
@@ -140,9 +183,9 @@ constexpr array<bool, TRACK_PROPERTY_COUNT> DEFAULT_COLUMN_STATES =
 constexpr array<TrackProperty, TRACK_PROPERTY_COUNT> DEFAULT_COLUMN_PROPERTIES =
     constructProperties();
 
-// Metadata / Search Config
-
 // Allowed file extensions for tracks
+
+// Music extensions
 // Although ALAC uses MPEG containers, let it be here
 constexpr QStringView EXT_MP3 = u"mp3";
 constexpr QStringView EXT_FLAC = u"flac";
@@ -151,12 +194,25 @@ constexpr QStringView EXT_AAC = u"aac";
 constexpr QStringView EXT_WAV = u"wav";
 constexpr QStringView EXT_OGG = u"ogg";
 constexpr QStringView EXT_M4A = u"m4a";
-constexpr QStringView EXT_MP4 = u"mp4";
-constexpr QStringView EXT_MKV = u"mkv";
 constexpr QStringView EXT_MKA = u"mka";
 constexpr QStringView EXT_ALAC = u"alac";
-constexpr QStringView EXT_MOV = u"mov";
 constexpr QStringView EXT_AC3 = u"ac3";
+
+constexpr u8 ALLOWED_MUSIC_EXTENSIONS_COUNT = 10;
+constexpr array<QStringView, ALLOWED_MUSIC_EXTENSIONS_COUNT>
+    ALLOWED_MUSIC_EXTENSIONS = {
+        EXT_MP3, EXT_FLAC, EXT_OPUS, EXT_AAC,  EXT_WAV,
+        EXT_OGG, EXT_M4A,  EXT_MKA,  EXT_ALAC, EXT_AC3
+    };
+
+// Video extensions
+constexpr QStringView EXT_MP4 = u"mp4";
+constexpr QStringView EXT_MKV = u"mkv";
+constexpr QStringView EXT_MOV = u"mov";
+
+constexpr u8 ALLOWED_VIDEO_EXTENSIONS_COUNT = 3;
+constexpr array<QStringView, ALLOWED_VIDEO_EXTENSIONS_COUNT>
+    ALLOWED_VIDEO_EXTENSIONS = { EXT_MP4, EXT_MKV, EXT_MOV };
 
 // Allowed playlists
 constexpr QStringView EXT_CUE = u"cue";
@@ -164,24 +220,27 @@ constexpr QStringView EXT_M3U = u"m3u";
 constexpr QStringView EXT_M3U8 = u"m3u8";
 constexpr QStringView EXT_XSPF = u"xspf";
 
-constexpr u8 ALLOWED_FILE_EXTENSIONS_COUNT = 13;
-constexpr array<QStringView, ALLOWED_FILE_EXTENSIONS_COUNT>
-    ALLOWED_FILE_EXTENSIONS = { EXT_MP3,  EXT_FLAC, EXT_OPUS, EXT_AAC, EXT_WAV,
-                                EXT_OGG,  EXT_M4A,  EXT_MP4,  EXT_MKV, EXT_MKA,
-                                EXT_ALAC, EXT_MOV,  EXT_AC3 };
+constexpr u8 ALLOWED_PLAYLIST_EXTENSIONS_COUNT = 4;
+constexpr array<QStringView, ALLOWED_PLAYLIST_EXTENSIONS_COUNT>
+    ALLOWED_PLAYLIST_EXTENSIONS = { EXT_XSPF, EXT_M3U8, EXT_M3U, EXT_CUE };
 
-constexpr u8 ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT = 10;
-constexpr array<QStringView, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
-    ALLOWED_MUSIC_FILE_EXTENSIONS = { EXT_MP3,  EXT_FLAC, EXT_OPUS, EXT_AAC,
-                                      EXT_WAV,  EXT_OGG,  EXT_M4A,  EXT_MKA,
-                                      EXT_ALAC, EXT_AC3 };
+// All allowed playable file extensions
+constexpr u8 ALLOWED_EXTENSIONS_COUNT = ALLOWED_MUSIC_EXTENSIONS_COUNT +
+                                        ALLOWED_VIDEO_EXTENSIONS_COUNT +
+                                        ALLOWED_PLAYLIST_EXTENSIONS_COUNT;
+constexpr array<QStringView, ALLOWED_EXTENSIONS_COUNT>
+    ALLOWED_PLAYABLE_EXTENSIONS = { EXT_MP3,  EXT_FLAC, EXT_OPUS, EXT_AAC,
+                                    EXT_WAV,  EXT_OGG,  EXT_M4A,  EXT_MKA,
+                                    EXT_ALAC, EXT_AC3,
 
-constexpr u8 ALLOWED_VIDEO_FILE_EXTENSIONS_COUNT = 3;
-constexpr array<QStringView, ALLOWED_VIDEO_FILE_EXTENSIONS_COUNT>
-    ALLOWED_VIDEO_FILE_EXTENSIONS = { EXT_MP4, EXT_MKV, EXT_MOV };
+                                    EXT_MOV,  EXT_MP4,  EXT_MKV,
 
-constexpr array<QStringView, 6> IMAGE_EXTENSIONS = { u"jpg",  u"jpeg", u"png",
-                                                     u"tiff", u"webp", u"bmp" };
+                                    EXT_XSPF, EXT_M3U,  EXT_M3U8, EXT_CUE };
+
+// Image extensions
+constexpr array<QStringView, 6> ALLOWED_IMAGE_EXTENSIONS = { u"jpg",  u"jpeg",
+                                                             u"png",  u"tiff",
+                                                             u"webp", u"bmp" };
 
 // Searchable track property names
 constexpr array<QStringView, TRACK_PROPERTY_COUNT> SEARCH_PROPERTIES = {
@@ -211,21 +270,8 @@ constexpr u8 MINUTE_SECONDS = 60;
 constexpr u16 HOUR_SECONDS = 3600;
 constexpr u8 START_DRAG_DISTANCE = 40;
 
-constexpr u8 INT24_SIZE = 3;
 constexpr i32 INT24_MAX = 8388607;
 constexpr i32 INT24_MIN = ~INT24_MAX;
 constexpr i32 UINT24_MAX = 16777215;
 
-// Type Aliases / Structs
-
-using MetadataArray = array<QString, TRACK_PROPERTY_COUNT>;
-using GainArray = array<i8, MAX_BANDS_COUNT>;
-using FrequencyArray = array<f32, MAX_BANDS_COUNT>;
-
-// Equalizer settings info struct
-struct EqualizerInfo {
-    const bool enabled;
-    const u8 bandIndex;
-    const GainArray gains;
-    const FrequencyArray frequencies;
-};
+constexpr array<cstr, 3> BPM_TAGS = { "BPM", "TBPM", "IBPM" };

@@ -225,9 +225,6 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <property name="contextMenuPolicy">
-          <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
-         </property>
          <property name="minimumSize">
           <size>
            <width>32</width>
@@ -244,6 +241,9 @@
           <font>
            <pointsize>7</pointsize>
           </font>
+         </property>
+         <property name="contextMenuPolicy">
+          <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
          </property>
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Repeat&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -444,7 +444,7 @@
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Progress&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
-          <string notr="true">0:00/0:00</string>
+          <string notr="true">00:00/00:00</string>
          </property>
          <property name="textFormat">
           <enum>Qt::TextFormat::PlainText</enum>
@@ -678,6 +678,9 @@
     <addaction name="actionOpenFolder"/>
     <addaction name="actionOpenPlaylist"/>
     <addaction name="separator"/>
+    <addaction name="actionSettings"/>
+    <addaction name="actionVisualizer"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuAbout">
@@ -705,15 +708,8 @@
     <addaction name="actionRussian"/>
     <addaction name="actionEnglish"/>
    </widget>
-   <widget class="QMenu" name="menuSettings">
-    <property name="title">
-     <string>Settings</string>
-    </property>
-    <addaction name="actionSettings"/>
-   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuPlaylist"/>
-   <addaction name="menuSettings"/>
    <addaction name="menuLanguage"/>
    <addaction name="menuAbout"/>
   </widget>
@@ -786,11 +782,6 @@
     <enum>QAction::MenuRole::NoRole</enum>
    </property>
   </action>
-  <action name="actionSettings">
-   <property name="text">
-    <string>Settings</string>
-   </property>
-  </action>
   <action name="actionDocumentation">
    <property name="text">
     <string>Usage Documentation</string>
@@ -844,38 +835,48 @@
     <string>Export M3U8 Playlist</string>
    </property>
   </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionVisualizer">
+   <property name="text">
+    <string>Visualizer</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
    <class>CustomSlider</class>
    <extends>QSlider</extends>
-   <header>customslider.hpp</header>
+   <header>CustomSlider.hpp</header>
   </customwidget>
   <customwidget>
    <class>ActionButton</class>
    <extends>QPushButton</extends>
-   <header>actionbutton.hpp</header>
+   <header>ActionButton.hpp</header>
   </customwidget>
   <customwidget>
    <class>PlaylistView</class>
    <extends>QWidget</extends>
-   <header>playlistview.hpp</header>
+   <header>PlaylistView.hpp</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>IconTextButton</class>
    <extends>QPushButton</extends>
-   <header>icontextbutton.hpp</header>
+   <header>IconTextButton.hpp</header>
   </customwidget>
   <customwidget>
    <class>ScaledLabel</class>
    <extends>QLabel</extends>
-   <header>scaledlabel.hpp</header>
+   <header>ScaledLabel.hpp</header>
   </customwidget>
   <customwidget>
    <class>DockWidget</class>
    <extends>QSplitter</extends>
-   <header>dockwidget.hpp</header>
+   <header>DockWidget.hpp</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

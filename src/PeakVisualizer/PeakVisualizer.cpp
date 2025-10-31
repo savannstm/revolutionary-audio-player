@@ -1,5 +1,6 @@
 #include "PeakVisualizer.hpp"
 
+#include "Constants.hpp"
 #include "Enums.hpp"
 
 #include <QMenu>
@@ -7,15 +8,17 @@
 
 constexpr u8 VISUALIZER_WIDTH = 128;
 constexpr u8 PEAK_PADDING = 4;
-constexpr u16 MIN_SAMPLE_COUNT = 512;
+constexpr u16 MIN_FFT_SAMPLE_COUNT = 1024;
 
-PeakVisualizer::PeakVisualizer(QWidget* parent) : QWidget(parent) {
+PeakVisualizer::PeakVisualizer(const f32* bufferData, QWidget* parent) :
+    QWidget(parent) {
     setFixedWidth(VISUALIZER_WIDTH);
     setContextMenuPolicy(Qt::CustomContextMenu);
 
-    connect(this, &QWidget::customContextMenuRequested, this, [&] {
+    buffer = bufferData;
+
+    connect(this, &QWidget::customContextMenuRequested, this, [&] -> void {
         auto* menu = new QMenu(this);
-        auto* hideAction = menu->addAction(tr("Hide"));
 
         auto* modeMenu = new QMenu(menu);
         modeMenu->setTitle(tr("Mode"));
@@ -42,7 +45,7 @@ PeakVisualizer::PeakVisualizer(QWidget* parent) : QWidget(parent) {
 
         // For some idiotic reasons, those indices aren't in Preset enum
         auto filteredPresetRange =
-            views::filter(unfilteredPresetRange, [&](const u16 preset) {
+            views::filter(unfilteredPresetRange, [&](const u16 preset) -> bool {
             return !ranges::contains(missingPresets, preset);
         });
 
@@ -54,9 +57,9 @@ PeakVisualizer::PeakVisualizer(QWidget* parent) : QWidget(parent) {
                 action->setChecked(true);
             }
 
-            connect(action, &QAction::triggered, this, [this, preset] {
-                gradient = QGradient(as<QGradient::Preset>(preset));
-                gradientPreset = as<QGradient::Preset>(preset);
+            connect(action, &QAction::triggered, this, [this, preset] -> void {
+                gradient = QGradient(QGradient::Preset(preset));
+                gradientPreset = QGradient::Preset(preset);
             });
         }
 
@@ -69,44 +72,47 @@ PeakVisualizer::PeakVisualizer(QWidget* parent) : QWidget(parent) {
             return;
         }
 
-        if (selectedAction == hideAction) {
-            hide();
-        } else if (selectedAction == relativeAction) {
+        if (selectedAction == relativeAction) {
             mode = PeakVisualizerMode::Relative;
         } else {
             mode = PeakVisualizerMode::DBFS;
         }
     });
+
+    connect(&timer, &QTimer::timeout, this, [&] -> void {
+        buildPeaks();
+        update();
+    });
 }
 
-void PeakVisualizer::buildPeaks(const u16 sampleRate) {
-    if (isHidden() || buffer->empty()) {
-        return;
-    }
-
+void PeakVisualizer::buildPeaks() {
     // Measure the sample count
-    const u16 sampleCount = buffer->size() / F32_SAMPLE_SIZE;
+    const u16 sampleCount = (bufferSize / F32_SAMPLE_SIZE) / channels;
 
-    // Inners of FFmpeg's FFT don't allow sizes less than 512
-    if (sampleCount < MIN_SAMPLE_COUNT) {
-        return;
+    // This shit screws up the FFT by mixing the samples from all channels
+    for (u16 sample = 0; sample < sampleCount; sample++) {
+        f32 mixedSample = 0.0F;
+
+        for (u8 channel = 0; channel < channels; channel++) {
+            const u32 index = (sample * channels) + channel;
+            mixedSample += buffer[index];
+        }
+
+        fftSamples[sample + fftSampleCount] = mixedSample / f32(channels);
     }
 
-    // Compute size that is any power of 2
-    const u16 fftSampleCount = u16(1 << av_log2_16bit(sampleCount));
+    // sampleCount is always of the power of two
+    fftSampleCount += (1 << std::countr_zero(sampleCount));
 
-    // Copy only those samples, that will be used in FFT
-    vector<f32> samples = vector<f32>(fftSampleCount);
-    memcpy(
-        samples.data(),
-        buffer->data(),
-        i32(fftSampleCount * F32_SAMPLE_SIZE)
-    );
-
-    AVTXContext* fftCtxPtr = nullptr;
+    // Inners of FFmpeg's FFT don't allow less than N samples
+    if (fftSampleCount < MIN_FFT_SAMPLE_COUNT) {
+        return;
+    }
 
     if (fftSampleCount != lastFFTSampleCount) {
         fftScale = 1.0F / f32(fftSampleCount);
+
+        AVTXContext* fftCtxPtr = nullptr;
 
         av_tx_init(
             &fftCtxPtr,
@@ -126,10 +132,9 @@ void PeakVisualizer::buildPeaks(const u16 sampleRate) {
     vector<AVComplexFloat> output =
         vector<AVComplexFloat>(fftOutputSampleCount);
 
-    fft(fftCtx.get(), output.data(), samples.data(), F32_SAMPLE_SIZE);
+    fft(fftCtx.get(), output.data(), fftSamples.data(), F32_SAMPLE_SIZE);
 
-    const array<u16, TEN_BANDS> bandIndices =
-        getBandIndices(sampleRate, fftSampleCount);
+    const array<u16, TEN_BANDS> bandIndices = getBandIndices(fftSampleCount);
     peaks.fill(0);
 
     for (const u8 band : range(0, TEN_BANDS)) {
@@ -143,22 +148,22 @@ void PeakVisualizer::buildPeaks(const u16 sampleRate) {
 
             // Compute the loudness magnitude
             const f32 magnitude = sqrtf(powf(real, 2) + powf(imaginary, 2));
-            maxMagnitude = max(maxMagnitude, magnitude);
+            maxMagnitude = std::max<f32>(maxMagnitude, magnitude);
         }
 
         peaks[band] = maxMagnitude;
     }
 
-    update();
+    fftSampleCount = 0;
 }
 
-auto PeakVisualizer::getBandIndices(const u16 sampleRate, const u16 fftSize)
+auto PeakVisualizer::getBandIndices(const u16 fftSize) const
     -> array<u16, TEN_BANDS> {
     array<u16, TEN_BANDS> indices;
 
     for (const auto [idx, frequency] : views::enumerate(TEN_BAND_FREQUENCIES)) {
         const i32 index = i32((frequency / f32(sampleRate)) * f32(fftSize));
-        indices[idx] = min(index, fftSize / 2);
+        indices[idx] = std::min<u16>(index, fftSize / 2);
     }
 
     return indices;
@@ -190,14 +195,14 @@ void PeakVisualizer::paintEvent(QPaintEvent* /* event */) {
             constexpr f32 MIN_DBFS = -60;
             constexpr f32 MAX_DBFS = 0;
 
-            const f32 dBFSPeak = 20.0F * log10f(max(peak, 0.000001F));
+            const f32 dBFSPeak = 20.0F * log10f(std::max<f32>(peak, 0.000001F));
             normalizedPeak = (dBFSPeak - MIN_DBFS) / (MAX_DBFS - MIN_DBFS);
             normalizedPeak = clamp(normalizedPeak, 0.0F, 1.0F);
         }
 
         const u16 peakHeight = u16(normalizedPeak * f32(height));
 
-        const QRectF bar = QRectF(
+        const QRect bar = QRect(
             u8(band) * peakWidth,
             height - peakHeight,
             peakWidth - PEAK_PADDING,
@@ -209,6 +214,7 @@ void PeakVisualizer::paintEvent(QPaintEvent* /* event */) {
 }
 
 void PeakVisualizer::reset() {
+    timer.stop();
     peaks.fill(0);
     update();
 }

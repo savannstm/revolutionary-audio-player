@@ -19,7 +19,7 @@
 
 TrackTree::TrackTree(QWidget* parent) : QTreeView(parent) {
     setHeader(musicHeader);
-    setModel(musicModel);
+    setModel(trackTreeModel);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setIndentation(1);
     setSortingEnabled(true);
@@ -48,7 +48,7 @@ TrackTree::TrackTree(QWidget* parent) : QTreeView(parent) {
 }
 
 void TrackTree::reselectCurrentElement(
-    const QItemSelection& /*unused*/,
+    const QItemSelection& /* unused */,
     const QItemSelection& deselected
 ) {
     const QModelIndex requiredIndex = currentIndex();
@@ -144,25 +144,27 @@ void TrackTree::dropEvent(QDropEvent* event) {
     clonedItems.reserve(TRACK_PROPERTY_COUNT);
 
     for (const u8 column : range(0, TRACK_PROPERTY_COUNT - 1)) {
-        clonedItems.emplace_back(musicModel->item(sourceRow, column)->clone());
+        clonedItems.emplace_back(
+            trackTreeModel->item(sourceRow, column)->clone()
+        );
     }
 
-    musicModel->insertRow(targetRow);
+    trackTreeModel->insertRow(targetRow);
 
     for (const u8 column : range(0, TRACK_PROPERTY_COUNT - 1)) {
-        musicModel->setItem(targetRow, column, clonedItems[column]);
+        trackTreeModel->setItem(targetRow, column, clonedItems[column]);
     }
 
     if (sourceRow >= targetRow) {
         sourceRow += 1;
     }
 
-    musicModel->removeRow(sourceRow);
+    trackTreeModel->removeRow(sourceRow);
 
-    for (const u16 row : range(0, musicModel->rowCount())) {
+    for (const u16 row : range(0, trackTreeModel->rowCount())) {
         auto* item = new QStandardItem();
         item->setData(row, Qt::EditRole);
-        musicModel->setItem(row, TrackProperty::Order, item);
+        trackTreeModel->setItem(row, TrackProperty::Order, item);
     }
 
     event->acceptProposedAction();
@@ -184,13 +186,14 @@ auto TrackTree::rowMetadata(const u16 row) const
     result.reserve(TRACK_PROPERTY_COUNT);
 
     for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
-        const TrackProperty headerProperty = musicModel->trackProperty(column);
-        const QModelIndex index = musicModel->index(row, column);
+        const TrackProperty headerProperty =
+            trackTreeModel->trackProperty(column);
+        const QModelIndex index = trackTreeModel->index(row, column);
 
         if (index.isValid()) {
             result.insert_or_assign(
                 headerProperty,
-                musicModel->data(index).toString()
+                trackTreeModel->data(index).toString()
             );
         }
     }
@@ -199,10 +202,11 @@ auto TrackTree::rowMetadata(const u16 row) const
 }
 
 void TrackTree::addFile(const HashMap<TrackProperty, QString>& metadata) {
-    const u16 row = musicModel->rowCount();
+    const u16 row = trackTreeModel->rowCount();
+    const auto index = currentIndex();
 
     for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
-        const auto headerProperty = musicModel->trackProperty(column);
+        const auto headerProperty = trackTreeModel->trackProperty(column);
         auto* item = new MusicItem();
 
         if (headerProperty == TrackProperty::TrackNumber) {
@@ -230,7 +234,7 @@ void TrackTree::addFile(const HashMap<TrackProperty, QString>& metadata) {
             item->setText(metadata[headerProperty]);
         }
 
-        musicModel
+        trackTreeModel
             ->setItem(row, column, item, headerProperty == TrackProperty::Path);
     }
 }
@@ -240,10 +244,10 @@ void TrackTree::addFileCUE(
     const HashMap<TrackProperty, QString>& metadata,
     const QString& cueFilePath
 ) {
-    const u16 row = musicModel->rowCount();
+    const u16 row = trackTreeModel->rowCount();
 
     for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
-        const auto headerProperty = musicModel->trackProperty(column);
+        const auto headerProperty = trackTreeModel->trackProperty(column);
         auto* item = new MusicItem();
 
         if (column == 0) {
@@ -276,17 +280,25 @@ void TrackTree::addFileCUE(
             item->setText(metadata[headerProperty]);
         }
 
-        musicModel
+        trackTreeModel
             ->setItem(row, column, item, headerProperty == TrackProperty::Path);
     }
 }
 
 void TrackTree::sortByPath() {
+    //! Don't forget about this cool persistent model index thing: it really
+    //! simplifies EVERYTHING
+    const QPersistentModelIndex persistent = currentIndex();
+
     for (u8 column = TRACK_PROPERTY_COUNT - 1; column >= 0; column--) {
-        if (musicModel->trackProperty(column) == TrackProperty::Path) {
+        if (trackTreeModel->trackProperty(column) == TrackProperty::Path) {
             sortByColumn(column, Qt::AscendingOrder);
             break;
         }
+    }
+
+    if (persistent.isValid()) {
+        setCurrentIndex(persistent);
     }
 }
 
@@ -295,7 +307,7 @@ void TrackTree::fillTable(
     const QList<QVariant>& cueOffsets,
     const bool fromArgs
 ) {
-    QThreadPool::globalInstance()->start([=, this] {
+    QThreadPool::globalInstance()->start([=, this] -> void {
         map<QString, CueInfo> cueInfos;
         QString totalDuration;
 
@@ -307,7 +319,14 @@ void TrackTree::fillTable(
             if (extension == EXT_CUE) {
                 if (!cueInfos.contains(path)) {
                     QFile cueFile = QFile(path);
-                    cueFile.open(QFile::ReadOnly);
+
+                    if (!cueFile.open(QFile::ReadOnly | QFile::Text)) {
+                        // This is not likely to fail, because we just parsed
+                        // the contents from this cue file. But if it does fail,
+                        // just continue
+                        continue;
+                    };
+
                     cueInfos.emplace(path, parseCUE(cueFile, info));
                     cueFile.close();
                 }
@@ -322,7 +341,7 @@ void TrackTree::fillTable(
 
                     const auto& tracks = cueInfos[path].tracks;
                     const auto& offsets =
-                        views::transform(tracks, [&](const auto& track) {
+                        views::transform(tracks, [&](const auto& track) -> u16 {
                         return track.offset;
                     });
 
@@ -365,7 +384,7 @@ void TrackTree::fillTable(
             }
 
             if (info.isFile() &&
-                !ranges::contains(ALLOWED_FILE_EXTENSIONS, extension)) {
+                !ranges::contains(ALLOWED_PLAYABLE_EXTENSIONS, extension)) {
                 continue;
             }
 
@@ -375,10 +394,12 @@ void TrackTree::fillTable(
                     QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot
                 );
 
-                const auto pathsView =
-                    views::transform(entries, [&](const QString& entry) {
+                const auto pathsView = views::transform(
+                    entries,
+                    [&](const QString& entry) -> QString {
                     return dir.absoluteFilePath(entry);
-                });
+                }
+                );
 
                 const QStringList paths =
                     QStringList(pathsView.begin(), pathsView.end());
@@ -387,7 +408,7 @@ void TrackTree::fillTable(
                 continue;
             }
 
-            if (musicModel->contains(path)) {
+            if (trackTreeModel->contains(path)) {
                 continue;
             }
 
@@ -468,15 +489,15 @@ auto TrackTree::deselect(const i32 index) -> QModelIndex {
     const QModelIndex modelIndex = currentIndex();
 
     if (index != -1) {
-        musicModel->item(index, 0)->setData(QString(), Qt::DecorationRole);
+        trackTreeModel->item(index, 0)->setData(QString(), Qt::DecorationRole);
     } else {
         if (modelIndex.isValid()) {
-            musicModel->item(modelIndex.row(), 0)
+            trackTreeModel->item(modelIndex.row(), 0)
                 ->setData(QString(), Qt::DecorationRole);
         }
     }
 
-    setCurrentIndex(musicModel->index(-1, -1));
+    setCurrentIndex(trackTreeModel->index(-1, -1));
     return modelIndex;
 }
 
@@ -495,8 +516,8 @@ void TrackTree::handleHeaderPress(
             i8 columnIndex = -1;
 
             for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
-                if (musicModel->headerData(column, Qt::Horizontal).toString() ==
-                    label) {
+                if (trackTreeModel->headerData(column, Qt::Horizontal)
+                        .toString() == label) {
                     columnIndex = i8(column);
                     break;
                 }
@@ -505,10 +526,10 @@ void TrackTree::handleHeaderPress(
             if (columnIndex != -1) {
                 action->setChecked(!isColumnHidden(columnIndex));
             } else {
-                action->setEnabled(false);
+                action->setDisabled(true);
             }
 
-            connect(action, &QAction::triggered, menu, [=, this] {
+            connect(action, &QAction::triggered, menu, [=, this] -> void {
                 if (columnIndex != -1) {
                     const bool currentlyHidden = isColumnHidden(columnIndex);
                     setColumnHidden(columnIndex, !currentlyHidden);

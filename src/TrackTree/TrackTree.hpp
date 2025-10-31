@@ -2,7 +2,7 @@
 
 #include "Enums.hpp"
 #include "MusicHeader.hpp"
-#include "MusicModel.hpp"
+#include "TrackTreeModel.hpp"
 
 #include <QTreeView>
 
@@ -25,8 +25,8 @@ class TrackTree : public QTreeView {
         return index;
     };
 
-    [[nodiscard]] constexpr auto model() const -> MusicModel* {
-        return musicModel;
+    [[nodiscard]] constexpr auto model() const -> TrackTreeModel* {
+        return trackTreeModel;
     };
 
     [[nodiscard]] constexpr auto header() const -> MusicHeader* {
@@ -77,7 +77,7 @@ class TrackTree : public QTreeView {
 
     QModelIndex index;
     MusicHeader* musicHeader = new MusicHeader(Qt::Horizontal, this);
-    MusicModel* musicModel = new MusicModel(this);
+    TrackTreeModel* trackTreeModel = new TrackTreeModel(this);
 
     vector<u16> order;
 

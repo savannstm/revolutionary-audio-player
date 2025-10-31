@@ -3,7 +3,11 @@
 #include <QMenu>
 
 DockWidget::DockWidget(QWidget* parent) : QSplitter(parent) {
-    connect(this, &DockWidget::customContextMenuRequested, this, [=, this] {
+    connect(
+        this,
+        &DockWidget::customContextMenuRequested,
+        this,
+        [=, this] -> void {
         auto* menu = new QMenu(this);
 
         const QAction* moveToLeftAction = menu->addAction(tr("Move To Left"));
@@ -46,5 +50,6 @@ DockWidget::DockWidget(QWidget* parent) : QSplitter(parent) {
                 dockMetadataTree->hide();
             }
         }
-    });
+    }
+    );
 }

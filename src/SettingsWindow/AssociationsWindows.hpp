@@ -11,87 +11,111 @@
 #include <windows.h>
 
 constexpr wstring_view DEFAULT_KEY;
+constexpr u8 EXTENSIONS_COUNT =
+    ALLOWED_MUSIC_EXTENSIONS_COUNT + ALLOWED_PLAYLIST_EXTENSIONS_COUNT;
 
-constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
-    EXTENSION_ENTRIES = {
-        LR"(Software\Classes\.mp3)",  LR"(Software\Classes\.flac)",
-        LR"(Software\Classes\.opus)", LR"(Software\Classes\.aac)",
-        LR"(Software\Classes\.wav)",  LR"(Software\Classes\.ogg)",
-        LR"(Software\Classes\.m4a)",  LR"(Software\Classes\.mka)",
-        LR"(Software\Classes\.alac)", LR"(Software\Classes\.ac3)",
-    };
+constexpr array<wstring_view, EXTENSIONS_COUNT> EXTENSION_ENTRIES = {
+    LR"(Software\Classes\.mp3)",  LR"(Software\Classes\.flac)",
+    LR"(Software\Classes\.opus)", LR"(Software\Classes\.aac)",
+    LR"(Software\Classes\.wav)",  LR"(Software\Classes\.ogg)",
+    LR"(Software\Classes\.m4a)",  LR"(Software\Classes\.mka)",
+    LR"(Software\Classes\.alac)", LR"(Software\Classes\.ac3)",
 
-constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> PROG_IDS = {
-    L"rap.mp3", L"rap.flac", L"rap.opus", L"rap.aac",  L"rap.wav",
-    L"rap.ogg", L"rap.m4a",  L"rap.mka",  L"rap.alac", L"rap.ac3"
+    LR"(Software\Classes\.xspf)", LR"(Software\Classes\.m3u8)",
+    LR"(Software\Classes\.m3u)",  LR"(Software\Classes\.cue)",
 };
 
-constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
-    PROG_ID_ENTRIES = {
-        LR"(Software\Classes\rap.mp3)",  LR"(Software\Classes\rap.flac)",
-        LR"(Software\Classes\rap.opus)", LR"(Software\Classes\rap.aac)",
-        LR"(Software\Classes\rap.wav)",  LR"(Software\Classes\rap.ogg)",
-        LR"(Software\Classes\rap.m4a)",  LR"(Software\Classes\rap.mka)",
-        LR"(Software\Classes\rap.alac)", LR"(Software\Classes\rap.ac3)",
-    };
+constexpr array<wstring_view, EXTENSIONS_COUNT> PROG_IDS = {
+    L"rap.mp3",  L"rap.flac", L"rap.opus", L"rap.aac",  L"rap.wav",
+    L"rap.ogg",  L"rap.m4a",  L"rap.mka",  L"rap.alac", L"rap.ac3",
 
-constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
-    ICON_ENTRIES = {
-        LR"(Software\Classes\rap.mp3\DefaultIcon)",
-        LR"(Software\Classes\rap.flac\DefaultIcon)",
-        LR"(Software\Classes\rap.opus\DefaultIcon)",
-        LR"(Software\Classes\rap.aac\DefaultIcon)",
-        LR"(Software\Classes\rap.wav\DefaultIcon)",
-        LR"(Software\Classes\rap.ogg\DefaultIcon)",
-        LR"(Software\Classes\rap.m4a\DefaultIcon)",
-        LR"(Software\Classes\rap.mka\DefaultIcon)",
-        LR"(Software\Classes\rap.alac\DefaultIcon)",
-        LR"(Software\Classes\rap.ac3\DefaultIcon)",
-    };
+    L"rap.xspf", L"rap.m3u8", L"rap.m3u",  L"rap.cue"
+};
 
-constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
-    SHELL_ENTRIES = {
-        LR"(Software\Classes\rap.mp3\shell)",
-        LR"(Software\Classes\rap.flac\shell)",
-        LR"(Software\Classes\rap.opus\shell)",
-        LR"(Software\Classes\rap.aac\shell)",
-        LR"(Software\Classes\rap.wav\shell)",
-        LR"(Software\Classes\rap.ogg\shell)",
-        LR"(Software\Classes\rap.m4a\shell)",
-        LR"(Software\Classes\rap.mka\shell)",
-        LR"(Software\Classes\rap.alac\shell)",
-        LR"(Software\Classes\rap.ac3\shell)",
-    };
+constexpr array<wstring_view, EXTENSIONS_COUNT> PROG_ID_ENTRIES = {
+    LR"(Software\Classes\rap.mp3)",  LR"(Software\Classes\rap.flac)",
+    LR"(Software\Classes\rap.opus)", LR"(Software\Classes\rap.aac)",
+    LR"(Software\Classes\rap.wav)",  LR"(Software\Classes\rap.ogg)",
+    LR"(Software\Classes\rap.m4a)",  LR"(Software\Classes\rap.mka)",
+    LR"(Software\Classes\rap.alac)", LR"(Software\Classes\rap.ac3)",
 
-constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
-    SHELL_OPEN_ENTRIES = {
-        LR"(Software\Classes\rap.mp3\shell\open)",
-        LR"(Software\Classes\rap.flac\shell\open)",
-        LR"(Software\Classes\rap.opus\shell\open)",
-        LR"(Software\Classes\rap.aac\shell\open)",
-        LR"(Software\Classes\rap.wav\shell\open)",
-        LR"(Software\Classes\rap.ogg\shell\open)",
-        LR"(Software\Classes\rap.m4a\shell\open)",
-        LR"(Software\Classes\rap.mka\shell\open)",
-        LR"(Software\Classes\rap.alac\shell\open)",
-        LR"(Software\Classes\rap.ac3\shell\open)",
-    };
+    LR"(Software\Classes\rap.xspf)", LR"(Software\Classes\rap.m3u8)",
+    LR"(Software\Classes\rap.m3u)",  LR"(Software\Classes\rap.cue)",
+};
 
-constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>
-    SHELL_COMMAND_ENTRIES = {
-        LR"(Software\Classes\rap.mp3\shell\open\command)",
-        LR"(Software\Classes\rap.flac\shell\open\command)",
-        LR"(Software\Classes\rap.opus\shell\open\command)",
-        LR"(Software\Classes\rap.aac\shell\open\command)",
-        LR"(Software\Classes\rap.wav\shell\open\command)",
-        LR"(Software\Classes\rap.ogg\shell\open\command)",
-        LR"(Software\Classes\rap.m4a\shell\open\command)",
-        LR"(Software\Classes\rap.mka\shell\open\command)",
-        LR"(Software\Classes\rap.alac\shell\open\command)",
-        LR"(Software\Classes\rap.ac3\shell\open\command)",
-    };
+constexpr array<wstring_view, EXTENSIONS_COUNT> ICON_ENTRIES = {
+    LR"(Software\Classes\rap.mp3\DefaultIcon)",
+    LR"(Software\Classes\rap.flac\DefaultIcon)",
+    LR"(Software\Classes\rap.opus\DefaultIcon)",
+    LR"(Software\Classes\rap.aac\DefaultIcon)",
+    LR"(Software\Classes\rap.wav\DefaultIcon)",
+    LR"(Software\Classes\rap.ogg\DefaultIcon)",
+    LR"(Software\Classes\rap.m4a\DefaultIcon)",
+    LR"(Software\Classes\rap.mka\DefaultIcon)",
+    LR"(Software\Classes\rap.alac\DefaultIcon)",
+    LR"(Software\Classes\rap.ac3\DefaultIcon)",
 
-constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_ENTRIES = {
+    LR"(Software\Classes\rap.xspf\DefaultIcon)",
+    LR"(Software\Classes\rap.m3u8\DefaultIcon)",
+    LR"(Software\Classes\rap.m3u\DefaultIcon)",
+    LR"(Software\Classes\rap.cue\DefaultIcon)",
+};
+
+constexpr array<wstring_view, EXTENSIONS_COUNT> SHELL_ENTRIES = {
+    LR"(Software\Classes\rap.mp3\shell)",
+    LR"(Software\Classes\rap.flac\shell)",
+    LR"(Software\Classes\rap.opus\shell)",
+    LR"(Software\Classes\rap.aac\shell)",
+    LR"(Software\Classes\rap.wav\shell)",
+    LR"(Software\Classes\rap.ogg\shell)",
+    LR"(Software\Classes\rap.m4a\shell)",
+    LR"(Software\Classes\rap.mka\shell)",
+    LR"(Software\Classes\rap.alac\shell)",
+    LR"(Software\Classes\rap.ac3\shell)",
+
+    LR"(Software\Classes\rap.xspf\shell)",
+    LR"(Software\Classes\rap.m3u8\shell)",
+    LR"(Software\Classes\rap.m3u\shell)",
+    LR"(Software\Classes\rap.cue\shell)",
+};
+
+constexpr array<wstring_view, EXTENSIONS_COUNT> SHELL_OPEN_ENTRIES = {
+    LR"(Software\Classes\rap.mp3\shell\open)",
+    LR"(Software\Classes\rap.flac\shell\open)",
+    LR"(Software\Classes\rap.opus\shell\open)",
+    LR"(Software\Classes\rap.aac\shell\open)",
+    LR"(Software\Classes\rap.wav\shell\open)",
+    LR"(Software\Classes\rap.ogg\shell\open)",
+    LR"(Software\Classes\rap.m4a\shell\open)",
+    LR"(Software\Classes\rap.mka\shell\open)",
+    LR"(Software\Classes\rap.alac\shell\open)",
+    LR"(Software\Classes\rap.ac3\shell\open)",
+
+    LR"(Software\Classes\rap.xspf\shell\open)",
+    LR"(Software\Classes\rap.m3u8\shell\open)",
+    LR"(Software\Classes\rap.m3u\shell\open)",
+    LR"(Software\Classes\rap.cue\shell\open)",
+};
+
+constexpr array<wstring_view, EXTENSIONS_COUNT> SHELL_COMMAND_ENTRIES = {
+    LR"(Software\Classes\rap.mp3\shell\open\command)",
+    LR"(Software\Classes\rap.flac\shell\open\command)",
+    LR"(Software\Classes\rap.opus\shell\open\command)",
+    LR"(Software\Classes\rap.aac\shell\open\command)",
+    LR"(Software\Classes\rap.wav\shell\open\command)",
+    LR"(Software\Classes\rap.ogg\shell\open\command)",
+    LR"(Software\Classes\rap.m4a\shell\open\command)",
+    LR"(Software\Classes\rap.mka\shell\open\command)",
+    LR"(Software\Classes\rap.alac\shell\open\command)",
+    LR"(Software\Classes\rap.ac3\shell\open\command)",
+
+    LR"(Software\Classes\rap.xspf\shell\open\command)",
+    LR"(Software\Classes\rap.m3u8\shell\open\command)",
+    LR"(Software\Classes\rap.m3u\shell\open\command)",
+    LR"(Software\Classes\rap.cue\shell\open\command)",
+};
+
+constexpr array<wstring_view, EXTENSIONS_COUNT> EXPLORER_ENTRIES = {
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mp3\UserChoiceLatest)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.flac\UserChoiceLatest)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.opus\UserChoiceLatest)",
@@ -102,9 +126,14 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_ENTR
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mka\UserChoiceLatest)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ac3\UserChoiceLatest)",
+
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.xspf\UserChoiceLatest)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m3u8\UserChoiceLatest)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m3u\UserChoiceLatest)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.cue\UserChoiceLatest)",
 };
 
-constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_PROGIDS = {
+constexpr array<wstring_view, EXTENSIONS_COUNT> EXPLORER_PROGIDS = {
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mp3\UserChoiceLatest\ProgId)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.flac\UserChoiceLatest\ProgId)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.opus\UserChoiceLatest\ProgId)",
@@ -115,9 +144,14 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_PROG
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mka\UserChoiceLatest\ProgId)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\ProgId)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ac3\UserChoiceLatest\ProgId)",
+
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.xspf\UserChoiceLatest\ProgId)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m3u8\UserChoiceLatest\ProgId)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m3u\UserChoiceLatest\ProgId)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.cue\UserChoiceLatest\ProgId)",
 };
 
-constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_OPEN_WITH_LIST_ENTRIES = {
+constexpr array<wstring_view, EXTENSIONS_COUNT> EXPLORER_OPEN_WITH_LIST_ENTRIES = {
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mp3\UserChoiceLatest\OpenWithList)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.flac\UserChoiceLatest\OpenWithList)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.opus\UserChoiceLatest\OpenWithList)",
@@ -128,9 +162,14 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_OPEN
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mka\UserChoiceLatest\OpenWithList)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\OpenWithList)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ac3\UserChoiceLatest\OpenWithList)",
+
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.xspf\UserChoiceLatest\OpenWithList)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m3u8\UserChoiceLatest\OpenWithList)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m3u\UserChoiceLatest\OpenWithList)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.cue\UserChoiceLatest\OpenWithList)",
 };
 
-constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_OPEN_WITH_PROGIDS_ENTRIES = {
+constexpr array<wstring_view, EXTENSIONS_COUNT> EXPLORER_OPEN_WITH_PROGIDS_ENTRIES = {
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mp3\UserChoiceLatest\OpenWithProgids)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.flac\UserChoiceLatest\OpenWithProgids)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.opus\UserChoiceLatest\OpenWithProgids)",
@@ -141,6 +180,25 @@ constexpr array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT> EXPLORER_OPEN
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mka\UserChoiceLatest\OpenWithProgids)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.alac\UserChoiceLatest\OpenWithProgids)",
     LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ac3\UserChoiceLatest\OpenWithProgids)",
+
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.xspf\UserChoiceLatest\OpenWithProgids)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m3u8\UserChoiceLatest\OpenWithProgids)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.m3u\UserChoiceLatest\OpenWithProgids)",
+    LR"(Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.cue\UserChoiceLatest\OpenWithProgids)",
+};
+
+constexpr array<array<wstring_view, EXTENSIONS_COUNT>, 11> allEntriesArrays = {
+    EXTENSION_ENTRIES,
+    PROG_IDS,
+    PROG_ID_ENTRIES,
+    ICON_ENTRIES,
+    SHELL_ENTRIES,
+    SHELL_OPEN_ENTRIES,
+    SHELL_COMMAND_ENTRIES,
+    EXPLORER_ENTRIES,
+    EXPLORER_PROGIDS,
+    EXPLORER_OPEN_WITH_LIST_ENTRIES,
+    EXPLORER_OPEN_WITH_PROGIDS_ENTRIES
 };
 
 constexpr wstring_view SHELL_ENTRY =
@@ -149,32 +207,52 @@ constexpr wstring_view SHELL_ENTRY_COMMAND =
     LR"(Software\Classes\Directory\shell\Open directory in RAP\command)";
 
 constexpr auto arrayMissingEntry(
-    const array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>& arr
+    const array<wstring_view, EXTENSIONS_COUNT>& arr
 ) -> bool {
     return ranges::any_of(arr, &wstring_view::empty);
 }
 
 constexpr auto arraysMissingEntry() -> bool {
-    constexpr array<
-        array<wstring_view, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT>,
-        11>
-        arr = { EXTENSION_ENTRIES,
-                PROG_IDS,
-                PROG_ID_ENTRIES,
-                ICON_ENTRIES,
-                SHELL_ENTRIES,
-                SHELL_OPEN_ENTRIES,
-                SHELL_COMMAND_ENTRIES,
-                EXPLORER_ENTRIES,
-                EXPLORER_PROGIDS,
-                EXPLORER_OPEN_WITH_LIST_ENTRIES,
-                EXPLORER_OPEN_WITH_PROGIDS_ENTRIES };
-
-    return ranges::any_of(arr, &arrayMissingEntry);
+    return ranges::any_of(allEntriesArrays, &arrayMissingEntry);
 }
 
 // Quick hack to check if some extensions were forgotten
 static_assert(!arraysMissingEntry(), "Array missing entry!");
+
+[[nodiscard]] auto associationsExist() -> bool {
+    for (const wstring_view entry : PROG_ID_ENTRIES) {
+        HKEY hKey;
+
+        const u32 result =
+            RegOpenKeyExW(HKEY_CURRENT_USER, entry.data(), 0, KEY_READ, &hKey);
+
+        if (result == ERROR_SUCCESS) {
+            RegCloseKey(hKey);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+[[nodiscard]] auto shellEntryExists() -> bool {
+    HKEY hKey;
+
+    const u32 result = RegOpenKeyExW(
+        HKEY_CURRENT_USER,
+        SHELL_ENTRY.data(),
+        0,
+        KEY_READ,
+        &hKey
+    );
+
+    if (result == ERROR_SUCCESS) {
+        RegCloseKey(hKey);
+        return true;
+    }
+
+    return false;
+}
 
 auto setRegistryValue(
     const HKEY root,
@@ -243,12 +321,20 @@ createFileAssociationsOS(const QString& appPath_, const QString& iconPath_) {
     const wstring_view iconPath = { ras<wcstr>(iconPath_.utf16()),
                                     usize(iconPath_.size()) };
 
-    for (const u8 idx : range(0, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT)) {
-        const QStringView extension = ALLOWED_MUSIC_FILE_EXTENSIONS[idx];
+    for (const u8 idx : range(0, EXTENSIONS_COUNT)) {
+        QStringView extension;
+
+        if (idx < ALLOWED_MUSIC_EXTENSIONS_COUNT) {
+            extension = ALLOWED_MUSIC_EXTENSIONS[idx];
+        } else {
+            extension = ALLOWED_PLAYLIST_EXTENSIONS
+                [idx - ALLOWED_MUSIC_EXTENSIONS_COUNT];
+        }
+
         const wstring_view wextension = { ras<wcstr>(extension.utf16()),
                                           usize(extension.size()) };
 
-        const wstring_view progId = PROG_IDS[idx];
+        const wstring_view progID = PROG_IDS[idx];
         const wstring_view extensionEntry = EXTENSION_ENTRIES[idx];
         const wstring_view progIdEntry = PROG_ID_ENTRIES[idx];
         const wstring_view iconEntry = ICON_ENTRIES[idx];
@@ -261,7 +347,7 @@ createFileAssociationsOS(const QString& appPath_, const QString& iconPath_) {
             HKEY_CURRENT_USER,
             extensionEntry,
             DEFAULT_KEY,
-            progId,
+            progID,
             REG_SZ
         );
 
@@ -294,7 +380,6 @@ createFileAssociationsOS(const QString& appPath_, const QString& iconPath_) {
         );
 
         // Set HKEY_CURRENT_USER\Software\Classes\rap.ext\shell\open
-
         constexpr wstring_view shellOpenValue = L"Open in RAP";
         setRegistryValue(
             HKEY_CURRENT_USER,
@@ -322,7 +407,7 @@ createFileAssociationsOS(const QString& appPath_, const QString& iconPath_) {
             HKEY_CURRENT_USER,
             explorerProgIdEntry,
             explorerProgIdKey,
-            progId,
+            progID,
             REG_SZ
         );
 
@@ -349,12 +434,12 @@ createFileAssociationsOS(const QString& appPath_, const QString& iconPath_) {
             REG_SZ
         );
 
-        const wstring_view ExplorerOpenWithProgidsEntry =
+        const wstring_view explorerOpenWithProgidsEntry =
             EXPLORER_OPEN_WITH_PROGIDS_ENTRIES[idx];
         setRegistryValue(
             HKEY_CURRENT_USER,
-            ExplorerOpenWithProgidsEntry,
-            progId,
+            explorerOpenWithProgidsEntry,
+            progID,
             DEFAULT_KEY,
             REG_BINARY
         );
@@ -362,7 +447,7 @@ createFileAssociationsOS(const QString& appPath_, const QString& iconPath_) {
 }
 
 inline void removeFileAssociationsOS() {
-    for (const u8 idx : range(0, ALLOWED_MUSIC_FILE_EXTENSIONS_COUNT)) {
+    for (const u8 idx : range(0, EXTENSIONS_COUNT)) {
         const wstring_view extensionEntry = EXTENSION_ENTRIES[idx];
         const wstring_view progIdEntry = PROG_ID_ENTRIES[idx];
         const wstring_view explorerEntry = EXPLORER_ENTRIES[idx];
@@ -383,7 +468,8 @@ inline void createContextMenuEntryOS(const QString& appPath_) {
     const wstring_view appPath = { ras<wcstr>(appPath_.utf16()),
                                    usize(appPath_.size()) };
 
-    constexpr wstring_view shellEntryNameKey = L"Open directory in RAP";
+    const wstring shellEntryNameKey =
+        QObject::tr("Open directory in RAP").toStdWString();
     setRegistryValue(
         HKEY_CURRENT_USER,
         SHELL_ENTRY,

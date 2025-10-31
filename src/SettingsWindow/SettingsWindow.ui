@@ -144,7 +144,7 @@
       <item>
        <widget class="QCheckBox" name="setAssociationsCheckbox">
         <property name="text">
-         <string>Set file associations for audio files</string>
+         <string>Set file associations for audio and playlist files</string>
         </property>
        </widget>
       </item>

@@ -2,6 +2,7 @@
 
 #include "Aliases.hpp"
 #include "Constants.hpp"
+#include "FFMpeg.hpp"
 
 struct Filter {
     cstr filter;
@@ -10,9 +11,10 @@ struct Filter {
     AVFilterContext** context;
 };
 
-AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
-    format_.setSampleFormat(QAudioFormat::Float);
-
+AudioStreamer::AudioStreamer(shared_ptr<Settings> settings_, QObject* parent) :
+    QObject(parent),
+    settings(std::move(settings_)),
+    eqSettings(settings->equalizerSettings) {
 #ifdef DEBUG_BUILD
     av_log_set_level(AV_LOG_VERBOSE);
 #elifdef RELEASE_BUILD
@@ -20,15 +22,17 @@ AudioStreamer::AudioStreamer(QObject* parent) : QIODevice(parent) {
 #endif
 }
 
-void AudioStreamer::start(const QString& path) {
+void AudioStreamer::start(const QString& path, const u16 startSecond) {
     reset();
 
-    const string pathString = path.toStdString();
+    AVFormatContext* fCtxPtr = nullptr;
 
-    AVFormatContext* fCtxPtr = formatContext.get();
-
-    i32 err;
-    err = avformat_open_input(&fCtxPtr, pathString.c_str(), nullptr, nullptr);
+    i32 err = avformat_open_input(
+        &fCtxPtr,
+        path.toStdString().c_str(),
+        nullptr,
+        nullptr
+    );
 
     if (checkError(err, true, false)) {
         return;
@@ -43,7 +47,7 @@ void AudioStreamer::start(const QString& path) {
         return;
     }
 
-    const AVCodec* codec;
+    const AVCodec* codec = nullptr;
     err = av_find_best_stream(fCtxPtr, AVMEDIA_TYPE_AUDIO, -1, -1, &codec, 0);
 
     if (checkError(err, true, false)) {
@@ -53,115 +57,393 @@ void AudioStreamer::start(const QString& path) {
     audioStreamIndex = u8(err);
 
     const AVStream* audioStream = fCtxPtr->streams[audioStreamIndex];
+
     codecContext = createCodecContext(codec);
-
-    AVCodecContext* cCtxPtr = codecContext.get();
-    avcodec_parameters_to_context(cCtxPtr, audioStream->codecpar);
-
-    err = avcodec_open2(cCtxPtr, codec, nullptr);
+    avcodec_parameters_to_context(codecContext.get(), audioStream->codecpar);
+    err = avcodec_open2(codecContext.get(), codec, nullptr);
 
     if (checkError(err, true, false)) {
         return;
     }
 
     const AVChannelLayout& channelLayout = codecContext->ch_layout;
-    const u8 channelCount = codecContext->ch_layout.nb_channels;
-    const u16 sampleRate = codecContext->sample_rate;
+    const auto channels = AudioChannels(codecContext->ch_layout.nb_channels);
+    const u32 sampleRate = codecContext->sample_rate;
 
-    format_.setSampleRate(sampleRate);
-    format_.setChannelCount(channelCount);
+    sampleRate_ = sampleRate;
+    channels_ = channels;
 
-    const string_view formatName = cCtxPtr->codec->name;
+    const string_view formatName = codecContext->codec->name;
     rawPCM = formatName.starts_with("pcm");
+
+    sampleSize = SampleSize(av_get_bytes_per_sample(codecContext->sample_fmt));
 
     if (rawPCM) {
         // Ensure that we are at the very start of the data,
         // when reading raw PCM
         avio_seek(formatContext->pb, headerLength, SEEK_SET);
 
-        inputSampleSize =
-            formatName.contains("24")
-                ? INT24_SIZE
-                : av_get_bytes_per_sample(codecContext->sample_fmt);
-        fileKbps = sampleRate * channelCount * inputSampleSize;
+        if (formatName.ends_with("24le")) {
+            sampleSize = SampleSize::S24;
+        }
+
+        planarFormat = false;
+        encodedLoselessFormat = false;
+        buf = arrayBuffer.data();
+        fileKbps = sampleRate * channels * sampleSize;
     } else {
-        // We only need packets and frames when decoding the encoded data
+        encodedLoselessFormat = formatName == "flac" || formatName == "alac";
+        planarFormat = bool(av_sample_fmt_is_planar(codecContext->sample_fmt));
+
+        if (encodedLoselessFormat) {
+            buf = buffer.data();
+        } else {
+            buf = arrayBuffer.data();
+        }
+
+        // We need that only in encoded formats
         packet = createPacket();
         frame = createFrame();
+    }
 
-        if (codecContext->sample_fmt != F32_SAMPLE_FORMAT) {
-            // We only use FFmpeg's swresample when
-            // decoding the encoded data, in
-            // raw formats we handle it manually
-            ::SwrContext* swrCtxPtr = swrContext.get();
+    minBufferSize = (channels_ == AudioChannels::Surround51)
+                        ? MIN_BUFFER_SIZE_3BYTES
+                        : MIN_BUFFER_SIZE;
 
-            err = swr_alloc_set_opts2(
-                &swrCtxPtr,
-                &channelLayout,
-                F32_SAMPLE_FORMAT,
-                sampleRate,
-                &channelLayout,
-                codecContext->sample_fmt,
-                sampleRate,
-                0,
-                nullptr
-            );
+    if (startSecond != UINT16_MAX) {
+        seekSecond(startSecond);
+    }
 
-            if (checkError(err, true, false)) {
-                return;
-            }
+    initializeFilters();
+}
 
-            swrContext.reset(swrCtxPtr);
-            swr_init(swrCtxPtr);
+//! maxSize should exactly match minBufferSize, so we don't use it
+auto AudioStreamer::readData(u8* output) -> u64 {
+    if (bufferSize == 0 || bufferOffset >= bufferSize) {
+        prepareBuffer();
+        bufferOffset = 0;
+
+        if (bufferSize == 0) {
+            emit streamEnded();
+            return 0;
         }
     }
 
-    open(QIODevice::ReadOnly);
-}
+    const u64 bytesToCopy =
+        std::min<u64>(minBufferSize, bufferSize - bufferOffset);
+    u8* src;
 
-auto AudioStreamer::processFrame(i64 totalRead, str buf) -> i64 {
-    const f64 timestamp =
-        f64((frame->pts != AV_NOPTS_VALUE) ? frame->pts
-                                           : frame->best_effort_timestamp);
-
-    playbackSecond =
-        u16(timestamp *
-            av_q2d(formatContext->streams[audioStreamIndex]->time_base));
-
-    convertFrame();
-    equalizeFrame();
-
-    const u32 bufferSize =
-        frame->nb_samples * F32_SAMPLE_SIZE * frame->ch_layout.nb_channels;
-    memcpy(buf + totalRead, frame->data[0], bufferSize);
-    return bufferSize;
-}
-
-auto AudioStreamer::buildEqualizerArgs() const -> string {
-    string args;
-
-    constexpr u8 stringSize = sizeof("entry(,);") - 1;
-    constexpr u8 maxFrequencyLength = 5;
-    constexpr u8 maxGainLength = 2;
-
-    args.reserve(
-        usize(bandCount) * (stringSize + maxFrequencyLength + maxGainLength)
-    );
-
-    for (const auto [freq, gain] :
-         views::take(views::zip(frequencies_, gains_), bandCount)) {
-        args += std::format("entry({},{});", freq, gain);
+    if (encodedLoselessFormat) {
+        src = buffer.data() + bufferOffset;
+    } else {
+        src = arrayBuffer.data() + bufferOffset;
     }
 
-    args.pop_back();  // Remove last semicolon
-    return args;
+    // First we copy full-volume samples into the visualizers
+    if (peakVisualizerEnabled) {
+        memcpy(peakVisualizerBuffer, src, bytesToCopy);
+    }
+
+    if (visualizerEnabled) {
+        memcpy(visualizerBuffer, src, bytesToCopy);
+    }
+
+    // Then we feed this to the output
+    memcpy(output, src, bytesToCopy);
+
+    // Clean up dirt
+    if (minBufferSize > bytesToCopy) {
+        if (peakVisualizerEnabled) {
+            memset(
+                peakVisualizerBuffer + bytesToCopy,
+                0,
+                minBufferSize - bytesToCopy
+            );
+        }
+
+        if (visualizerEnabled) {
+            memset(
+                visualizerBuffer + bytesToCopy,
+                0,
+                minBufferSize - bytesToCopy
+            );
+        }
+
+        memset(output + bytesToCopy, 0, minBufferSize - bytesToCopy);
+    }
+
+    bufferOffset += bytesToCopy;
+    emit processedSamples();
+
+    if (playbackSecond != lastPlaybackSecond) {
+        emit progressUpdate(playbackSecond);
+        lastPlaybackSecond = playbackSecond;
+    }
+
+    return bytesToCopy;
+}
+
+void AudioStreamer::prepareBuffer() {
+    if (rawPCM) {
+        decodeRaw();
+        return;
+    }
+
+    bufferOffset = 0;
+
+    if (leftoverSize != 0) {
+        memcpy(buf, leftoverBuffer.data(), leftoverSize);
+        bufferOffset = leftoverSize;
+        leftoverSize = 0;
+    }
+
+    while (av_read_frame(formatContext.get(), packet.get()) >= 0) {
+        if (packet->stream_index != audioStreamIndex) {
+            av_packet_unref(packet.get());
+            continue;
+        }
+
+        i32 err = avcodec_send_packet(codecContext.get(), packet.get());
+        av_packet_unref(packet.get());
+
+        if (checkError(err, false, false)) {
+            continue;
+        }
+
+        while (true) {
+            err = avcodec_receive_frame(codecContext.get(), frame.get());
+
+            if (err == AVERROR(EAGAIN) || checkError(err, false, false)) {
+                av_frame_unref(frame.get());
+                break;
+            }
+
+            processFrame();
+
+            if (bufferOffset < minBufferSize) {
+                break;
+            }
+
+            leftoverSize = bufferSize % minBufferSize;
+            bufferSize -= leftoverSize;
+
+            if (leftoverSize != 0) {
+                memcpy(leftoverBuffer.data(), buf + bufferSize, leftoverSize);
+            }
+
+            convertBuffer(bufferSize);
+            equalizeBuffer();
+            return;
+        }
+    }
+
+    buffer.clear();
+    bufferSize = 0;
+    leftoverSize = 0;
+}
+
+//! __restrict helps massively with native SEE/AVX optimizations here
+// In this function, sampleSize can't be 1 or 3: all of
+// supported encoded formats don't pack samples into signed
+// 8-bit integers. They do pack samples into 24-bit integers,
+// but received frames convert 24-bit integers to 32-bit ones
+// beforehand. We can do a little optimization by using bit
+// shifts instead of multiplying.
+void AudioStreamer::processFrame() {
+    const i64 timestamp = (frame->pts != AV_NOPTS_VALUE)
+                              ? frame->pts
+                              : frame->best_effort_timestamp;
+
+    playbackSecond =
+        u16(f64(timestamp) *
+            av_q2d(formatContext->streams[audioStreamIndex]->time_base));
+
+    const u32 size = (frame->nb_samples << (sampleSize >> 1)) * channels_;
+    bufferSize = bufferOffset + size;
+
+    if (encodedLoselessFormat) {
+        buffer.resize(bufferSize);
+        buf = buffer.data();
+    }
+
+    u8* __restrict const out = buf + bufferOffset;
+    bufferOffset += size;
+
+    if (planarFormat) {
+        const u32 channelSampleCount = frame->nb_samples;
+
+        for (u8 channel = 0; channel < channels_; channel++) {
+            const u8* const input = frame->data[channel];
+
+            for (u64 sample = 0; sample < channelSampleCount; sample++) {
+                const u8* __restrict src =
+                    input + (sample << (sampleSize >> 1));
+                u8* __restrict dst = out + (((sample * channels_) + channel)
+                                            << (sampleSize >> 1));
+                memcpy(dst, src, sampleSize);
+            }
+        }
+    } else {
+        memcpy(out, frame->data[0], size);
+    }
+}
+
+void AudioStreamer::convertBuffer(const u32 bytesRead) {
+    if (codecContext->sample_fmt == F32_SAMPLE_FORMAT ||
+        codecContext->sample_fmt == F32P_SAMPLE_FORMAT) {
+        return;
+    }
+
+    vector<u8> floatBuffer;
+
+    switch (sampleSize) {
+        case SampleSize::U8: {
+            const u8* const samples = buf;
+
+            floatBuffer.resize(u32(bytesRead * F32_SAMPLE_SIZE));
+            f32* out = ras<f32*>(floatBuffer.data());
+
+            for (const u32 sample : range(0, bytesRead)) {
+                out[sample] = f32(samples[sample]) / (INT8_MAX + 1.0F);
+            }
+            break;
+        }
+        case SampleSize::S16: {
+            const i16* const samples = ras<const i16*>(buf);
+
+            const u32 sampleCount = bytesRead >> 1;
+            const u32 floatBufferSize = sampleCount * F32_SAMPLE_SIZE;
+
+            floatBuffer.resize(floatBufferSize);
+            f32* out = ras<f32*>(floatBuffer.data());
+
+            for (const u32 sample : range(0, sampleCount)) {
+                out[sample] = f32(samples[sample]) / (INT16_MAX + 1.0F);
+            }
+            break;
+        }
+        // Only the case for pcm_s24le, because in encoded formats FFmpeg
+        // automatically converts 24-bit samples to 32-bit samples
+        case SampleSize::S24: {
+            constexpr u8 U8_BIT = SampleSize::U8 * CHAR_BIT;
+            constexpr u8 I16_BIT = SampleSize::S16 * CHAR_BIT;
+
+            const u8* const samples = buf;
+
+            const u32 sampleCount = bytesRead / 3;
+            const u32 floatBufferSize = sampleCount * F32_SAMPLE_SIZE;
+
+            floatBuffer.resize(floatBufferSize);
+            f32* out = ras<f32*>(floatBuffer.data());
+
+            for (const u32 sample : range(0, sampleCount)) {
+                const u32 offset = sample * sampleSize;
+                i32 value = (samples[offset]) |
+                            (samples[offset + 1] << U8_BIT) |
+                            (samples[offset + 2] << I16_BIT);
+
+                if ((value & (INT24_MAX + 1)) != 0) {
+                    value |= ~UINT24_MAX;
+                }
+
+                out[sample] = f32(value) / (INT24_MAX + 1.0F);
+            }
+            break;
+        }
+        case SampleSize::S32: {
+            const i32* __restrict const samples = ras<const i32*>(buf);
+            const u32 sampleCount = bytesRead >> 2;
+
+            //! We can overwrite directly, because sizeof(float) == sizeof(i32)
+            f32* __restrict dst = ras<f32*>(buf);
+
+            for (const u32 sample : range(0, sampleCount)) {
+                dst[sample] = f32(samples[sample]) / f32(INT32_MAX);
+            }
+            return;
+        }
+        default:
+            LOG_WARN(u"Unsupported sample size: %1"_s.arg(sampleSize));
+            return;
+    }
+
+    bufferSize = floatBuffer.size();
+
+    if (encodedLoselessFormat) {
+        buffer.resize(bufferSize);
+        buf = buffer.data();
+    }
+
+    memcpy(buf, floatBuffer.data(), bufferSize);
+}
+
+void AudioStreamer::decodeRaw() {
+    if (avio_feof(formatContext->pb) != 0) {
+        bufferSize = 0;
+        return;
+    }
+
+    const i32 size = (sampleSize == SampleSize::S24 ||
+                      channels_ == AudioChannels::Surround51)
+                         ? MIN_BUFFER_SIZE_3BYTES
+                         : MIN_BUFFER_SIZE;
+    const i32 bytesRead =
+        avio_read(formatContext->pb, arrayBuffer.data(), size);
+
+    if (bytesRead <= 0) {
+        bufferSize = 0;
+        return;
+    }
+
+    bufferSize = bytesRead;
+    convertBuffer(bytesRead);
+    equalizeBuffer();
+
+    playbackSecond = avio_tell(formatContext->pb) / fileKbps;
+}
+
+void AudioStreamer::seekSecond(const u16 second) {
+    const i64 timestamp =
+        second == 0
+            ? 0
+            : av_rescale(
+                  second,
+                  formatContext->streams[audioStreamIndex]->time_base.den,
+                  formatContext->streams[audioStreamIndex]->time_base.num
+              );
+
+    avcodec_flush_buffers(codecContext.get());
+
+    avformat_seek_file(
+        formatContext.get(),
+        audioStreamIndex,
+        0,
+        timestamp,
+        timestamp,
+        AVSEEK_FLAG_ANY
+    );
+}
+
+auto AudioStreamer::reset() -> bool {
+    formatContext.reset();
+    codecContext.reset();
+    packet.reset();
+    frame.reset();
+    filterGraph.reset();
+
+    buffer.clear();
+    bufferSize = 0;
+    leftoverSize = 0;
+    bufferOffset = 0;
+
+    return true;
 }
 
 void AudioStreamer::initializeFilters() {
     // We don't ever need to rebuild the filters, equalizer's gains are adjusted
     // through the command, if they need to be changed
-    if (!equalizerEnabled_ || filterGraph != nullptr) {
-        if (changedBands) {
+    if (!settings->equalizerSettings.enabled || filterGraph != nullptr) {
+        if (changedGains) {
             avfilter_graph_send_command(
                 filterGraph.get(),
                 "equalizer",
@@ -282,38 +564,62 @@ void AudioStreamer::initializeFilters() {
     }
 }
 
-void AudioStreamer::equalizeBuffer(vector<u8>& buffer) {
-    if (!equalizerEnabled_ || filterGraph == nullptr ||
-        ranges::all_of(gains_, [](const i8 gain) { return gain == 0; })) {
-        return;
+auto AudioStreamer::buildEqualizerArgs() const -> string {
+    string args;
+
+    constexpr u8 stringSize = sizeof("entry(,);") - 1;
+    constexpr u8 maxFrequencyLength = 5;
+    constexpr u8 maxGainLength = 2;
+
+    args.reserve(
+        usize(eqSettings.bandCount) *
+        (stringSize + maxFrequencyLength + maxGainLength)
+    );
+
+    for (const auto [freq, gain] : views::take(
+             views::zip(
+                 span(eqSettings.frequencies, eqSettings.bandCount),
+                 eqSettings.gains
+             ),
+             eqSettings.bandCount
+         )) {
+        args += std::format("entry({},{});", freq, gain);
     }
 
-    const u8 channelCount = codecContext->ch_layout.nb_channels;
-    const u32 bufferSize = buffer.size();
-
-    frame = createFrame();
-    frame->nb_samples = i32(bufferSize / (F32_SAMPLE_SIZE * channelCount));
-    frame->format = F32_SAMPLE_FORMAT;
-    frame->ch_layout = codecContext->ch_layout;
-    frame->sample_rate = codecContext->sample_rate;
-
-    av_frame_get_buffer(frame.get(), 0);
-    memcpy(frame->data[0], buffer.data(), bufferSize);
-
-    equalizeFrame();
-
-    memcpy(buffer.data(), frame->data[0], bufferSize);
-    frame.reset();
+    args.pop_back();  // Remove last semicolon
+    return args;
 }
 
-void AudioStreamer::equalizeFrame() {
-    if (!equalizerEnabled_ || filterGraph == nullptr ||
-        ranges::all_of(gains_, [](const i8 gain) { return gain == 0; })) {
+void AudioStreamer::equalizeBuffer() {
+    initializeFilters();
+
+    if (!settings->equalizerSettings.enabled || filterGraph == nullptr ||
+        ranges::all_of(eqSettings.gains, [](const i8 gain) -> bool {
+        return gain == 0;
+    })) {
         return;
     }
 
-    i32 err = av_buffersrc_add_frame(abufferContext, frame.get());
+    AVFrame* unfilteredFrame = av_frame_alloc();
+    unfilteredFrame->nb_samples =
+        i32(bufferSize / i32(F32_SAMPLE_SIZE * channels_));
+    unfilteredFrame->format = F32_SAMPLE_FORMAT;
+    unfilteredFrame->ch_layout = codecContext->ch_layout;
+    unfilteredFrame->sample_rate = codecContext->sample_rate;
+
+    av_frame_get_buffer(unfilteredFrame, 0);
+    memcpy(unfilteredFrame->data[0], buf, bufferSize);
+
+    if (!settings->equalizerSettings.enabled || filterGraph == nullptr ||
+        ranges::all_of(eqSettings.gains, [](const i8 gain) -> bool {
+        return gain == 0;
+    })) {
+        return;
+    }
+
+    i32 err = av_buffersrc_add_frame(abufferContext, unfilteredFrame);
     if (checkError(err, false, false)) {
+        av_frame_free(&unfilteredFrame);
         return;
     }
 
@@ -325,258 +631,7 @@ void AudioStreamer::equalizeFrame() {
         return;
     }
 
-    frame.reset(filteredFrame);
-}
-
-void AudioStreamer::convertBuffer(vector<u8>& buffer, const u32 bytesRead) {
-    if (codecContext->sample_fmt == F32_SAMPLE_FORMAT) {
-        return;
-    }
-
-    const u8 channelCount = codecContext->ch_layout.nb_channels;
-    const u32 sampleCount = bytesRead / inputSampleSize;
-    const u32 floatBufferSize = sampleCount * F32_SAMPLE_SIZE;
-
-    vector<f32> outBuffer;
-    outBuffer.reserve(floatBufferSize);
-
-    switch (inputSampleSize) {
-        case sizeof(i8): {
-            const i8* samples = ras<const i8*>(buffer.data());
-
-            for (const u32 sample : range(0, sampleCount)) {
-                outBuffer.emplace_back(
-                    f32(samples[sample]) / (INT8_MAX + 1.0F)
-                );
-            }
-            break;
-        }
-        case sizeof(i16): {
-            const i16* samples = ras<const i16*>(buffer.data());
-
-            for (const u32 sample : range(0, sampleCount)) {
-                outBuffer.emplace_back(
-                    f32(samples[sample]) / (INT16_MAX + 1.0F)
-                );
-            }
-            break;
-        }
-        case sizeof(i8) + sizeof(i16): {
-            constexpr u8 I8_BIT = sizeof(i8) * CHAR_BIT;
-            constexpr u8 I16_BIT = sizeof(i16) * CHAR_BIT;
-
-            const u8* samples = buffer.data();
-
-            for (const u32 sample : range(0, sampleCount)) {
-                const u32 offset = sample * inputSampleSize;
-                i32 value = (samples[offset]) |
-                            (samples[offset + 1] << I8_BIT) |
-                            (samples[offset + 2] << I16_BIT);
-
-                if ((value & (INT24_MAX + 1)) != 0) {
-                    value |= ~UINT24_MAX;
-                }
-
-                outBuffer.emplace_back(f32(value) / (INT24_MAX + 1.0F));
-            }
-            break;
-        }
-        case sizeof(i32): {
-            const i32* samples = ras<const i32*>(buffer.data());
-
-            for (const u32 sample : range(0, sampleCount)) {
-                outBuffer.emplace_back(f32(samples[sample]) / f32(INT32_MAX));
-            }
-            break;
-        }
-        default:
-            LOG_WARN(u"Unsupported sample size: %1"_s.arg(inputSampleSize));
-            break;
-    }
-
-    buffer.resize(floatBufferSize);
-    memcpy(buffer.data(), outBuffer.data(), floatBufferSize);
-}
-
-void AudioStreamer::convertFrame() {
-    if (codecContext->sample_fmt == F32_SAMPLE_FORMAT) {
-        return;
-    }
-
-    AVFrame* newFrame = av_frame_alloc();
-    newFrame->ch_layout = codecContext->ch_layout;
-    newFrame->sample_rate = codecContext->sample_rate;
-    newFrame->format = F32_SAMPLE_FORMAT;
-
-    swr_convert_frame(swrContext.get(), newFrame, frame.get());
-    frame.reset(newFrame);
-}
-
-auto AudioStreamer::decodeRaw(str buf) -> i64 {
-    if (avio_feof(formatContext->pb) != 0) {
-        return 0;
-    }
-
-    const i32 size =
-        i32(inputSampleSize == sizeof(i8) + sizeof(i16) ? MIN_BUFFER_SIZE_I24
-                                                        : MIN_BUFFER_SIZE);
-    vector<u8> buffer;
-    buffer.resize(size);
-
-    const i32 bytesRead = avio_read(formatContext->pb, buffer.data(), size);
-
-    if (bytesRead <= 0) {
-        return 0;
-    }
-
-    convertBuffer(buffer, bytesRead);
-    equalizeBuffer(buffer);
-
-    memcpy(buf, buffer.data(), size);
-
-    playbackSecond = avio_tell(formatContext->pb) / fileKbps;
-    return bytesRead;
-}
-
-auto AudioStreamer::prepareBuffer(str buf) -> i64 {
-    if (rawPCM) {
-        return decodeRaw(buf);
-    }
-
-    i64 totalRead = 0;
-
-    while (av_read_frame(formatContext.get(), packet.get()) >= 0) {
-        if (packet->stream_index != audioStreamIndex) {
-            av_packet_unref(packet.get());
-            continue;
-        }
-
-        i32 err = avcodec_send_packet(codecContext.get(), packet.get());
-        av_packet_unref(packet.get());
-
-        if (checkError(err, false, false)) {
-            continue;
-        }
-
-        while (true) {
-            err = avcodec_receive_frame(codecContext.get(), frame.get());
-
-            if (err == AVERROR(EAGAIN) || checkError(err, false, false)) {
-                av_frame_unref(frame.get());
-                break;
-            }
-
-            const i64 read = processFrame(totalRead, buf);
-            totalRead += read;
-
-            if (totalRead < MIN_BUFFER_SIZE) {
-                av_frame_unref(frame.get());
-                break;
-            }
-
-            return totalRead;
-        }
-    }
-
-    return 0;
-}
-
-auto AudioStreamer::readData(str data, const qi64 /* size */) -> qi64 {
-    const i64 read = prepareBuffer(data);
-
-    if (read == 0) {
-        emit streamEnded();
-    } else {
-        if (playbackSecond != lastPlaybackSecond) {
-            emit progressUpdate(playbackSecond);
-            lastPlaybackSecond = playbackSecond;
-        }
-
-        visualizerBuffer->resize(read);
-        memcpy(visualizerBuffer->data(), data, read);
-        emit buildPeaks(codecContext->sample_rate);
-    }
-
-    return read;
-}
-
-auto AudioStreamer::reset() -> bool {
-    QIODevice::close();
-
-    formatContext.reset();
-    codecContext.reset();
-    swrContext.reset();
-    packet.reset();
-    frame.reset();
-    filterGraph.reset();
-
-    return true;
-}
-
-void AudioStreamer::seekSecond(const u16 second) {
-    const i64 timestamp =
-        second == 0
-            ? 0
-            : av_rescale(
-                  second,
-                  formatContext->streams[audioStreamIndex]->time_base.den,
-                  formatContext->streams[audioStreamIndex]->time_base.num
-              );
-
-    avcodec_flush_buffers(codecContext.get());
-
-    avformat_seek_file(
-        formatContext.get(),
-        audioStreamIndex,
-        0,
-        timestamp,
-        timestamp,
-        AVSEEK_FLAG_ANY
-    );
-}
-
-void AudioStreamer::setBandCount(const u8 bands) {
-    bandCount = bands;
-
-    switch (bands) {
-        case THREE_BANDS:
-            memcpy(
-                frequencies_.data(),
-                THREE_BAND_FREQUENCIES.data(),
-                u16(THREE_BANDS * F32_SAMPLE_SIZE)
-            );
-            break;
-        case FIVE_BANDS:
-            memcpy(
-                frequencies_.data(),
-                FIVE_BAND_FREQUENCIES.data(),
-                u16(FIVE_BANDS * F32_SAMPLE_SIZE)
-            );
-            break;
-        case TEN_BANDS:
-            memcpy(
-                frequencies_.data(),
-                TEN_BAND_FREQUENCIES.data(),
-                u16(TEN_BANDS * F32_SAMPLE_SIZE)
-            );
-            break;
-        case EIGHTEEN_BANDS:
-            memcpy(
-                frequencies_.data(),
-                EIGHTEEN_BAND_FREQUENCIES.data(),
-                u16(EIGHTEEN_BANDS * F32_SAMPLE_SIZE)
-            );
-            break;
-        case THIRTY_BANDS:
-            memcpy(
-                frequencies_.data(),
-                THIRTY_BAND_FREQUENCIES.data(),
-                u16(THIRTY_BANDS * F32_SAMPLE_SIZE)
-            );
-            break;
-        default:
-            break;
-    }
-
-    gains_.fill(0);
+    memcpy(buf, filteredFrame->data[0], bufferSize);
+    av_frame_free(&filteredFrame);
+    av_frame_free(&unfilteredFrame);
 }

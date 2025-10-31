@@ -44,8 +44,15 @@ class CoverWindow : public QDialog {
         coverLabel->resize(scaledPixmap.size());
     }
 
+    void keyPressEvent(QKeyEvent* event) override {
+        if (event->key() == Qt::Key_F11) {
+            toggleFullscreen(isFullScreen());
+        }
+    }
+
    private:
     void showContextMenu(const QPoint& pos);
+    void toggleFullscreen(bool isFullscreen);
 
     QHBoxLayout* layout = new QHBoxLayout(this);
 
