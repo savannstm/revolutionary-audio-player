@@ -214,6 +214,7 @@ void AudioStreamer::prepareBuffer() {
             err = avcodec_receive_frame(codecContext.get(), frame.get());
 
             if (err == AVERROR(EAGAIN) || checkError(err, false, false)) {
+                // Read another frame
                 av_frame_unref(frame.get());
                 break;
             }
@@ -221,6 +222,8 @@ void AudioStreamer::prepareBuffer() {
             processFrame();
 
             if (bufferOffset < minBufferSize) {
+                // Read another frame
+                av_frame_unref(frame.get());
                 break;
             }
 
@@ -233,6 +236,9 @@ void AudioStreamer::prepareBuffer() {
 
             convertBuffer(bufferSize);
             equalizeBuffer();
+
+            // Finish reading frames
+            av_frame_unref(frame.get());
             return;
         }
     }
