@@ -37,29 +37,6 @@ FFmpegError(const cstr file, const i32 line, const cstr func, const i32 err)
 
 #define FFMPEG_ERROR(err) FFmpegError(__FILE__, __LINE__, __func__, err)
 
-//? FIXME: Is it really needed?
-inline auto roundBitrate(const u32 bitrate) -> QString {
-    const u32 kbps = bitrate / KB_BYTES;
-
-    if (kbps < MIN_LOSSY_BITRATE || kbps > MAX_LOSSY_BITRATE) {
-        return u"%1k"_s.arg(kbps);
-    }
-
-    u16 closest = STANDARD_BITRATES[0];
-    u32 minDiff = abs(i32(kbps - closest));
-
-    for (const u16 bitrate : STANDARD_BITRATES) {
-        const u32 diff = abs(i32(kbps - bitrate));
-
-        if (diff < minDiff) {
-            minDiff = diff;
-            closest = bitrate;
-        }
-    }
-
-    return u"%1k"_s.arg(closest);
-}
-
 inline auto extractMetadata(const QString& filePath)
     -> result<HashMap<TrackProperty, QString>, QString> {
     FormatContext formatContext;
@@ -150,10 +127,22 @@ inline auto extractMetadata(const QString& filePath)
         TrackProperty::Duration,
         secsToMins(formatContext->duration / AV_TIME_BASE)
     );
-    metadata.insert_or_assign(
-        TrackProperty::Bitrate,
-        roundBitrate(formatContext->bit_rate)
-    );
+
+    // First get nominal bitrate of the codec
+    u32 bitrate = audioStream->codecpar->bit_rate;
+
+    // If codec doesn't specify nominal bitrate or if it's loseless, get it from
+    // format context
+    if (bitrate == 0) {
+        bitrate = formatContext->bit_rate;
+    }
+
+    bitrate /= KB_BYTES;
+
+    QString bitrateString = QString::number(bitrate);
+    bitrateString += u"k";
+
+    metadata.insert_or_assign(TrackProperty::Bitrate, bitrateString);
 
     metadata.insert_or_assign(
         TrackProperty::SampleRate,
