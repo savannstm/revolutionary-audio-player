@@ -96,6 +96,19 @@ class AudioStreamer : public QObject {
         return false;
     };
 
+    array<u8, UINT16_MAX + 1> arrayBuffer;
+    array<u8, MIN_BUFFER_SIZE> leftoverBuffer;
+    vector<u8> buffer;
+
+    usize bufferSize = 0;
+    usize bufferOffset = 0;
+
+    // FLAC/ALAC format may contain frames as big as 2 MB - but all lossy
+    // formats have frames less than UINT16_MAX even for highest available
+    // channel count and sample rate. So we keep array buffer as our main
+    // buffer, and make vector buffer our FLAC/ALAC buffer.
+    u8* buf = nullptr;
+
     FormatContext formatContext;
     CodecContext codecContext;
     Packet packet;
@@ -108,37 +121,27 @@ class AudioStreamer : public QObject {
     AVFilterContext* aformatContext = nullptr;
     AVFilterContext* abuffersinkContext = nullptr;
 
-    // FLAC/ALAC format may contain frames as big as 2 MB - but all lossy
-    // formats have frames less than UINT16_MAX even for highest available
-    // channel count and sample rate. So we keep array buffer as our main
-    // buffer, and make vector buffer our FLAC/ALAC buffer.
-    u8* buf = nullptr;
-    vector<u8> buffer;
-    array<u8, UINT16_MAX> arrayBuffer;
-    array<u8, MIN_BUFFER_SIZE> leftoverBuffer;
-
-    u16 leftoverSize = 0;
-    usize bufferSize = 0;
-    usize bufferOffset = 0;
-    u16 minBufferSize = 0;
+    shared_ptr<Settings> settings;
+    EqualizerSettings& eqSettings;
 
     u32 sampleRate_ = 0;
-    AudioChannels channels_;
+    u32 fileKbps = 0;
+
+    u16 leftoverSize = 0;
+    u16 minBufferSize = 0;
 
     u16 playbackSecond = 0;
     u16 lastPlaybackSecond = 0;
+
+    AudioChannels channels_;
 
     u8 audioStreamIndex = 0;
     bool planarFormat = false;
     bool rawPCM = false;
     bool encodedLoselessFormat = false;
     SampleSize sampleSize;
-    u32 fileKbps = 0;
 
     bool peakVisualizerEnabled = false;
     bool visualizerEnabled = false;
     bool changedGains = false;
-
-    shared_ptr<Settings> settings;
-    EqualizerSettings& eqSettings;
 };
