@@ -1,5 +1,7 @@
 #include "VisualizerWidget.hpp"
 
+#include "Logger.hpp"
+
 VisualizerWidget::VisualizerWidget(
     const f32* visualizerBuffer,
     QWidget* parent
@@ -37,17 +39,17 @@ void VisualizerWidget::initializeGL() {
         return;
     }
 
-    QMessageBox::information(
-        parent,
-        "OpenGL version",
-        QString("%1.%2").arg(ver.first).arg(ver.second)
-    );
+    LOG_INFO(QString("OpenGL version: %1.%2").arg(ver.first).arg(ver.second));
 
 #ifdef Q_OS_WINDOWS
     glewExperimental = GL_TRUE;
     u32 result = glewInit();
 
-    if (result != GLEW_OK || (result = glGetError()) != GLEW_OK) {
+    if (result == GLEW_OK) {
+        result = glGetError();
+    }
+
+    if (result != GLEW_OK) {
         QMessageBox::critical(
             parent,
             tr("Failed to initialize GLEW"),
