@@ -5,9 +5,6 @@
 
 #ifdef Q_OS_WINDOWS
 #include <GL/glew.h>
-#elifdef Q_OS_LINUX
-#include <GL/gl.h>
-#include <GL/glext.h>
 #endif
 
 #include <projectM-4/projectM.h>
