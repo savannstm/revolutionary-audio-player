@@ -275,3 +275,35 @@ constexpr i32 INT24_MIN = ~INT24_MAX;
 constexpr i32 UINT24_MAX = 16777215;
 
 constexpr array<cstr, 3> BPM_TAGS = { "BPM", "TBPM", "IBPM" };
+
+// Visualizer
+constexpr cstr VISUALIZER_SHARED_MEMORY_LABEL = "rap-visualizer";
+
+constexpr u16 MIN_MESH_SIZE = 10;
+constexpr u16 MAX_MESH_SIZE = 200;
+
+constexpr u16 DEFAULT_MESH_WIDTH = 80;
+constexpr u16 DEFAULT_MESH_HEIGHT = 40;
+
+constexpr u16 MIN_FPS = 24;
+constexpr u16 MAX_FPS = 360;
+
+constexpr u16 PRESET_PATH_LIMIT = 512;
+
+struct VisualizerSharedData {
+    array<f32, DESIRED_SAMPLE_COUNT> audioBuffer;
+    array<char, PRESET_PATH_LIMIT> presetPath;
+
+    atomic<u16> bufferSize = MIN_BUFFER_SIZE;
+    atomic<u16> fps = MIN_FPS;
+    atomic<u16> meshWidth = DEFAULT_MESH_WIDTH;
+    atomic<u16> meshHeight = DEFAULT_MESH_HEIGHT;
+
+    atomic<bool> loadPreset = false;
+    atomic<bool> presetRequested = false;
+
+    atomic<bool> running = true;
+    atomic<bool> hasNewData = false;
+
+    atomic<AudioChannels> channels = AudioChannels::Zero;
+};
