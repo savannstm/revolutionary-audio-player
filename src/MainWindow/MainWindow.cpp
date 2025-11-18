@@ -397,6 +397,13 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     }
     );
 
+#ifdef Q_OS_LINUX
+    // On Linux, server cannot listen to the given name if it's already exists.
+    // Since everything is file in Unix systems, server is persistent across
+    // runs.
+    QLocalServer::removeServer(u"revolutionary-audio-player-server"_s);
+#endif
+
     server->listen(u"revolutionary-audio-player-server"_s);
 
     progressLabelTray->setText(trackDuration);
