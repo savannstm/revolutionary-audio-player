@@ -26,39 +26,19 @@ class EqualizerSettings {
 
     [[nodiscard]] auto stringify() const -> QJsonObject;
 
+    QMap<Bands, QMap<QString, QVector<i8>>> presets = { { Bands::Ten, {} },
+                                                        { Bands::Eighteen, {} },
+                                                        { Bands::Thirty, {} } };
+
+    array<i8, usize(Bands::Thirty)> gains;
+
+    const f32* frequencies = nullptr;
+
+    u16 presetIndex = 0;
+
     bool enabled = false;
     u8 bandIndex = 2;
-    u16 presetIndex = 0;
-    QMap<u16, QMap<QString, QVector<i8>>> presets = { { TEN_BANDS, {} },
-                                                      { EIGHTEEN_BANDS, {} },
-                                                      { THIRTY_BANDS, {} } };
-
-    u8 bandCount = TEN_BANDS;
-    array<i8, MAX_BANDS_COUNT> gains;
-    const f32* frequencies = nullptr;
-};
-
-class SettingsFlags {
-   public:
-    explicit SettingsFlags();
-    explicit SettingsFlags(const QJsonObject& obj);
-
-    [[nodiscard]] auto stringify() const -> QJsonObject;
-
-    Style applicationStyle;
-    PlaylistNaming playlistNaming = PlaylistNaming::DirectoryName;
-
-    // Self-explanatory.
-    bool fileAssociationsEnabled = false;
-
-    // Open in RAP context menu entry.
-    bool contextMenuEntryEnabled = false;
-
-    // Automatically set the playlist background from the track cover.
-    bool autoSetBackground = false;
-
-    // Prioritize external (cover.jpg/cover.png) cover over embedded.
-    bool prioritizeExternalCover = false;
+    Bands bandCount = Bands::Ten;
 };
 
 class DockWidgetSettings {
@@ -68,9 +48,9 @@ class DockWidgetSettings {
 
     [[nodiscard]] auto stringify() const -> QJsonObject;
 
-    DockWidgetPosition position = DockWidgetPosition::Right;
     u16 size = 0;
     u16 imageSize = 0;
+    DockWidgetPosition position = DockWidgetPosition::Right;
 };
 
 class PeakVisualizerSettings {
@@ -80,14 +60,85 @@ class PeakVisualizerSettings {
 
     [[nodiscard]] auto stringify() const -> QJsonObject;
 
-    bool hidden = false;
-    PeakVisualizerMode mode = PeakVisualizerMode::DBFS;
     QGradient::Preset preset = QGradient::MorpheusDen;
+
+    bool hidden = false;
+    Bands bands = Bands::Eighteen;
+    PeakVisualizerMode mode = PeakVisualizerMode::DBFS;
 };
 
-// TODO: Allow selecting custom locations for settings and playlists
-// TODO: Configurable default columns for new playlists
-// TODO: Configurable associations for different file types
+class CoreSettings {
+   public:
+    explicit CoreSettings() = default;
+    explicit CoreSettings(const QJsonObject& obj);
+
+    [[nodiscard]] auto stringify() const -> QJsonObject;
+
+    // Runtime only
+    optional<ma_device_id> outputDeviceID;
+
+    QString settingsDir = QApplication::applicationDirPath();
+    QString playlistsDir = QApplication::applicationDirPath();
+
+    QString lastDir;
+    QString outputDevice;
+
+    QString defaultStyle;
+
+    QLocale::Language language = QLocale().language();
+
+    u8 volume = MAX_VOLUME;
+    i8 currentTab = -1;
+
+    i8 applicationStyle = -1;
+    Qt::ColorScheme applicationTheme;
+};
+
+class ShellIntegrationSettings {
+   public:
+    explicit ShellIntegrationSettings() = default;
+    explicit ShellIntegrationSettings(const QJsonObject& obj);
+
+    [[nodiscard]] auto stringify() const -> QJsonObject;
+
+    // Enabled file extensions, as bitflags integer.
+    Associations enabledAssociations;
+
+    // Open in RAP context menu entry.
+    bool contextMenuEntryEnabled = false;
+};
+
+class PlaylistSettings {
+   public:
+    explicit PlaylistSettings() = default;
+    explicit PlaylistSettings(const QJsonObject& obj);
+
+    [[nodiscard]] auto stringify() const -> QJsonObject;
+
+    array<TrackProperty, TRACK_PROPERTY_COUNT> defaultColumns =
+        DEFAULT_COLUMN_PROPERTIES;
+    PlaylistNaming playlistNaming = PlaylistNaming::DirectoryName;
+
+    // Automatically set the playlist background from the track cover.
+    bool autoSetBackground = false;
+
+    // Prioritize external (cover.jpg/cover.png) cover over embedded.
+    bool prioritizeExternalCover = false;
+};
+
+class VisualizerSettings {
+   public:
+    explicit VisualizerSettings() = default;
+    explicit VisualizerSettings(const QJsonObject& obj);
+
+    [[nodiscard]] auto stringify() const -> QJsonObject;
+
+    u16 meshWidth = DEFAULT_MESH_WIDTH;
+    u16 meshHeight = DEFAULT_MESH_HEIGHT;
+    u16 fps = 0;
+    QString presetPath;
+};
+
 class Settings {
    public:
     explicit Settings() = default;
@@ -96,19 +147,13 @@ class Settings {
     [[nodiscard]] auto stringify() const -> QJsonObject;
     void save(QFile& file) const;
 
-    QString settingsPath = QApplication::applicationDirPath();
-    QString playlistsPath = QApplication::applicationDirPath();
-
-    u8 volume = MAX_VOLUME;
-    i8 currentTab = -1;
-    QString lastOpenedDirectory;
-    QString outputDevice;
-    optional<ma_device_id> outputDeviceID;
-    QLocale::Language language = QLocale().language();
-    SettingsFlags flags;
-    EqualizerSettings equalizerSettings;
-    DockWidgetSettings dockWidgetSettings;
-    PeakVisualizerSettings peakVisualizerSettings;
+    CoreSettings core;
+    ShellIntegrationSettings shell;
+    PlaylistSettings playlist;
+    EqualizerSettings equalizer;
+    PeakVisualizerSettings peakVisualizer;
+    VisualizerSettings visualizer;
+    DockWidgetSettings dockWidget;
 };
 
 class PlaylistObject {
@@ -124,13 +169,16 @@ class PlaylistObject {
 
     [[nodiscard]] auto stringify() const -> QJsonObject;
 
-    QString label;
-    QString backgroundImagePath;
+    array<TrackProperty, TRACK_PROPERTY_COUNT> defaultColumns =
+        DEFAULT_COLUMN_PROPERTIES;
+
     QStringList tracks;
     QStringList order;
-    QList<QVariant> cueOffsets;
     QStringList cueFilePaths;
+    QVariantList cueOffsets;
 
-    array<TrackProperty, TRACK_PROPERTY_COUNT> columnProperties;
-    array<bool, TRACK_PROPERTY_COUNT> columnStates;
+    QString label;
+    QString backgroundImagePath;
+
+    QString color;
 };

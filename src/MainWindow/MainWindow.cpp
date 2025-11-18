@@ -420,6 +420,7 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     setupTrayIcon();
     initializeSettings();
 
+    playlistView->setSettings(settings);
     audioWorker = new AudioWorker(
         settings,
         peakVisualizerBuffer.data(),
@@ -473,10 +474,11 @@ void MainWindow::focus() {
 
 void MainWindow::processArgs(const QStringList& args) {
     if (!args.empty()) {
-        const QFileInfo firstPathInfo = QFileInfo(args[0]);
+        const auto firstPathInfo = QFileInfo(args[0]);
         QString tabLabel;
 
-        if (settings->flags.playlistNaming == PlaylistNaming::DirectoryName) {
+        if (settings->playlist.playlistNaming ==
+            PlaylistNaming::DirectoryName) {
             tabLabel = firstPathInfo.isDir() ? firstPathInfo.fileName()
                                              : firstPathInfo.dir().dirName();
         }
@@ -606,28 +608,30 @@ void MainWindow::updatePlaybackPosition() {
 }
 
 void MainWindow::loadPlaylists() {
-    QFile playlistsFile =
-        QFile(settings->playlistsPath + "/rap-playlists.json");
+    auto playlistsFile = QFile(
+        settings->core.playlistsDir + '/' +
+        PLAYLISTS_FILE_NAME
+#if QT_VERSION_MINOR < 9
+            .toString()
+#endif
+    );
 
     if (!playlistsFile.open(QFile::ReadOnly | QFile::Text)) {
         LOG_WARN(playlistsFile.errorString());
         return;
     }
 
-    QJsonArray playlistsArray =
+    const QJsonArray playlistsArray =
         QJsonDocument::fromJson(playlistsFile.readAll()).array();
 
     for (const auto& playlistObject : playlistsArray) {
         const PlaylistObject playlist =
             PlaylistObject(playlistObject.toObject());
 
-        const u8 index = playlistView->addTab(
-            playlist.label,
-            playlist.columnProperties,
-            playlist.columnStates
-        );
+        const u8 index =
+            playlistView->addTab(playlist.label, playlist.defaultColumns);
 
-        auto* tree = playlistView->tree(index);
+        TrackTree* const tree = playlistView->tree(index);
         tree->fillTable(playlist.tracks, playlist.cueOffsets);
 
         if (!playlist.order.empty()) {
@@ -635,10 +639,10 @@ void MainWindow::loadPlaylists() {
                 tree,
                 &TrackTree::fillingFinished,
                 this,
-                [=](const bool /* ignore */) -> void {
+                [=](const bool /* startPlaying */) -> void {
                 for (const u16 track : range(0, tree->model()->rowCount())) {
                     tree->model()
-                        ->item(track, TrackProperty::Order)
+                        ->item(track, i32(TrackProperty::Order))
                         ->setData(playlist.order[track], Qt::EditRole);
                 }
             },
@@ -654,7 +658,7 @@ void MainWindow::loadPlaylists() {
 
             QImage image;
 
-            if (ranges::contains(ALLOWED_MUSIC_EXTENSIONS, extension)) {
+            if (ranges::contains(ALLOWED_AUDIO_EXTENSIONS, extension)) {
                 const auto extracted = extractCover(imagePath.toUtf8().data());
 
                 if (!extracted) {
@@ -681,8 +685,13 @@ void MainWindow::loadPlaylists() {
 }
 
 auto MainWindow::savePlaylists() -> result<bool, QString> {
-    QFile playlistsFile =
-        QFile(settings->playlistsPath + "/rap-playlists.json");
+    QFile playlistsFile = QFile(
+        settings->core.playlistsDir + '/' +
+        PLAYLISTS_FILE_NAME
+#if QT_VERSION_MINOR < 9
+            .toString()
+#endif
+    );
 
     if (!playlistsFile.open(QFile::WriteOnly | QFile::Text)) {
         return err(playlistsFile.errorString());
@@ -692,8 +701,9 @@ auto MainWindow::savePlaylists() -> result<bool, QString> {
     const u8 tabCount = playlistView->tabCount();
 
     for (const u8 tab : range(0, tabCount)) {
-        auto* tree = playlistView->tree(tab);
-        auto* model = tree->model();
+        const TrackTree* const tree = playlistView->tree(tab);
+        const TrackTreeModel* const model = tree->model();
+        const QString& tabColor = playlistView->tabColor(tab);
 
         const u16 rowCount = model->rowCount();
 
@@ -718,12 +728,16 @@ auto MainWindow::savePlaylists() -> result<bool, QString> {
             );
         }
 
-        for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
-            playlistObject.columnProperties[column] = TrackProperty(
+        for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
+            if (tree->isColumnHidden(column)) {
+                playlistObject.defaultColumns[column - 1] = TrackProperty::Play;
+                continue;
+            }
+
+            playlistObject.defaultColumns[column - 1] = TrackProperty(
                 model->headerData(column, Qt::Horizontal, PROPERTY_ROLE)
                     .toUInt()
             );
-            playlistObject.columnStates[column] = tree->isColumnHidden(column);
         }
 
         playlistsArray.append(playlistObject.stringify());
@@ -732,19 +746,24 @@ auto MainWindow::savePlaylists() -> result<bool, QString> {
     playlistsFile.write(
         QJsonDocument(playlistsArray).toJson(QJsonDocument::Compact)
     );
-    playlistsFile.close();
     return true;
 }
 
 auto MainWindow::saveSettings() -> result<bool, QString> {
-    QFile settingsFile = QFile(settings->settingsPath + "/rap-settings.json");
+    QFile settingsFile = QFile(
+        settings->core.settingsDir + '/' +
+        SETTINGS_FILE_NAME
+#if QT_VERSION_MINOR < 9
+            .toString()
+#endif
+    );
 
     if (!settingsFile.open(QFile::WriteOnly | QFile::Text)) {
         return err(settingsFile.errorString());
     }
 
-    settings->currentTab = playlistView->currentIndex();
-    settings->volume = volumeSlider->value();
+    settings->core.currentTab = playlistView->currentIndex();
+    settings->core.volume = volumeSlider->value();
 
     equalizerMenu->saveSettings();
 
@@ -760,12 +779,26 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
                                                   : DockWidgetPosition::Bottom;
     }
 
-    settings->dockWidgetSettings.position = dockWidgetPosition;
-    settings->dockWidgetSettings.size = dockWidget->width();
-    settings->dockWidgetSettings.imageSize = dockCoverLabel->height();
+    settings->dockWidget.position = dockWidgetPosition;
+    settings->dockWidget.size = dockWidget->width();
+    settings->dockWidget.imageSize = dockCoverLabel->height();
 
-    peakVisualizer->saveSettings(settings->peakVisualizerSettings);
+    peakVisualizer->saveSettings(settings->peakVisualizer);
     settings->save(settingsFile);
+
+    QFile rapPathsFile = QFile(
+        QApplication::applicationDirPath() + '/' +
+        PATHS_FILE_NAME
+#if QT_VERSION_MINOR < 9
+            .toString()
+#endif
+    );
+
+    if (rapPathsFile.open(QFile::WriteOnly | QFile::Text | QFile::Truncate)) {
+        rapPathsFile.write(settings->core.settingsDir.toUtf8());
+        rapPathsFile.write("\n");
+        rapPathsFile.write(settings->core.playlistsDir.toUtf8());
+    }
 
     return savePlaylists();
 }
@@ -808,52 +841,128 @@ void MainWindow::retranslate(const QLocale::Language language) {
 }
 
 void MainWindow::initializeSettings() {
-    // TODO: Check for registry entry with settingsPath
-    QFile settingsFile =
-        QFile(QApplication::applicationDirPath() + "/rap-settings.json");
+    QFile rapPathsFile = QFile(
+        QApplication::applicationDirPath() + '/' +
+        PATHS_FILE_NAME
+#if QT_VERSION_MINOR < 9
+            .toString()
+#endif
+    );
+    QFile* settingsFile;
+    QString settingsFilePath;
+    QString playlistsFilePath;
 
-    if (!settingsFile.open(QFile::ReadOnly | QFile::Text)) {
-        LOG_WARN(settingsFile.errorString());
-        settings = make_shared<Settings>();
+    if (!rapPathsFile.open(QFile::ReadOnly | QFile::Text)) {
+        LOG_WARN(rapPathsFile.errorString());
+
+        settingsFilePath = QApplication::applicationDirPath() + '/' +
+                           SETTINGS_FILE_NAME
+#if QT_VERSION_MINOR < 9
+                               .toString()
+#endif
+            ;
+        playlistsFilePath = QApplication::applicationDirPath() + '/' +
+                            PLAYLISTS_FILE_NAME
+#if QT_VERSION_MINOR < 9
+                                .toString()
+#endif
+            ;
+
+        settingsFile = new QFile(settingsFilePath);
+
     } else {
-        const QByteArray jsonData = settingsFile.readAll();
-        settingsFile.close();
+        QString settingsDir = rapPathsFile.readLine();
+        QString playlistsDir = rapPathsFile.readLine();
 
-        settings = make_shared<Settings>(
-            QJsonDocument::fromJson(jsonData, nullptr).object()
-        );
+        // Remove "\n", playlistsDir doesn't required that because of EOF
+        settingsDir.chop(1);
+
+        settingsFilePath = settingsDir + '/' +
+                           SETTINGS_FILE_NAME
+#if QT_VERSION_MINOR < 9
+                               .toString()
+#endif
+            ;
+        playlistsFilePath = playlistsDir + '/' +
+                            PLAYLISTS_FILE_NAME
+#if QT_VERSION_MINOR < 9
+                                .toString()
+#endif
+            ;
+
+        settingsFile = new QFile(settingsFilePath);
     }
+
+    if (!settingsFile->open(QFile::ReadOnly | QFile::Text)) {
+        LOG_WARN(settingsFile->fileName() + settingsFile->errorString());
+
+        settings = make_shared<Settings>();
+        delete settingsFile;
+
+        return;
+    }
+
+    const QByteArray jsonData = settingsFile->readAll();
+
+    QJsonParseError jsonError;
+    const QJsonObject settingsObject =
+        QJsonDocument::fromJson(jsonData, &jsonError).object();
+
+    if (jsonError.error != QJsonParseError::NoError) {
+        LOG_WARN(jsonError.errorString());
+    } else {
+        settings = make_shared<Settings>(settingsObject);
+    }
+
+    settings->core.settingsDir =
+        settingsFilePath.slice(0, settingsFilePath.lastIndexOf('/'));
+    settings->core.playlistsDir =
+        playlistsFilePath.slice(0, playlistsFilePath.lastIndexOf('/'));
+
+    delete settingsFile;
 }
 
 void MainWindow::loadSettings() {
-    volumeSlider->setValue(settings->volume);
-    volumeSliderTray->setValue(settings->volume);
+    volumeSlider->setValue(settings->core.volume);
+    volumeSliderTray->setValue(settings->core.volume);
 
-    updateVolume(settings->volume);
+    updateVolume(settings->core.volume);
+
+    settings->core.defaultStyle = QApplication::style()->name();
+
+    if (settings->core.applicationStyle != -1) {
+        QApplication::setStyle(
+            APPLICATION_STYLES[u8(settings->core.applicationStyle)].toString()
+        );
+    }
+
+    SettingsWindow::setTheme(settings->core.applicationTheme);
 
     loadPlaylists();
-    playlistView->setCurrentIndex(settings->currentTab);
+    playlistView->setCurrentIndex(settings->core.currentTab);
     equalizerMenu->loadSettings();
 
-    const DockWidgetPosition dockWidgetPosition =
-        settings->dockWidgetSettings.position;
+    peakVisualizer->loadSettings(settings->peakVisualizer);
 
-    moveDockWidget(dockWidgetPosition);
-
-    mainArea->setSizes({ QWIDGETSIZE_MAX, settings->dockWidgetSettings.size });
-
-    peakVisualizer->loadSettings(settings->peakVisualizerSettings);
-
-    // Update system associations, in case if binary was moved somewhere
-    if (settings->flags.contextMenuEntryEnabled) {
-        SettingsWindow::createContextMenuEntry();
+    // Directly update system associations, in case if binary was moved
+    // somewhere
+    if (shellEntryExists()) {
+        settings->shell.contextMenuEntryEnabled = true;
+        createContextMenuEntry();
     }
 
-    if (settings->flags.fileAssociationsEnabled) {
-        SettingsWindow::createFileAssociations();
+    const Associations associations = getExistingAssociations();
+
+    if (associations != Associations::None) {
+        settings->shell.enabledAssociations = associations;
+
+        updateFileAssociations(associations);
     }
 
-    retranslate(settings->language);
+    moveDockWidget(settings->dockWidget.position);
+    mainArea->setSizes({ QWIDGETSIZE_MAX, settings->dockWidget.size });
+
+    retranslate(settings->core.language);
 }
 
 void MainWindow::moveDockWidget(const DockWidgetPosition dockWidgetPosition) {
@@ -1195,10 +1304,10 @@ void MainWindow::showHelpWindow() {
 
 void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
     const QString searchDirectory =
-        settings->lastOpenedDirectory.isEmpty() ||
-                !QFile::exists(settings->lastOpenedDirectory)
+        settings->core.lastDir.isEmpty() ||
+                !QFile::exists(settings->core.lastDir)
             ? QDir::rootPath()
-            : settings->lastOpenedDirectory;
+            : settings->core.lastDir;
     QString path;
 
     if (isFolder) {
@@ -1222,7 +1331,7 @@ void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
             return;
         }
 
-        settings->lastOpenedDirectory = path;
+        settings->core.lastDir = path;
     } else {
         path = QFileDialog::getOpenFileName(
             this,
@@ -1236,13 +1345,14 @@ void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
         }
     }
 
-    auto* tree = trackTree;
+    TrackTree* tree = trackTree;
 
     if (createNewTab || tree == nullptr) {
         const u8 index = playlistView->addTab(
-            settings->flags.playlistNaming == DirectoryName
+            settings->playlist.playlistNaming == PlaylistNaming::DirectoryName
                 ? QFileInfo(path).fileName()
-                : QString()
+                : QString(),
+            settings->playlist.defaultColumns
         );
         tree = playlistView->tree(index);
     }
@@ -1513,7 +1623,7 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     QPixmap cover;
     QString path;
 
-    if (settings->flags.prioritizeExternalCover) {
+    if (settings->playlist.prioritizeExternalCover) {
         const QDir fileDirectory = metadata[TrackProperty::Path].sliced(
             0,
             metadata[TrackProperty::Path].lastIndexOf('/')
@@ -1542,7 +1652,7 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
         }
     }
 
-    if (!settings->flags.prioritizeExternalCover || path.isEmpty()) {
+    if (!settings->playlist.prioritizeExternalCover || path.isEmpty()) {
         const auto extracted =
             extractCover(metadata[TrackProperty::Path].toUtf8().data());
 
@@ -1555,7 +1665,7 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
         }
     }
 
-    if (settings->flags.autoSetBackground) {
+    if (settings->playlist.autoSetBackground) {
         const QImage image = cover.toImage();
         playlistView->setBackgroundImage(playingPlaylist, image, path);
     }
