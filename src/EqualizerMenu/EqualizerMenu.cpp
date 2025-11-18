@@ -398,3 +398,33 @@ void EqualizerMenu::createNewPreset() {
     presetSelect->addItem(tr("New preset"));
     presetSelect->setCurrentIndex(presetSelect->count() - 1);
 }
+
+void EqualizerMenu::retranslate() {
+    ui->retranslateUi(this);
+
+    if (eqSettings.enabled) {
+        toggleButton->setText(tr("Enabled"));
+    }
+
+    const span<const f32> frequencies = span(
+        getFrequenciesForBands(eqSettings.bandCount),
+        usize(eqSettings.bandCount)
+    );
+
+    for (const auto& [container, frequency] : views::zip(
+             views::take(sliders, u8(eqSettings.bandCount)),
+             views::take(frequencies, u8(eqSettings.bandCount))
+         )) {
+        container.dbLabel->setText(tr("dB"));
+        container.hzLabel->setText(QString::number(frequency) + tr(" Hz"));
+    }
+}
+
+void EqualizerMenu::loadSettings() {
+    toggleButton->setChecked(settings->equalizer.enabled);
+    bandSelect->setCurrentIndex(settings->equalizer.bandIndex);
+
+    changeBands(bandSelect->currentText());
+
+    presetSelect->setCurrentIndex(settings->equalizer.presetIndex);
+}

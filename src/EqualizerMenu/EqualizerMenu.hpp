@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Constants.hpp"
 #include "CustomInput.hpp"
 #include "Settings.hpp"
 #include "ui_EqualizerMenu.h"
@@ -40,36 +39,8 @@ class EqualizerMenu : public QDialog {
 
     void saveSettings();
     void keyPressEvent(QKeyEvent* event) override;
-
-    void retranslate() {
-        ui->retranslateUi(this);
-
-        if (eqSettings.enabled) {
-            toggleButton->setText(tr("Enabled"));
-        }
-
-        const span<const f32> frequencies = span(
-            getFrequenciesForBands(eqSettings.bandCount),
-            usize(eqSettings.bandCount)
-        );
-
-        for (const auto& [container, frequency] : views::zip(
-                 views::take(sliders, u8(eqSettings.bandCount)),
-                 views::take(frequencies, u8(eqSettings.bandCount))
-             )) {
-            container.dbLabel->setText(tr("dB"));
-            container.hzLabel->setText(QString::number(frequency) + tr(" Hz"));
-        }
-    }
-
-    void loadSettings() {
-        toggleButton->setChecked(settings->equalizer.enabled);
-        bandSelect->setCurrentIndex(settings->equalizer.bandIndex);
-
-        changeBands(bandSelect->currentText());
-
-        presetSelect->setCurrentIndex(settings->equalizer.presetIndex);
-    }
+    void retranslate();
+    void loadSettings();
 
    signals:
     void gainChanged(u8 band);
