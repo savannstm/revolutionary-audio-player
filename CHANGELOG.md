@@ -1,5 +1,81 @@
 # Changelog
 
+## v0.10.0 - Polishing & Wayland issues
+
+### Changes
+
+**Linux binaries are now linked dynamically to Qt, see [required libraries here](./docs/linux-deps.md)**
+
+#### Playback Fixes
+
+-   Fixed non-working repeat of a single track.
+-   Fixed the situation where a track would continue playing even after playback was stopped, if play button is pressed again.
+-   Fixed crashes when switching tracks while having the visualizer window opened.
+-   Fixed not opening the track from association because of a logic flow that was introduced after switching to `miniaudio` library for audio playback.
+-   Fixing #1 playback stutters.
+
+#### Playlists
+
+-   Fixed not showing scroll bar in tab bar when there's many playlists opened, and dock widget is minimized.
+-   Fixed not filling the created playlist when files are dropped into the player.
+
+#### Equalizer Updates
+
+-   Added default 18- and 30-band presets for equalizer (these are just stretched versions of 10-band ones).
+-   Fixed equalizer corrupting audio when playing audio with too high sample rate and many channels.
+
+#### Visualizer Updates
+
+-   Fixed peak (spectrum) visualizer for any audio formats.
+-   Spectrum visualizer is now available with only either 18 or 30 bands.
+-   Added feature to maximize visualizer to fullscreen by pressing F11.
+-   Visualizer was rewritten from using Qt6 OpenGL to open a separate GLFW window, which ensures maximum portability and less pain in the ass.
+
+#### Settings & Configuration
+
+-   Settings were split into sections, and several additions were made:
+    -   Added a setting to explicitly change color theme.
+    -   Added ability to change settings/playlists files' location (paths are stored alongside `rap` executable; after reinstalling, directories need to be located again).
+    -   Associations for file formats can now be enabled/disabled per format.
+    -   Added ability to change default playlist columns and their ordering.
+    -   Added "Default" application style option.
+
+#### File & System Integration
+
+-   Fixed check of enabled associations (now based on whether the file/shell associations actually exist in the system).
+-   Linux:
+    -   Fixed `Create "Open in RAP" directory context menu item` working for files and not directories on Linux.
+    -   Fixed not opening files in the application if supplied as arguments while the executable is already opened.
+    -   Fixed not opening for the first time on Linux if the application wasn't closed properly.
+
+#### Localization
+
+-   Fixed track search input not retranslating when the language is changed.
+-   Removed retranslating of some widgets that shouldn't be retranslated.
+-   Added retranslating of some widgets that should be retranslated.
+
+#### Other Updates
+
+-   Starting from v0.10.0, releases will be compiled with `-march=sandybridge` flag (Intel 3rd Gen with AVX support).
+-   Removed blank entries from tray icon menu on Linux platform, which are actually supposed to be sliders. But sliders are not widely supported, so whatever.
+-   Fixed system window bar not appearing after maximizing cover window.
+-   Implemented skip sections for repeat menu. Now you can enter custom sections to skip.
+-   Allowed using theme plugins by linking Qt dynamically.
+
+### Broken
+
+-   Sliders in tray icon menu don't display on KDE (possibly other DEs)
+-   Shell context menu entries in different Linux DEs (WIP)
+-   Equalizer menu doesn't move itself beneath equalizer button, it draws in the center of the screen on Wayland
+-   Set Always On Top does not work on Wayland
+-   No devices hot reload in settings
+
+### Coming in v0.11.0
+
+-   Floating spectrum visualizer, and more spectrum visualizer customization
+-   Import/export for visualizer presets
+-   Possible integration with last.fm API for music data scraping
+
 ## v0.9.0
 
 ### Changes
