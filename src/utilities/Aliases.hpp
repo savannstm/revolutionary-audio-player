@@ -124,3 +124,18 @@ constexpr auto operator""_qsv(const char16_t* chr, const size_t size)
     -> QStringView {
     return { chr, isize(size) };
 }
+
+// Concatenation compatibility
+#if QT_VERSION_MINOR >= 9
+constexpr auto operator""_qssv(const char16_t* chr, const size_t size)
+    -> QStringView {
+    return { chr, isize(size) };
+}
+#else
+constexpr auto operator""_qssv(const char16_t* chr, const size_t size)
+    -> QString {
+    return QString(
+        QStringPrivate(nullptr, const_cast<char16_t*>(chr), qsizetype(size))
+    );
+}
+#endif
