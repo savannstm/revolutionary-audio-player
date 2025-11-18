@@ -20,7 +20,10 @@ class DeviceMonitor : public QObject {
     ~DeviceMonitor() override;
 
    signals:
-    void defaultDeviceChanged(const QString& name);
+    void defaultDeviceChanged(const QString& deviceName);
+    void deviceAdded(const QString& deviceName, const QString& deviceID);
+    void deviceRemoved(const QString& deviceName, const QString& deviceID);
+    void deviceStateChanged(const QString& deviceName, const QString& deviceID);
 
    private:
 #ifdef Q_OS_WINDOWS

@@ -4,10 +4,10 @@
 #include "WindowsDeviceMonitor.hpp"
 #endif
 
-DeviceMonitor::DeviceMonitor(QObject* parent) : QObject(parent) {
+DeviceMonitor::DeviceMonitor(QObject* const parent) : QObject(parent) {
+#ifdef Q_OS_WINDOWS
     deviceMonitor->initialize();
 
-#ifdef Q_OS_WINDOWS
     connect(
         deviceMonitor,
         &WindowsDeviceMonitor::defaultDeviceChanged,

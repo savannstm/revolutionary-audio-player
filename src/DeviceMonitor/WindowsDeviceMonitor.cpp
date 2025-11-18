@@ -1,13 +1,16 @@
 #include "WindowsDeviceMonitor.hpp"
 
 #ifdef Q_OS_WINDOWS
-#include <QDebug>
 #include <comdef.h>
 
 WindowsDeviceMonitor::WindowsDeviceMonitor(QObject* parent) : QObject(parent) {}
 
 WindowsDeviceMonitor::~WindowsDeviceMonitor() {
-    shutdown();
+    if (deviceEnumerator != nullptr) {
+        deviceEnumerator->UnregisterEndpointNotificationCallback(this);
+        deviceEnumerator->Release();
+        deviceEnumerator = nullptr;
+    }
 }
 
 auto WindowsDeviceMonitor::initialize() -> bool {
@@ -31,14 +34,6 @@ auto WindowsDeviceMonitor::initialize() -> bool {
     }
 
     return SUCCEEDED(result);
-}
-
-void WindowsDeviceMonitor::shutdown() {
-    if (deviceEnumerator != nullptr) {
-        deviceEnumerator->UnregisterEndpointNotificationCallback(this);
-        deviceEnumerator->Release();
-        deviceEnumerator = nullptr;
-    }
 }
 
 auto WindowsDeviceMonitor::AddRef() -> ULONG {
