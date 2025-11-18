@@ -105,14 +105,6 @@ constexpr auto getFrequenciesForBands(const u8 bands) -> const f32* {
     }
 }
 
-// Standard bitrates (in kbps)
-constexpr array<u16, 17> STANDARD_BITRATES = { 32,  40,  48,  56,  64,  80,
-                                               96,  112, 128, 160, 192, 224,
-                                               256, 320, 350, 450, 510 };
-constexpr u16 MAX_LOSSY_BITRATE =
-    STANDARD_BITRATES[STANDARD_BITRATES.size() - 1];
-constexpr u16 MIN_LOSSY_BITRATE = STANDARD_BITRATES[0];
-
 // Volume limits
 constexpr u8 MAX_VOLUME = 100;
 constexpr u8 MIN_VOLUME = 0;
