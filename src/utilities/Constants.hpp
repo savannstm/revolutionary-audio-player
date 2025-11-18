@@ -194,32 +194,32 @@ constexpr array<TrackProperty, TRACK_PROPERTY_COUNT> DEFAULT_COLUMN_PROPERTIES =
 
 // Music extensions
 // Although ALAC uses MPEG containers, let it be here
-constexpr QStringView EXT_MP3 = u"mp3";
-constexpr QStringView EXT_FLAC = u"flac";
-constexpr QStringView EXT_OPUS = u"opus";
 constexpr QStringView EXT_AAC = u"aac";
-constexpr QStringView EXT_WAV = u"wav";
-constexpr QStringView EXT_OGG = u"ogg";
+constexpr QStringView EXT_AC3 = u"ac3";
+constexpr QStringView EXT_ALAC = u"alac";
+constexpr QStringView EXT_FLAC = u"flac";
 constexpr QStringView EXT_M4A = u"m4a";
 constexpr QStringView EXT_MKA = u"mka";
-constexpr QStringView EXT_ALAC = u"alac";
-constexpr QStringView EXT_AC3 = u"ac3";
+constexpr QStringView EXT_MP3 = u"mp3";
+constexpr QStringView EXT_OGG = u"ogg";
+constexpr QStringView EXT_OPUS = u"opus";
+constexpr QStringView EXT_WAV = u"wav";
 
-constexpr u8 ALLOWED_MUSIC_EXTENSIONS_COUNT = 10;
-constexpr array<QStringView, ALLOWED_MUSIC_EXTENSIONS_COUNT>
-    ALLOWED_MUSIC_EXTENSIONS = {
-        EXT_MP3, EXT_FLAC, EXT_OPUS, EXT_AAC,  EXT_WAV,
-        EXT_OGG, EXT_M4A,  EXT_MKA,  EXT_ALAC, EXT_AC3
+constexpr u8 ALLOWED_AUDIO_EXTENSIONS_COUNT = 10;
+constexpr array<QStringView, ALLOWED_AUDIO_EXTENSIONS_COUNT>
+    ALLOWED_AUDIO_EXTENSIONS = {
+        EXT_AAC, EXT_AC3, EXT_ALAC, EXT_FLAC, EXT_M4A,
+        EXT_MKA, EXT_MP3, EXT_OGG,  EXT_OPUS, EXT_WAV
     };
 
 // Video extensions
-constexpr QStringView EXT_MP4 = u"mp4";
 constexpr QStringView EXT_MKV = u"mkv";
 constexpr QStringView EXT_MOV = u"mov";
+constexpr QStringView EXT_MP4 = u"mp4";
 
 constexpr u8 ALLOWED_VIDEO_EXTENSIONS_COUNT = 3;
 constexpr array<QStringView, ALLOWED_VIDEO_EXTENSIONS_COUNT>
-    ALLOWED_VIDEO_EXTENSIONS = { EXT_MP4, EXT_MKV, EXT_MOV };
+    ALLOWED_VIDEO_EXTENSIONS = { EXT_MKV, EXT_MOV, EXT_MP4 };
 
 // Allowed playlists
 constexpr QStringView EXT_CUE = u"cue";
@@ -229,25 +229,42 @@ constexpr QStringView EXT_XSPF = u"xspf";
 
 constexpr u8 ALLOWED_PLAYLIST_EXTENSIONS_COUNT = 4;
 constexpr array<QStringView, ALLOWED_PLAYLIST_EXTENSIONS_COUNT>
-    ALLOWED_PLAYLIST_EXTENSIONS = { EXT_XSPF, EXT_M3U8, EXT_M3U, EXT_CUE };
+    ALLOWED_PLAYLIST_EXTENSIONS = { EXT_CUE, EXT_M3U, EXT_M3U8, EXT_XSPF };
 
 // All allowed playable file extensions
-constexpr u8 ALLOWED_EXTENSIONS_COUNT = ALLOWED_MUSIC_EXTENSIONS_COUNT +
+constexpr u8 ALLOWED_EXTENSIONS_COUNT = ALLOWED_AUDIO_EXTENSIONS_COUNT +
                                         ALLOWED_VIDEO_EXTENSIONS_COUNT +
                                         ALLOWED_PLAYLIST_EXTENSIONS_COUNT;
 constexpr array<QStringView, ALLOWED_EXTENSIONS_COUNT>
-    ALLOWED_PLAYABLE_EXTENSIONS = { EXT_MP3,  EXT_FLAC, EXT_OPUS, EXT_AAC,
-                                    EXT_WAV,  EXT_OGG,  EXT_M4A,  EXT_MKA,
-                                    EXT_ALAC, EXT_AC3,
+    ALLOWED_PLAYABLE_EXTENSIONS = {
+        // Audio
+        EXT_AAC,
+        EXT_AC3,
+        EXT_ALAC,
+        EXT_FLAC,
+        EXT_M4A,
+        EXT_MKA,
+        EXT_MP3,
+        EXT_OGG,
+        EXT_OPUS,
+        EXT_WAV,
 
-                                    EXT_MOV,  EXT_MP4,  EXT_MKV,
+        // Video
+        EXT_MKV,
+        EXT_MOV,
+        EXT_MP4,
 
-                                    EXT_XSPF, EXT_M3U,  EXT_M3U8, EXT_CUE };
+        // Playlist
+        EXT_CUE,
+        EXT_M3U,
+        EXT_M3U8,
+        EXT_XSPF
+    };
 
 // Image extensions
-constexpr array<QStringView, 6> ALLOWED_IMAGE_EXTENSIONS = { u"jpg",  u"jpeg",
-                                                             u"png",  u"tiff",
-                                                             u"webp", u"bmp" };
+constexpr array<QStringView, 6> ALLOWED_IMAGE_EXTENSIONS = { u"bmp",  u"jpeg",
+                                                             u"jpg",  u"png",
+                                                             u"tiff", u"webp" };
 
 // Searchable track property names
 constexpr array<QStringView, TRACK_PROPERTY_COUNT> SEARCH_PROPERTIES = {
