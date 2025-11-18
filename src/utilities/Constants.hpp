@@ -112,8 +112,12 @@ constexpr QSize PLAYLIST_TAB_CLOSE_BUTTON_SIZE = QSize(16, 16);
 constexpr u8 HEADER_HANDLE_WIDTH = 4;
 
 // Search input size constraints
-constexpr u8 SEARCH_INPUT_MIN_WIDTH = 64;
-constexpr u8 SEARCH_INPUT_HEIGHT = 24;
+constexpr u8 MINIMUM_MATCHES_NUMBER = 32;
+
+constexpr u8 SEARCH_INPUT_POSITION_PADDING = 16;
+constexpr QMargins SEARCH_INPUT_TEXT_MARGINS = { 2, 2, 2, 2 };
+constexpr u16 SEARCH_INPUT_MIN_WIDTH = 256;
+constexpr u8 SEARCH_INPUT_HEIGHT = 40;
 
 // Equalizer menu input widths
 constexpr u8 GAIN_INPUT_FIXED_WIDTH = 32;
@@ -227,17 +231,6 @@ constexpr array<QStringView, TRACK_PROPERTY_COUNT> SEARCH_PROPERTIES = {
     u"discnumber", u"comment",     u"publisher", u"bitrate",
     u"samplerate", u"channels",    u"format",    u"path",
     u"order"
-};
-
-// Minimum number of search result matches
-constexpr u8 MINIMUM_MATCHES_NUMBER = 32;
-
-// Application Config
-
-// Available application style names
-constexpr array<QStringView, 8> APPLICATION_STYLES = {
-    u"windows11", u"windowsvista", u"Windows", u"Fusion",
-    u"macintosh", u"breeze",       u"gtk",     u"adwaita"
 };
 
 // Time and data unit conversions

@@ -427,7 +427,8 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     randomButton->setAction(actionRandom);
 
     searchTrackInput->hide();
-    searchTrackInput->setMinimumWidth(MINIMUM_MATCHES_NUMBER);
+    searchTrackInput->setTextMargins(SEARCH_INPUT_TEXT_MARGINS);
+    searchTrackInput->setMinimumWidth(SEARCH_INPUT_MIN_WIDTH);
     searchTrackInput->setFixedHeight(SEARCH_INPUT_HEIGHT);
 
     setupTrayIcon();
@@ -1188,8 +1189,7 @@ void MainWindow::searchTrack() {
             }
         }
 
-        const u16 rowCount = trackTreeModel->rowCount();
-        for (const u16 row : range(0, rowCount)) {
+        for (const u16 row : range(0, trackTreeModel->rowCount())) {
             const HashMap<TrackProperty, QString> metadata =
                 trackTree->rowMetadata(row);
             QString fieldValue;
@@ -1210,32 +1210,30 @@ void MainWindow::searchTrack() {
             }
         }
 
-        if (searchMatches.empty()) {
+        if (searchMatches.isEmpty()) {
             searchMatches.clear();
             searchMatches.reserve(MINIMUM_MATCHES_NUMBER);
             searchMatchesPosition = 0;
             return;
         }
-
-        const QModelIndex& firstMatch = searchMatches[searchMatchesPosition];
-        trackTree->scrollTo(firstMatch, QTreeView::PositionAtCenter);
-        trackTree->selectionModel()->select(
-            firstMatch,
-            QItemSelectionModel::Select | QItemSelectionModel::Rows
-        );
-    } else {
-        searchMatchesPosition++;
-        if (searchMatchesPosition >= searchMatches.size()) {
-            searchMatchesPosition = 0;
-        }
-
-        const QModelIndex& match = searchMatches[searchMatchesPosition];
-        trackTree->scrollTo(match, QTreeView::PositionAtCenter);
-        trackTree->selectionModel()->select(
-            match,
-            QItemSelectionModel::Select | QItemSelectionModel::Rows
-        );
     }
+
+    if (searchMatches.isEmpty()) {
+        return;
+    }
+
+    if (searchMatchesPosition >= searchMatches.size()) {
+        searchMatchesPosition = 0;
+    }
+
+    trackTree->selectionModel()->clearSelection();
+
+    const QModelIndex& match = searchMatches[searchMatchesPosition++];
+    trackTree->scrollTo(match, QTreeView::PositionAtCenter);
+    trackTree->selectionModel()->select(
+        match,
+        QItemSelectionModel::Select | QItemSelectionModel::Rows
+    );
 }
 
 void MainWindow::showSearchInput() {
@@ -1243,9 +1241,11 @@ void MainWindow::showSearchInput() {
         return;
     }
 
-    searchTrackInput->move(trackTree->mapToGlobal(
-        QPoint(trackTree->width() - searchTrackInput->width(), 0)
-    ));
+    searchTrackInput->move(trackTree->mapToGlobal(QPoint(
+        trackTree->width() - searchTrackInput->width() -
+            SEARCH_INPUT_POSITION_PADDING,
+        0 + SEARCH_INPUT_POSITION_PADDING
+    )));
     searchTrackInput->raise();
     searchTrackInput->show();
     searchTrackInput->setFocus();
