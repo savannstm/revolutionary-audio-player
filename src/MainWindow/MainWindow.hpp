@@ -22,7 +22,7 @@
 #include "ui_mainwindow.h"
 
 #ifdef PROJECTM
-#include "VisualizerWindow.hpp"
+#include "VisualizerDialog.hpp"
 #endif
 
 #include <QAction>
@@ -258,6 +258,6 @@ class MainWindow : public QMainWindow {
     EqualizerMenu* equalizerMenu = nullptr;
 
 #ifdef PROJECTM
-    VisualizerWindow* visualizerWindow = nullptr;
+    VisualizerDialog* visualizerDialog = nullptr;
 #endif
 };

@@ -66,48 +66,52 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
 
     connect(actionVisualizer, &QAction::triggered, this, [&] -> void {
 #ifdef PROJECTM
-        if (visualizerWindow == nullptr) {
-            visualizerWindow = new VisualizerWindow(visualizerBuffer.data());
-            auto* visualizer = visualizerWindow->visualizer();
-            visualizer->setChannels(audioWorker->channels());
-            audioWorker->toggleVisualizer(true);
-
-            connect(
-                audioWorker,
-                &AudioWorker::audioProperties,
-                visualizer,
-                [&](const u32 /* sampleRate */, const AudioChannels channels)
-                    -> void { visualizer->setChannels(channels); }
-            );
-
-            connect(
-                audioWorker,
-                &AudioWorker::streamEnded,
-                visualizer,
-                &VisualizerWidget::clear
-            );
-
-            connect(
-                audioWorker,
-                &AudioWorker::processedSamples,
-                visualizer,
-                &VisualizerWidget::addSamples
-            );
-
-            connect(
-                visualizerWindow,
-                &VisualizerWindow::destroyed,
-                this,
-                [this] -> void {
-                visualizerWindow = nullptr;
-                audioWorker->toggleVisualizer(false);
-            },
-                Qt::SingleShotConnection
-            );
-
-            visualizerWindow->setAttribute(Qt::WA_DeleteOnClose);
-            visualizerWindow->show();
+        if (visualizerDialog != nullptr) {
+            return;
         }
+
+        visualizerDialog = new VisualizerDialog(settings);
+        visualizerDialog->setChannels(audioWorker->channels());
+        visualizerDialog->show();
+
+        audioWorker->toggleVisualizer(true);
+
+        connect(
+            audioWorker,
+            &AudioWorker::audioProperties,
+            visualizerDialog,
+            [this](const u32 /* sampleRate */, const AudioChannels channels)
+                -> void { visualizerDialog->setChannels(channels); }
+        );
+
+        connect(
+            audioWorker,
+            &AudioWorker::processedSamples,
+            visualizerDialog,
+            [&] -> void {
+            visualizerDialog->addSamples(visualizerBuffer.data());
+        }
+        );
+
+        connect(
+            audioWorker,
+            &AudioWorker::streamEnded,
+            visualizerDialog,
+            &VisualizerDialog::clear
+        );
+
+        connect(
+            visualizerDialog,
+            &VisualizerDialog::rejected,
+            this,
+            [&] -> void {
+            delete visualizerDialog;
+            visualizerDialog = nullptr;
+            audioWorker->toggleVisualizer(false);
+        },
+            Qt::SingleShotConnection
+        );
+
 #else
         QMessageBox::information(
             this,
