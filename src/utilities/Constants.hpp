@@ -46,48 +46,44 @@ constexpr f32 MAX_FREQUENCY = 20000;
 constexpr f32 MIN_FREQUENCY = 0;
 
 // Standard EQ band counts
-constexpr u8 MAX_BANDS_COUNT = 30;
-constexpr u8 THIRTY_BANDS = 30;
-constexpr u8 EIGHTEEN_BANDS = 18;
-constexpr u8 TEN_BANDS = 10;
-constexpr u8 FIVE_BANDS = 5;
-constexpr u8 THREE_BANDS = 3;
 
 // Frequency sets per band count
-constexpr array<f32, THREE_BANDS> THREE_BAND_FREQUENCIES = { 100, 1000, 10000 };
+constexpr array<f32, usize(Bands::Three)> THREE_BAND_FREQUENCIES = { 100,
+                                                                     1000,
+                                                                     10000 };
 
-constexpr array<f32, FIVE_BANDS> FIVE_BAND_FREQUENCIES = { 63,
-                                                           250,
-                                                           1000,
-                                                           4000,
-                                                           16000 };
+constexpr array<f32, usize(Bands::Five)> FIVE_BAND_FREQUENCIES = { 63,
+                                                                   250,
+                                                                   1000,
+                                                                   4000,
+                                                                   16000 };
 
-constexpr array<f32, TEN_BANDS> TEN_BAND_FREQUENCIES = { 31.5, 63,   125,  250,
-                                                         500,  1000, 2000, 4000,
-                                                         8000, 16000 };
+constexpr array<f32, usize(Bands::Ten)> TEN_BAND_FREQUENCIES = {
+    31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000
+};
 
-constexpr array<f32, EIGHTEEN_BANDS> EIGHTEEN_BAND_FREQUENCIES = {
+constexpr array<f32, usize(Bands::Eighteen)> EIGHTEEN_BAND_FREQUENCIES = {
     20,   31.5, 50,   80,   125,  200,  315,   500,   800,
     1250, 2000, 3150, 5000, 6300, 8000, 10000, 12500, 16000
 };
 
-constexpr array<f32, THIRTY_BANDS> THIRTY_BAND_FREQUENCIES = {
+constexpr array<f32, usize(Bands::Thirty)> THIRTY_BAND_FREQUENCIES = {
     25,   31.5, 40,   50,   63,   80,   100,   125,   160,   200,
     250,  315,  400,  500,  630,  800,  1000,  1250,  1600,  2000,
     2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000
 };
 
-constexpr auto getFrequenciesForBands(const u8 bands) -> const f32* {
+constexpr auto getFrequenciesForBands(const Bands bands) -> const f32* {
     switch (bands) {
-        case THREE_BANDS:
+        case Bands::Three:
             return THREE_BAND_FREQUENCIES.data();
-        case FIVE_BANDS:
+        case Bands::Five:
             return FIVE_BAND_FREQUENCIES.data();
-        case TEN_BANDS:
+        case Bands::Ten:
             return TEN_BAND_FREQUENCIES.data();
-        case EIGHTEEN_BANDS:
+        case Bands::Eighteen:
             return EIGHTEEN_BAND_FREQUENCIES.data();
-        case THIRTY_BANDS:
+        case Bands::Thirty:
             return THIRTY_BAND_FREQUENCIES.data();
         default:
             return nullptr;
@@ -120,7 +116,6 @@ constexpr u8 SEARCH_INPUT_MIN_WIDTH = 64;
 constexpr u8 SEARCH_INPUT_HEIGHT = 24;
 
 // Equalizer menu input widths
-
 constexpr u8 GAIN_INPUT_FIXED_WIDTH = 32;
 constexpr u8 FREQUENCY_INPUT_FIXED_WIDTH = 48;
 

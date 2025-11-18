@@ -274,31 +274,31 @@
          <bool>false</bool>
         </property>
         <property name="currentIndex">
-         <number>2</number>
+         <number>0</number>
         </property>
         <item>
          <property name="text">
-          <string>3</string>
+          <string notr="true">3</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>5</string>
+          <string notr="true">5</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>10</string>
+          <string notr="true">10</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>18</string>
+          <string notr="true">18</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>30</string>
+          <string notr="true">30</string>
          </property>
         </item>
        </widget>

@@ -3,7 +3,7 @@
 #include "Constants.hpp"
 #include "CustomInput.hpp"
 #include "Settings.hpp"
-#include "ui_equalizermenu.h"
+#include "ui_EqualizerMenu.h"
 
 #include <QComboBox>
 #include <QDialog>
@@ -50,25 +50,25 @@ class EqualizerMenu : public QDialog {
 
         const span<const f32> frequencies = span(
             getFrequenciesForBands(eqSettings.bandCount),
-            eqSettings.bandCount
+            usize(eqSettings.bandCount)
         );
 
         for (const auto& [container, frequency] : views::zip(
-                 views::take(sliders, eqSettings.bandCount),
-                 views::take(frequencies, eqSettings.bandCount)
+                 views::take(sliders, u8(eqSettings.bandCount)),
+                 views::take(frequencies, u8(eqSettings.bandCount))
              )) {
             container.dbLabel->setText(tr("dB"));
-            container.hzLabel->setText(tr("%1 Hz").arg(frequency));
+            container.hzLabel->setText(QString::number(frequency) + tr(" Hz"));
         }
     }
 
     void loadSettings() {
-        toggleButton->setChecked(settings->equalizerSettings.enabled);
-        bandSelect->setCurrentIndex(settings->equalizerSettings.bandIndex);
+        toggleButton->setChecked(settings->equalizer.enabled);
+        bandSelect->setCurrentIndex(settings->equalizer.bandIndex);
 
         changeBands(bandSelect->currentText());
 
-        presetSelect->setCurrentIndex(settings->equalizerSettings.presetIndex);
+        presetSelect->setCurrentIndex(settings->equalizer.presetIndex);
     }
 
    signals:
@@ -99,7 +99,7 @@ class EqualizerMenu : public QDialog {
     void buildBands();
 
     auto setupUi() -> Ui::EqualizerMenu* {
-        auto* ui_ = new Ui::EqualizerMenu();
+        auto* const ui_ = new Ui::EqualizerMenu();
         ui_->setupUi(this);
         return ui_;
     }
@@ -107,31 +107,32 @@ class EqualizerMenu : public QDialog {
     inline auto createSliderElement(u8 band, QWidget* parent)
         -> SliderContainer;
 
-    Ui::EqualizerMenu* ui = setupUi();
+    Ui::EqualizerMenu* const ui = setupUi();
 
-    u8 previousPresetIndex = 0;
+    array<SliderContainer, usize(Bands::Thirty)> sliders;
 
     shared_ptr<Settings> settings;
     EqualizerSettings& eqSettings;
 
-    QVBoxLayout* layout = ui->verticalLayout;
+    QVBoxLayout* const layout = ui->verticalLayout;
 
-    QWidget* firstSliderRow = ui->firstSliderRow;
-    QHBoxLayout* firstSliderLayout = ui->firstSliderLayout;
+    QWidget* const firstSliderRow = ui->firstSliderRow;
+    QHBoxLayout* const firstSliderLayout = ui->firstSliderLayout;
 
-    QWidget* secondSliderRow = ui->secondSliderRow;
-    QHBoxLayout* secondSliderLayout = ui->secondSliderLayout;
+    QWidget* const secondSliderRow = ui->secondSliderRow;
+    QHBoxLayout* const secondSliderLayout = ui->secondSliderLayout;
 
-    QLabel* bandSelectLabel = ui->bandSelectLabel;
-    QComboBox* bandSelect = ui->bandSelect;
+    QLabel* const bandSelectLabel = ui->bandSelectLabel;
+    QComboBox* const bandSelect = ui->bandSelect;
 
-    QLabel* presetSelectLabel = ui->presetSelectLabel;
-    QComboBox* presetSelect = ui->presetSelect;
+    QLabel* const presetSelectLabel = ui->presetSelectLabel;
+    QComboBox* const presetSelect = ui->presetSelect;
 
-    QPushButton* resetGainsButton = ui->resetGainsButton;
-    QPushButton* newPresetButton = ui->newPresetButton;
-    QPushButton* deletePresetButton = ui->deletePresetButton;
+    QPushButton* const resetGainsButton = ui->resetGainsButton;
+    QPushButton* const newPresetButton = ui->newPresetButton;
+    QPushButton* const deletePresetButton = ui->deletePresetButton;
 
-    QPushButton* toggleButton = ui->toggleButton;
-    array<SliderContainer, MAX_BANDS_COUNT> sliders;
+    QPushButton* const toggleButton = ui->toggleButton;
+
+    u8 previousPresetIndex = 0;
 };
