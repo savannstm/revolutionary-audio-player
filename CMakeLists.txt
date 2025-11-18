@@ -3,8 +3,27 @@ cmake_minimum_required(VERSION 3.25)
 
 # Project definition
 set(PROJECT_NAME rap)
-set(PROJECT_VERSION "0.9.0")
+set(PROJECT_VERSION "0.10.0")
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES C CXX)
+
+option(ENABLE_PROJECTM "Enable projectM visualizer. If this option is enabled, projectM visualizer executable will be built alongside the application. Disable if you don't want audio visualization through OpenGL." ON)
+
+option(MA_NO_WAV "Disable WAV support in miniaudio" ON)
+option(MA_NO_MP3 "Disable MP3 support in miniaudio" ON)
+option(MA_NO_FLAC "Disable FLAC support in miniaudio" ON)
+option(MA_NO_DECODING "Disable all decoding in miniaudio" ON)
+option(MA_NO_ENCODING "Disable all encoding in miniaudio" ON)
+
+option(MA_NO_RESOURCE_MANAGER "Disable resource manager in miniaudio" ON)
+option(MA_NO_NODE_GRAPH "Disable node graph in miniaudio" ON)
+option(MA_NO_ENGINE "Disable high-level engine in miniaudio" ON)
+option(MA_NO_GENERATION "Disable sound generation utilities in miniaudio" ON)
+
+option(MA_ENABLE_ONLY_SPECIFIC_BACKENDS "Enable only selected backends in miniaudio" ON)
+option(MA_ENABLE_PULSEAUDIO "Enable PulseAudio backend in miniaudio. Only used with enabled MA_ENABLE_ONLY_SPECIFIC_BACKENDS" ON)
+option(MA_ENABLE_WASAPI "Enable WASAPI backend in miniaudio. Only used with enabled MA_ENABLE_ONLY_SPECIFIC_BACKENDS" ON)
+
+option(MA_DEBUG_OUTPUT "Enable miniaudio debug output" ON)
 
 # Set standards for C and C++
 set(CMAKE_C_STANDARD 17)
@@ -25,7 +44,9 @@ if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
-option(ENABLE_PROJECTM "Enable projectM visualizer" ON)
+if (LINUX)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 
 # Find required packages
 find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent Gui Network LinguistTools)
@@ -68,6 +89,8 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     src/*.ts
 )
 
+list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Visualizer/VisualizerSidecar.cpp)
+
 # Collect translation source files
 file(GLOB TRANSLATION_TS_FILES translations/*)
 
@@ -96,28 +119,26 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<CONFIG:Release>:RELEASE_BUILD>
 )
 
-# Miniaudio options
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-    # We don't need formats handling, FFmpeg does everything
+# Apply enabled Miniaudio options as compile definitions
+foreach(opt
     MA_NO_WAV
     MA_NO_MP3
     MA_NO_FLAC
     MA_NO_DECODING
     MA_NO_ENCODING
-
-    # These are high-level things, we only need low-level API
     MA_NO_RESOURCE_MANAGER
     MA_NO_NODE_GRAPH
     MA_NO_ENGINE
     MA_NO_GENERATION
-
-    # We won't bother linking with all the obsolete or impractical backends, leave just those
     MA_ENABLE_ONLY_SPECIFIC_BACKENDS
     MA_ENABLE_PULSEAUDIO
     MA_ENABLE_WASAPI
-
     MA_DEBUG_OUTPUT
 )
+    if(${opt})
+        target_compile_definitions(${PROJECT_NAME} PRIVATE ${opt})
+    endif()
+endforeach()
 
 # Set properties (e.g., no console window for Windows app)
 set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
@@ -142,38 +163,40 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Widgets
     Qt6::Concurrent
     Qt6::Network
-    debug avfilterd
-    optimized avfilter
-    debug avformatd
-    optimized avformat
-    debug avcodecd
-    optimized avcodec
-    debug avutild
-    optimized avutil
-    debug swresampled
-    optimized swresample
+    avfilter
+    avformat
+    avcodec
+    avutil
+    swresample
 )
 
-# Link to projectM, if enabled
+# Compile visualizer sidecar, if projectM is enabled
 if (ENABLE_PROJECTM)
-    find_package(projectM4 REQUIRED)
-    find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
+    add_executable(rap-visualizer
+        src/Visualizer/VisualizerSidecar.cpp
+    )
 
-    target_link_libraries(${PROJECT_NAME} PRIVATE
+    find_package(projectM4 REQUIRED)
+    find_package(glfw3 REQUIRED)
+
+    set_target_properties(rap-visualizer PROPERTIES WIN32_EXECUTABLE TRUE)
+    target_include_directories(rap-visualizer PRIVATE src/Visualizer)
+
+    target_link_libraries(rap-visualizer PRIVATE
         libprojectM::projectM
-        Qt6::OpenGLWidgets
+        glfw
     )
 
     if (WIN32)
         find_package(GLEW REQUIRED)
-        target_link_libraries(${PROJECT_NAME} PRIVATE
+        target_link_libraries(rap-visualizer PRIVATE
             GLEW::GLEW
         )
     endif()
 
     if (LINUX)
         find_package(OpenGL REQUIRED)
-        target_link_libraries(${PROJECT_NAME} PRIVATE
+        target_link_libraries(rap-visualizer PRIVATE
             OpenGL::GL
         )
     endif()
@@ -190,6 +213,7 @@ if (LINUX)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         Qt6::Svg
         Qt6::WaylandClient
+        -lpulse
     )
 endif()
 
