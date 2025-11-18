@@ -10,11 +10,11 @@
 CoverWindow::CoverWindow(
     const QString& coverPath,  // NOLINT
     const QString& title,
-    QWidget* parent
+    QWidget* const parent
 ) :
-    QDialog(parent) {
+    QDialog(parent, Qt::Window) {
     setContextMenuPolicy(Qt::CustomContextMenu);
-    setWindowTitle(tr("%1: Cover").arg(title));
+    setWindowTitle(title + tr(": Cover"));
     setMinimumSize(MINIMUM_COVER_SIZE);
 
     setStyleSheet(u"CoverWindow { background-color: black; }"_s);
@@ -48,7 +48,7 @@ void CoverWindow::updateCover(const QString& coverPath) {
 }
 
 void CoverWindow::showContextMenu(const QPoint& pos) {
-    auto* menu = new QMenu(this);
+    auto* const menu = new QMenu(this);
 
     const bool isFullscreen = isFullScreen();
     const bool isOnTop = (windowFlags() & Qt::WindowStaysOnTopHint) != 0;
@@ -69,7 +69,7 @@ void CoverWindow::showContextMenu(const QPoint& pos) {
         alwaysOnTopAction = menu->addAction(tr("Set Always On Top"));
     }
 
-    const QAction* selectedAction = menu->exec(mapToGlobal(pos));
+    const QAction* const selectedAction = menu->exec(mapToGlobal(pos));
     delete menu;
 
     if (selectedAction == maximizeAction) {
@@ -82,7 +82,6 @@ void CoverWindow::showContextMenu(const QPoint& pos) {
 
 void CoverWindow::toggleFullscreen(const bool isFullscreen) {
     if (isFullscreen) {
-        setWindowFlag(Qt::FramelessWindowHint, false);
         showNormal();
         resize(originalPixmap.size());
 
@@ -102,7 +101,6 @@ void CoverWindow::toggleFullscreen(const bool isFullscreen) {
 
         move(xPos, yPos);
     } else {
-        setWindowFlag(Qt::FramelessWindowHint, true);
         showFullScreen();
     }
 }
