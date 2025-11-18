@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MainWindow.hpp"
-#include "ui_aboutwindow.h"
+#include "ui_AboutWindow.h"
 
 #include <QDialog>
 
@@ -19,6 +19,15 @@ class AboutWindow : public QDialog {
    public:
     explicit AboutWindow(MainWindow* parent = nullptr);
     ~AboutWindow() override;
+
+   protected:
+    void changeEvent(QEvent* const event) override {
+        if (event->type() == QEvent::LanguageChange) {
+            ui->retranslateUi(this);
+        }
+
+        QDialog::changeEvent(event);
+    }
 
    private:
     auto setupUi() -> Ui::AboutWindow*;

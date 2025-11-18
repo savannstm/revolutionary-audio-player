@@ -15,21 +15,19 @@ auto AboutWindow::setupUi() -> Ui::AboutWindow* {
 }
 
 AboutWindow::AboutWindow(MainWindow* parent) : QDialog(parent) {
-    connect(parent, &MainWindow::retranslated, this, [&] -> void {
-        ui->retranslateUi(this);
-    });
-
-    ui->versionLabel->setText(u"RAP v%1"_s.arg(APP_VERSION));
-    ui->iconLabel->setPixmap(
-        QPixmap(QApplication::applicationDirPath() + "/icons/rap-logo.png")
-    );
-    ui->qtVersionLabel->setText(u"Qt %1"_s.arg(QT_VERSION_STR));
-    ui->ffmpegVersionLabel->setText(u"FFmpeg %1"_s.arg(FFMPEG_VERSION));
+    ui->versionLabel->setText(u"RAP v"_s + APP_VERSION);
+    ui->iconLabel->setPixmap(QPixmap(
+        QApplication::applicationDirPath() + '/' +
+        PNG_LOGO_PATH
+#if QT_VERSION_MINOR < 9
+            .toString()
+#endif
+    ));
+    ui->qtVersionLabel->setText(u"Qt "_s + QT_VERSION_STR);
+    ui->ffmpegVersionLabel->setText(u"FFmpeg "_s + FFMPEG_VERSION);
 
 #ifdef PROJECTM
-    ui->projectMVersionLabel->setText(
-        u"ProjectM %1"_s.arg(PROJECTM_VERSION_STRING)
-    );
+    ui->projectMVersionLabel->setText(u"ProjectM "_s + PROJECTM_VERSION_STRING);
 #endif
 }
 

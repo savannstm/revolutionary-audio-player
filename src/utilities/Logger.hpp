@@ -26,7 +26,7 @@ class Logger {
     static void init() {
         if (!logFile.isOpen()) {
             logFile.setFileName(
-                QApplication::applicationDirPath() + "/rap.log"
+                QApplication::applicationDirPath() + u"/rap.log"_qssv
             );
 
             if (!logFile.open(
@@ -75,7 +75,7 @@ class Logger {
         }
 
         const QString timestamp =
-            QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+            QDateTime::currentDateTime().toString(u"yyyy-MM-dd HH:mm:ss"_s);
         stream << loggingLevelString << ' ' << timestamp << ' ' << file << ' '
                << line << ' ' << func << ' ' << '"' << msg << '"' << '\n';
         stream.flush();

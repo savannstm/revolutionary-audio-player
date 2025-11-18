@@ -68,5 +68,4 @@ namespace FFmpeg {
     inline auto createTXContext() -> TXContext {
         return {};
     }
-
 }  // namespace FFmpeg

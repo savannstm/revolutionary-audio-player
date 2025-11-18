@@ -19,7 +19,7 @@
 #include "Settings.hpp"
 #include "TrackTree.hpp"
 #include "TrackTreeModel.hpp"
-#include "ui_mainwindow.h"
+#include "ui_MainWindow.h"
 
 #ifdef PROJECTM
 #include "VisualizerDialog.hpp"
@@ -47,8 +47,6 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
-// TODO: Fix FFT for visualizers, when there's >2 channels
-
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
@@ -60,9 +58,6 @@ class MainWindow : public QMainWindow {
     void closeEvent(QCloseEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
-
-   signals:
-    void retranslated();
 
    private:
     inline auto saveSettings() -> result<bool, QString>;
@@ -130,73 +125,75 @@ class MainWindow : public QMainWindow {
     static inline auto constructAudioFileFilter() -> QString;
 
     auto setupUi() -> Ui::MainWindow* {
-        auto* ui_ = new Ui::MainWindow();
+        auto* const ui_ = new Ui::MainWindow();
         ui_->setupUi(this);
         return ui_;
     };
 
     // UI - Widgets
-    Ui::MainWindow* ui = setupUi();
+    Ui::MainWindow* const ui = setupUi();
 
     // Tray Icon
-    QSystemTrayIcon* trayIcon = new QSystemTrayIcon(this);
-    OptionMenu* trayIconMenu = new OptionMenu(this);
-    QLabel* progressLabelTray = new QLabel(trayIconMenu);
-    QLabel* volumeLabelTray = new QLabel(trayIconMenu);
-    CustomSlider* volumeSliderTray =
+    QSystemTrayIcon* const trayIcon = new QSystemTrayIcon(this);
+    OptionMenu* const trayIconMenu = new OptionMenu(this);
+    QLabel* const progressLabelTray = new QLabel(trayIconMenu);
+    QLabel* const volumeLabelTray = new QLabel(trayIconMenu);
+    CustomSlider* const volumeSliderTray =
         new CustomSlider(Qt::Horizontal, trayIconMenu);
-    CustomSlider* progressSliderTray =
+    CustomSlider* const progressSliderTray =
         new CustomSlider(Qt::Horizontal, trayIconMenu);
 
     // Labels
-    QLabel* progressLabel = ui->progressLabel;
-    QLabel* volumeLabel = ui->volumeLabel;
-    QLabel* trackLabel = ui->trackLabel;
+    QLabel* const progressLabel = ui->progressLabel;
+    QLabel* const volumeLabel = ui->volumeLabel;
+    QLabel* const trackLabel = ui->trackLabel;
 
     // Playlist
-    PlaylistView* playlistView = ui->playlistView;
-    PlaylistTabBar* playlistTabBar = playlistView->tabBar();
+    PlaylistView* const playlistView = ui->playlistView;
+    PlaylistTabBar* const playlistTabBar = playlistView->tabBar();
     TrackTree* trackTree = nullptr;
     MusicHeader* trackTreeHeader = nullptr;
     TrackTreeModel* trackTreeModel = nullptr;
 
     // UI - Buttons
-    ActionButton* playButton = ui->playButton;
-    ActionButton* stopButton = ui->stopButton;
-    ActionButton* backwardButton = ui->backwardButton;
-    ActionButton* forwardButton = ui->forwardButton;
-    IconTextButton* repeatButton = ui->repeatButton;
-    ActionButton* randomButton = ui->randomButton;
-    QPushButton* equalizerButton = ui->equalizerButton;
+    ActionButton* const playButton = ui->playButton;
+    ActionButton* const stopButton = ui->stopButton;
+    ActionButton* const backwardButton = ui->backwardButton;
+    ActionButton* const forwardButton = ui->forwardButton;
+    IconTextButton* const repeatButton = ui->repeatButton;
+    ActionButton* const randomButton = ui->randomButton;
+    QPushButton* const equalizerButton = ui->equalizerButton;
 
     // UI - Sliders
-    CustomSlider* volumeSlider = ui->volumeSlider;
-    CustomSlider* progressSlider = ui->progressSlider;
+    CustomSlider* const volumeSlider = ui->volumeSlider;
+    CustomSlider* const progressSlider = ui->progressSlider;
 
     // UI - Icons
-    QIcon pauseIcon = QIcon::fromTheme(u"media-playback-pause"_s);
-    QIcon startIcon = QIcon::fromTheme(u"media-playback-start"_s);
+    const QIcon pauseIcon = QIcon::fromTheme(u"media-playback-pause"_s);
+    const QIcon startIcon = QIcon::fromTheme(u"media-playback-start"_s);
 
     // Actions & Menus
-    QAction* actionOpenFile = ui->actionOpenFile;
-    QAction* actionOpenFolder = ui->actionOpenFolder;
-    QAction* actionOpenPlaylist = ui->actionOpenPlaylist;
-    QAction* actionSettings = ui->actionSettings;
-    QAction* actionVisualizer = ui->actionVisualizer;
+    const QAction* const actionOpenFile = ui->actionOpenFile;
+    const QAction* const actionOpenFolder = ui->actionOpenFolder;
+    const QAction* const actionOpenPlaylist = ui->actionOpenPlaylist;
+    const QAction* const actionSettings = ui->actionSettings;
+    const QAction* const actionVisualizer = ui->actionVisualizer;
     QAction* actionExit = ui->actionExit;
 
-    QAction* actionAddFile = ui->actionAddFile;
-    QAction* actionAddFolder = ui->actionAddFolder;
-    QAction* actionAddPlaylist = ui->actionAddPlaylist;
+    const QAction* const actionAddFile = ui->actionAddFile;
+    const QAction* const actionAddFolder = ui->actionAddFolder;
+    const QAction* const actionAddPlaylist = ui->actionAddPlaylist;
 
-    QAction* actionExportXSPFPlaylist = ui->actionExportXSPFPlaylist;
-    QAction* actionExportM3U8Playlist = ui->actionExportM3U8Playlist;
+    const QAction* const actionExportXSPFPlaylist =
+        ui->actionExportXSPFPlaylist;
+    const QAction* const actionExportM3U8Playlist =
+        ui->actionExportM3U8Playlist;
 
-    QAction* actionRussian = ui->actionRussian;
-    QAction* actionEnglish = ui->actionEnglish;
+    const QAction* const actionRussian = ui->actionRussian;
+    const QAction* const actionEnglish = ui->actionEnglish;
 
-    QAction* actionAbout = ui->actionAbout;
-    QAction* actionDocumentation = ui->actionDocumentation;
+    const QAction* const actionAbout = ui->actionAbout;
+    const QAction* const actionDocumentation = ui->actionDocumentation;
 
     QAction* actionForward = ui->actionForward;
     QAction* actionBackward = ui->actionBackward;
@@ -209,8 +206,9 @@ class MainWindow : public QMainWindow {
     shared_ptr<Settings> settings;
 
     // UI State
-    const QString ZERO_DURATION = u"00:00/00:00"_s;
-    QString trackDuration = ZERO_DURATION;
+    const QString ZERO_DURATION = u"00:00"_s;
+    const QString FULL_ZERO_DURATION = u"00:00/00:00"_s;
+    QString trackDuration = FULL_ZERO_DURATION;
     QTranslator* translator = new QTranslator(this);
 
     // Control Logic
@@ -221,28 +219,29 @@ class MainWindow : public QMainWindow {
     i8 playingPlaylist = -1;
     IndexSet playHistory;
 
-    QSplitter* mainArea = ui->mainArea;
-    DockWidget* dockWidget = ui->dockWidget;
-    ScaledLabel* dockCoverLabel = ui->dockCoverLabel;
-    QTreeWidget* dockMetadataTree = ui->dockMetadataTree;
+    QSplitter* const mainArea = ui->mainArea;
+    DockWidget* const dockWidget = ui->dockWidget;
+    ScaledLabel* const dockCoverLabel = ui->dockCoverLabel;
+    QTreeWidget* const dockMetadataTree = ui->dockMetadataTree;
 
     // Threads
-    QThreadPool* threadPool = new QThreadPool();
+    QThreadPool* const threadPool = new QThreadPool();
 
     // Audio
     array<f32, MIN_BUFFER_SIZE / F32_SAMPLE_SIZE> visualizerBuffer;
     array<f32, MIN_BUFFER_SIZE / F32_SAMPLE_SIZE> peakVisualizerBuffer;
 
-    PeakVisualizer* peakVisualizer =
+    PeakVisualizer* const peakVisualizer =
         new PeakVisualizer(peakVisualizerBuffer.data(), this);
 
-    AudioWorker* audioWorker = nullptr;
+    AudioWorker* audioWorker;
 
     // Search
-    CustomInput* searchTrackInput = new CustomInput(this);
+    CustomInput* const searchTrackInput = new CustomInput(this);
     QVector<QModelIndex> searchMatches;
     isize searchMatchesPosition = 0;
-    QShortcut* searchShortcut = new QShortcut(QKeySequence(u"Ctrl+F"_s), this);
+    const QShortcut* const searchShortcut =
+        new QShortcut(QKeySequence(u"Ctrl+F"_s), this);
     QString previousSearchPrompt;
 
     // Miscellaneous
@@ -252,9 +251,9 @@ class MainWindow : public QMainWindow {
     std::random_device seed;
     std::mt19937 rng = std::mt19937(seed());
 
-    QLocalServer* server = new QLocalServer(this);
+    QLocalServer* const server = new QLocalServer(this);
 
-    RepeatRangeMenu* repeatRangeMenu = new RepeatRangeMenu(this);
+    RepeatRangeMenu* const repeatRangeMenu = new RepeatRangeMenu(this);
     EqualizerMenu* equalizerMenu = nullptr;
 
 #ifdef PROJECTM

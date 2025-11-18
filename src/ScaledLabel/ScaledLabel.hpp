@@ -9,7 +9,7 @@ class ScaledLabel : public QLabel {
     QPixmap originalPixmap;
 
    public:
-    ScaledLabel(QWidget* parent = nullptr) : QLabel(parent) {
+    ScaledLabel(QWidget* const parent = nullptr) : QLabel(parent) {
         setMinimumSize(MINIMUM_COVER_SIZE);
         setAlignment(Qt::AlignCenter);
         setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);

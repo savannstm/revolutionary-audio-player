@@ -10,7 +10,9 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <qtversionchecks.h>
 #include <qtypes.h>
+#include <queue>
 #include <ranges>
 #include <set>
 #include <stdexcept>
@@ -61,6 +63,7 @@ using std::map;
 using std::nullopt;
 using std::optional;
 using std::println;
+using std::queue;
 using std::set;
 using std::shared_ptr;
 using std::span;

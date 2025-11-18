@@ -17,7 +17,7 @@
 #include <QMouseEvent>
 #include <QThreadPool>
 
-TrackTree::TrackTree(QWidget* parent) : QTreeView(parent) {
+TrackTree::TrackTree(QWidget* const parent) : QTreeView(parent) {
     setHeader(musicHeader);
     setModel(trackTreeModel);
     setSelectionMode(QAbstractItemView::SingleSelection);
@@ -61,13 +61,13 @@ void TrackTree::reselectCurrentElement(
     }
 }
 
-void TrackTree::mouseDoubleClickEvent(QMouseEvent* event) {
+void TrackTree::mouseDoubleClickEvent(QMouseEvent* const event) {
     const QModelIndex newIndex = indexAt(event->pos());
     if (!newIndex.isValid()) {
         return;
     }
 
-    if (newIndex.column() != TrackProperty::Order) {
+    if (newIndex.column() != u8(TrackProperty::Order)) {
         emit trackSelected(index.row(), newIndex.row());
         index = newIndex;
         setCurrentIndex(newIndex);
@@ -76,7 +76,7 @@ void TrackTree::mouseDoubleClickEvent(QMouseEvent* event) {
     QTreeView::mouseDoubleClickEvent(event);
 }
 
-void TrackTree::mousePressEvent(QMouseEvent* event) {
+void TrackTree::mousePressEvent(QMouseEvent* const event) {
     const QModelIndex index = indexAt(event->pos());
     if (!index.isValid()) {
         draggedRow = UINT16_MAX;
@@ -108,16 +108,16 @@ void TrackTree::startDrag(const Qt::DropActions supportedActions) {
     byteArray.resize(sizeof(u16));
     memcpy(byteArray.data(), &draggedRow, sizeof(u16));
 
-    auto* mimeData = new QMimeData();
+    auto* const mimeData = new QMimeData();
     // CRAZY hack to not override other methods
     mimeData->setData(u"application/x-qabstractitemmodeldatalist"_s, byteArray);
 
-    auto* drag = new QDrag(this);
+    auto* const drag = new QDrag(this);
     drag->setMimeData(mimeData);
     drag->exec(supportedActions, defaultDropAction());
 }
 
-void TrackTree::dropEvent(QDropEvent* event) {
+void TrackTree::dropEvent(QDropEvent* const event) {
     const QModelIndex targetIndex = indexAt(event->position().toPoint());
     if (!targetIndex.isValid()) {
         return;
@@ -134,7 +134,7 @@ void TrackTree::dropEvent(QDropEvent* event) {
         targetRow += 1;
     }
 
-    const QMimeData* mimeData = event->mimeData();
+    const QMimeData* const mimeData = event->mimeData();
     const QByteArray data =
         mimeData->data(u"application/x-qabstractitemmodeldatalist"_s);
 
@@ -162,15 +162,15 @@ void TrackTree::dropEvent(QDropEvent* event) {
     trackTreeModel->removeRow(sourceRow);
 
     for (const u16 row : range(0, trackTreeModel->rowCount())) {
-        auto* item = new QStandardItem();
+        auto* const item = new QStandardItem();
         item->setData(row, Qt::EditRole);
-        trackTreeModel->setItem(row, TrackProperty::Order, item);
+        trackTreeModel->setItem(row, u8(TrackProperty::Order), item);
     }
 
     event->acceptProposedAction();
 }
 
-void TrackTree::focusOutEvent(QFocusEvent* event) {
+void TrackTree::focusOutEvent(QFocusEvent* const event) {
     clearSelection();
     QTreeView::focusOutEvent(event);
 }
@@ -203,11 +203,12 @@ auto TrackTree::rowMetadata(const u16 row) const
 
 void TrackTree::addFile(const HashMap<TrackProperty, QString>& metadata) {
     const u16 row = trackTreeModel->rowCount();
-    const auto index = currentIndex();
+    const QModelIndex index = currentIndex();
 
     for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
-        const auto headerProperty = trackTreeModel->trackProperty(column);
-        auto* item = new MusicItem();
+        const TrackProperty headerProperty =
+            trackTreeModel->trackProperty(column);
+        auto* const item = new MusicItem();
 
         if (headerProperty == TrackProperty::TrackNumber) {
             QString number;
@@ -312,13 +313,13 @@ void TrackTree::fillTable(
         QString totalDuration;
 
         for (const u16 idx : range(0, paths.size())) {
-            const auto& path = paths[idx];
-            const QFileInfo info = QFileInfo(path);
+            const QString& path = paths[idx];
+            const auto info = QFileInfo(path);
             const QString extension = info.suffix().toLower();
 
             if (extension == EXT_CUE) {
                 if (!cueInfos.contains(path)) {
-                    QFile cueFile = QFile(path);
+                    auto cueFile = QFile(path);
 
                     if (!cueFile.open(QFile::ReadOnly | QFile::Text)) {
                         // This is not likely to fail, because we just parsed
@@ -328,7 +329,6 @@ void TrackTree::fillTable(
                     };
 
                     cueInfos.emplace(path, parseCUE(cueFile, info));
-                    cueFile.close();
                 }
 
                 if (cueInfos.contains(path)) {
@@ -401,7 +401,7 @@ void TrackTree::fillTable(
                 }
                 );
 
-                const QStringList paths =
+                const auto paths =
                     QStringList(pathsView.begin(), pathsView.end());
 
                 fillTable(paths);
@@ -506,11 +506,11 @@ void TrackTree::handleHeaderPress(
     const Qt::MouseButton button
 ) {
     if (button == Qt::RightButton) {
-        auto* menu = new OptionMenu(this);
+        auto* const menu = new OptionMenu(this);
 
         for (const auto& [idx, label] :
              views::drop(views::enumerate(trackPropertiesLabels()), 1)) {
-            auto* action = new QAction(label, menu);
+            auto* const action = new QAction(label, menu);
             action->setCheckable(true);
 
             i8 columnIndex = -1;

@@ -10,7 +10,7 @@
 
 auto applyEffectToImage(
     const QImage& src,
-    QGraphicsEffect* effect,
+    QGraphicsEffect* const effect,
     i32 extent = 0
 ) -> QImage {
     if (src.isNull()) {

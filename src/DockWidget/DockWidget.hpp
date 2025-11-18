@@ -15,7 +15,7 @@ class DockWidget : public QSplitter {
     QTreeWidget* dockMetadataTree;
     QLabel* dockCoverLabel;
 
-    void resizeEvent(QResizeEvent* event) override {
+    void resizeEvent(QResizeEvent* const event) override {
         QSplitter::resizeEvent(event);
         emit resized();
     }

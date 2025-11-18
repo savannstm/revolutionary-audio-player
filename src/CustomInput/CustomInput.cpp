@@ -2,7 +2,7 @@
 
 #include <QKeyEvent>
 
-void CustomInput::keyPressEvent(QKeyEvent* event) {
+void CustomInput::keyPressEvent(QKeyEvent* const event) {
     if (event->key() == Qt::Key::Key_Escape ||
         event->key() == Qt::Key::Key_Enter) {
         emit unfocused();

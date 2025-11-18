@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>292</width>
-    <height>486</height>
+    <height>508</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -73,21 +73,21 @@
       <item>
        <widget class="QLabel" name="qtVersionLabel">
         <property name="text">
-         <string/>
+         <string notr="true"/>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QLabel" name="ffmpegVersionLabel">
         <property name="text">
-         <string/>
+         <string notr="true"/>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QLabel" name="projectMVersionLabel">
         <property name="text">
-         <string/>
+         <string notr="true"/>
         </property>
        </widget>
       </item>

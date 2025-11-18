@@ -28,7 +28,7 @@ FFmpegError(const cstr file, const i32 line, const cstr func, const i32 err)
     QString string;
     string.reserve(AV_ERROR_MAX_STRING_SIZE * 4);
 
-    QTextStream stream = QTextStream(&string);
+    auto stream = QTextStream(&string);
 
     stream << file << ' ' << line << ' ' << func << ' ' << buffer.data();
 
@@ -108,8 +108,8 @@ inline auto extractMetadata(const QString& filePath)
     metadata.insert_or_assign(TrackProperty::Year, getTag("date"));
     metadata.insert_or_assign(TrackProperty::Composer, getTag("composer"));
 
-    for (const auto* bpmTag : BPM_TAGS) {
-        const auto tag = getTag(bpmTag);
+    for (const auto* const bpmTag : BPM_TAGS) {
+        const QString tag = getTag(bpmTag);
 
         if (!tag.isEmpty()) {
             metadata.insert_or_assign(TrackProperty::BPM, tag);
@@ -198,7 +198,7 @@ inline auto extractCover(cstr path) -> result<vector<u8>, QString> {
     }
 
     const u8 attachmentStreamIndex = u8(errorCode);
-    const AVStream* attachmentStream =
+    const AVStream* const attachmentStream =
         formatContext->streams[attachmentStreamIndex];
 
     if (attachmentStream->attached_pic.size == 0) {
@@ -223,12 +223,12 @@ constexpr auto sliceValue(const QString& line, const char (&key)[N])
 }
 
 inline auto parseCUE(QFile& cueFile, const QFileInfo& fileInfo) -> CueInfo {
-    QTextStream input = QTextStream(&cueFile);
+    auto input = QTextStream(&cueFile);
 
     bool listingTracks = false;
     u16 offset = 0;
 
-    std::optional<CUETrack> track;
+    optional<CUETrack> track;
     QList<CUETrack> tracks;
 
     HashMap<TrackProperty, QString> metadata;
@@ -295,7 +295,7 @@ inline auto parseCUE(QFile& cueFile, const QFileInfo& fileInfo) -> CueInfo {
                 metadata = std::move(extracted);
                 metadata.insert_or_assign(
                     TrackProperty::Format,
-                    metadata[TrackProperty::Format] + "/CUE"
+                    metadata[TrackProperty::Format] + u"/CUE"_qssv
                 );
             }
         }

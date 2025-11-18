@@ -5,7 +5,7 @@
 #include <QStyle>
 #include <QStyleOptionSlider>
 
-void CustomSlider::mouseMoveEvent(QMouseEvent* event) {
+void CustomSlider::mouseMoveEvent(QMouseEvent* const event) {
     if ((event->buttons() & Qt::LeftButton) != 0) {
         QStyleOptionSlider opt;
         this->initStyleOption(&opt);
@@ -40,7 +40,7 @@ void CustomSlider::mouseMoveEvent(QMouseEvent* event) {
     }
 }
 
-void CustomSlider::mousePressEvent(QMouseEvent* event) {
+void CustomSlider::mousePressEvent(QMouseEvent* const event) {
     if (event->button() == Qt::LeftButton) {
         QStyleOptionSlider opt;
         this->initStyleOption(&opt);

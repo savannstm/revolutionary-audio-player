@@ -4,7 +4,7 @@
 
 #include <QApplication>
 
-void MusicHeader::mousePressEvent(QMouseEvent* event) {
+void MusicHeader::mousePressEvent(QMouseEvent* const event) {
     pressedIndex = i8(logicalIndexAt(event->pos()));
     pressPos = event->pos();
     mousePressed = true;
@@ -13,7 +13,7 @@ void MusicHeader::mousePressEvent(QMouseEvent* event) {
     QHeaderView::mousePressEvent(event);
 }
 
-void MusicHeader::mouseMoveEvent(QMouseEvent* event) {
+void MusicHeader::mouseMoveEvent(QMouseEvent* const event) {
     if (mousePressed) {
         isDragging = true;
     }
@@ -21,7 +21,7 @@ void MusicHeader::mouseMoveEvent(QMouseEvent* event) {
     QHeaderView::mouseMoveEvent(event);
 }
 
-void MusicHeader::mouseReleaseEvent(QMouseEvent* event) {
+void MusicHeader::mouseReleaseEvent(QMouseEvent* const event) {
     if (!isDragging && pressedIndex != -1) {
         const u16 posX = event->pos().x();
         const u16 sectionStart = sectionPosition(pressedIndex);

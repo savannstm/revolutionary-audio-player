@@ -18,6 +18,6 @@ class MetadataWindow : public QDialog {
     );
 
    private:
-    QTreeWidget* treeWidget = new QTreeWidget(this);
-    QVBoxLayout* layout = new QVBoxLayout(this);
+    QTreeWidget* const treeWidget = new QTreeWidget(this);
+    QVBoxLayout* const layout = new QVBoxLayout(this);
 };

@@ -1,7 +1,7 @@
 #include "HelpWindow.hpp"
 
 auto HelpWindow::setupUi() -> Ui::HelpWindow* {
-    auto* ui_ = new Ui::HelpWindow();
+    auto* const ui_ = new Ui::HelpWindow();
     ui_->setupUi(this);
     return ui_;
 }

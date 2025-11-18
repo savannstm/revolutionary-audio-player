@@ -2,8 +2,8 @@
 
 #include <QMouseEvent>
 
-void OptionMenu::mouseReleaseEvent(QMouseEvent* event) {
-    QAction* action = activeAction();
+void OptionMenu::mouseReleaseEvent(QMouseEvent* const event) {
+    QAction* const action = activeAction();
 
     if (action != nullptr) {
         action->trigger();

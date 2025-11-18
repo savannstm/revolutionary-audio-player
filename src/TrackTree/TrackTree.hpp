@@ -13,6 +13,8 @@ struct CUETrack {
     u16 offset;
 };
 
+// TODO: Customizable opacity
+
 class TrackTree : public QTreeView {
     Q_OBJECT
 
@@ -76,8 +78,8 @@ class TrackTree : public QTreeView {
     inline void resetSorting(i32 /* unused */, Qt::SortOrder sortOrder);
 
     QModelIndex index;
-    MusicHeader* musicHeader = new MusicHeader(Qt::Horizontal, this);
-    TrackTreeModel* trackTreeModel = new TrackTreeModel(this);
+    MusicHeader* const musicHeader = new MusicHeader(Qt::Horizontal, this);
+    TrackTreeModel* const trackTreeModel = new TrackTreeModel(this);
 
     vector<u16> order;
 

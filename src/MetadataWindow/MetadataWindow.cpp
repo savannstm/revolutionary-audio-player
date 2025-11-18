@@ -2,19 +2,21 @@
 
 #include "TrackProperties.hpp"
 
+constexpr QSize METADATA_WINDOW_SIZE = QSize(800, 600);
+
 MetadataWindow::MetadataWindow(
     const HashMap<TrackProperty, QString>& metadata,
-    QWidget* parent
+    QWidget* const parent
 ) :
     QDialog(parent) {
-    setWindowTitle(tr("%1: Metadata").arg(metadata[Title]));
+    setWindowTitle(metadata[TrackProperty::Title] + tr(": Metadata"));
 
     treeWidget->setColumnCount(2);
     treeWidget->setHeaderLabels({ tr("Property"), tr("Value") });
 
     for (const auto& [idx, label] :
          views::drop(views::enumerate(trackPropertiesLabels()), 1)) {
-        auto* item = new QTreeWidgetItem(treeWidget);
+        auto* const item = new QTreeWidgetItem(treeWidget);
         item->setText(0, label);
         item->setText(1, metadata[TrackProperty(idx)]);
         treeWidget->addTopLevelItem(item);
@@ -24,5 +26,5 @@ MetadataWindow::MetadataWindow(
     treeWidget->resizeColumnToContents(1);
 
     layout->addWidget(treeWidget);
-    setFixedSize(800, 600);
+    setFixedSize(METADATA_WINDOW_SIZE);
 }

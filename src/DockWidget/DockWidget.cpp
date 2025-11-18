@@ -1,42 +1,48 @@
 #include "DockWidget.hpp"
 
+#include "Enums.hpp"
+
 #include <QMenu>
 
-DockWidget::DockWidget(QWidget* parent) : QSplitter(parent) {
+DockWidget::DockWidget(QWidget* const parent) : QSplitter(parent) {
     connect(
         this,
         &DockWidget::customContextMenuRequested,
         this,
         [=, this] -> void {
-        auto* menu = new QMenu(this);
+        auto* const menu = new QMenu(this);
 
-        const QAction* moveToLeftAction = menu->addAction(tr("Move To Left"));
-        const QAction* moveToRightAction = menu->addAction(tr("Move To Right"));
-        const QAction* moveToTopAction = menu->addAction(tr("Move To Top"));
-        const QAction* moveToBottomAction =
+        const QAction* const moveToLeftAction =
+            menu->addAction(tr("Move To Left"));
+        const QAction* const moveToRightAction =
+            menu->addAction(tr("Move To Right"));
+        const QAction* const moveToTopAction =
+            menu->addAction(tr("Move To Top"));
+        const QAction* const moveToBottomAction =
             menu->addAction(tr("Move To Bottom"));
 
         const bool dockCoverLabelHidden = dockCoverLabel->isHidden();
-        QAction* showCoverAction = menu->addAction(tr("Show Cover"));
+        QAction* const showCoverAction = menu->addAction(tr("Show Cover"));
         showCoverAction->setCheckable(true);
         showCoverAction->setChecked(!dockCoverLabelHidden);
 
         const bool dockMetadataTreeHidden = dockMetadataTree->isHidden();
-        QAction* showMetadataAction = menu->addAction(tr("Show Metadata"));
+        QAction* const showMetadataAction =
+            menu->addAction(tr("Show Metadata"));
         showMetadataAction->setCheckable(true);
         showMetadataAction->setChecked(!dockMetadataTreeHidden);
 
-        const QAction* selectedAction = menu->exec(QCursor::pos());
+        const QAction* const selectedAction = menu->exec(QCursor::pos());
         delete menu;
 
         if (selectedAction == moveToLeftAction) {
-            emit repositioned(Left);
+            emit repositioned(DockWidgetPosition::Left);
         } else if (selectedAction == moveToRightAction) {
-            emit repositioned(Right);
+            emit repositioned(DockWidgetPosition::Right);
         } else if (selectedAction == moveToTopAction) {
-            emit repositioned(Top);
+            emit repositioned(DockWidgetPosition::Top);
         } else if (selectedAction == moveToBottomAction) {
-            emit repositioned(Bottom);
+            emit repositioned(DockWidgetPosition::Bottom);
         } else if (selectedAction == showCoverAction) {
             if (dockCoverLabelHidden) {
                 dockCoverLabel->show();

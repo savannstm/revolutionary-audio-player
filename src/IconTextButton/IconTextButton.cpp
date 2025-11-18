@@ -4,7 +4,7 @@
 #include <QPainter>
 #include <QStyleOptionButton>
 
-void IconTextButton::paintEvent(QPaintEvent* event) {
+void IconTextButton::paintEvent(QPaintEvent* const event) {
     event->ignore();
 
     QPainter painter = QPainter(this);

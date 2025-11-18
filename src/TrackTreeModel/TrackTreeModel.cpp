@@ -4,14 +4,15 @@
 #include "Enums.hpp"
 #include "MusicItem.hpp"
 
-TrackTreeModel::TrackTreeModel(QObject* parent) : QStandardItemModel(parent) {
+TrackTreeModel::TrackTreeModel(QObject* const parent) :
+    QStandardItemModel(parent) {
     tracks.reserve(MINIMUM_TRACK_COUNT);
 }
 
 void TrackTreeModel::setItem(
     const u16 row,
     const u16 col,
-    QStandardItem* item,
+    QStandardItem* const item,
     const bool path
 ) {
     QStandardItemModel::setItem(row, col, item);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui_helpwindow.h"
+#include "ui_HelpWindow.h"
 
 #include <QDialog>
 

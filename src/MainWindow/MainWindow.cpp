@@ -2,6 +2,7 @@
 
 #include "AboutWindow.hpp"
 #include "Aliases.hpp"
+#include "Associations.hpp"
 #include "AudioWorker.hpp"
 #include "Constants.hpp"
 #include "CoverWindow.hpp"
@@ -23,6 +24,7 @@
 #include "SettingsWindow.hpp"
 #include "TrackProperties.hpp"
 #include "TrackTree.hpp"
+#include "VisualizerDialog.hpp"
 
 #include <QFileDialog>
 #include <QJsonDocument>
@@ -31,6 +33,7 @@
 #include <QMessageBox>
 #include <QMimeData>
 #include <QShortcut>
+#include <QStyleFactory>
 #include <QWidgetAction>
 #include <QXmlStreamReader>
 
@@ -171,7 +174,7 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
         progressSlider,
         &CustomSlider::valueChanged,
         this,
-        [&](const u16 value) -> void { MainWindow::updateProgressLabel(value); }
+        [&](const u16 value) -> void { updateProgressLabel(value); }
     );
 
     connect(
@@ -185,7 +188,7 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
         progressSliderTray,
         &CustomSlider::valueChanged,
         this,
-        [&](const u16 value) -> void { MainWindow::updateProgressLabel(value); }
+        [&](const u16 value) -> void { updateProgressLabel(value); }
     );
 
     connect(
@@ -315,7 +318,7 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     );
 
     connect(server, &QLocalServer::newConnection, this, [&] -> void {
-        QLocalSocket* clientConnection = server->nextPendingConnection();
+        QLocalSocket* const clientConnection = server->nextPendingConnection();
 
         connect(
             clientConnection,
@@ -357,14 +360,14 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
         &QWidget::customContextMenuRequested,
         this,
         [&] -> void {
-        auto* menu = new QMenu(this);
+        auto* const menu = new QMenu(this);
 
         const bool visualizerShown = !peakVisualizer->isHidden();
-        auto* visualizerAction = menu->addAction(tr("Visualizer"));
+        QAction* const visualizerAction = menu->addAction(tr("Visualizer"));
         visualizerAction->setCheckable(true);
         visualizerAction->setChecked(visualizerShown);
 
-        auto* selectedAction = menu->exec(QCursor::pos());
+        const QAction* const selectedAction = menu->exec(QCursor::pos());
         delete menu;
 
         if (selectedAction == visualizerAction) {
@@ -424,7 +427,6 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
     randomButton->setAction(actionRandom);
 
     searchTrackInput->hide();
-    searchTrackInput->setPlaceholderText(tr("Track name/property"));
     searchTrackInput->setMinimumWidth(MINIMUM_MATCHES_NUMBER);
     searchTrackInput->setFixedHeight(SEARCH_INPUT_HEIGHT);
 
@@ -516,20 +518,20 @@ void MainWindow::processArgs(const QStringList& args) {
     }
 }
 
-void MainWindow::closeEvent(QCloseEvent* event) {
+void MainWindow::closeEvent(QCloseEvent* const event) {
     hide();
     event->ignore();
 }
 
-void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
+void MainWindow::dragEnterEvent(QDragEnterEvent* const event) {
     if (event->mimeData()->hasUrls()) {
         event->acceptProposedAction();
     }
 }
 
-void MainWindow::dropEvent(QDropEvent* event) {
+void MainWindow::dropEvent(QDropEvent* const event) {
     const QPoint dropPos = event->position().toPoint();
-    auto* tree = trackTree;
+    TrackTree* tree = trackTree;
 
     if (event->mimeData()->hasUrls()) {
         const QList<QUrl> urls = event->mimeData()->urls();
@@ -550,7 +552,7 @@ void MainWindow::dropEvent(QDropEvent* event) {
                 continue;
             }
 
-            const QFileInfo info = QFileInfo(path);
+            const auto info = QFileInfo(path);
 
             if (info.isDir()) {
                 dirPaths.append(path);
@@ -576,7 +578,7 @@ void MainWindow::dropEvent(QDropEvent* event) {
 
         if (outsideTree) {
             for (const QString& dirPath : dirPaths) {
-                const QFileInfo info = QFileInfo(dirPath);
+                const auto info = QFileInfo(dirPath);
                 auto* newTree =
                     playlistView->tree(playlistView->addTab(info.fileName()));
                 newTree->fillTable({ dirPath });
@@ -587,11 +589,13 @@ void MainWindow::dropEvent(QDropEvent* event) {
             }
 
             if (!filePaths.isEmpty()) {
-                const QFileInfo info = QFileInfo(filePaths[0]);
+                const auto info = QFileInfo(filePaths[0]);
 
                 tree = playlistView->tree(
                     playlistView->addTab(info.dir().dirName())
                 );
+
+                tree->fillTable(filePaths);
             }
         } else {
             tree->fillTable(dirPaths);
@@ -823,7 +827,7 @@ void MainWindow::retranslate(const QLocale::Language language) {
         QLocale(language),
         u"rap"_s,
         u"."_s,
-        QApplication::applicationDirPath() + "/translations"
+        QApplication::applicationDirPath() + u"/translations"_qssv
     );
 
     QApplication::installTranslator(translator);
@@ -834,10 +838,12 @@ void MainWindow::retranslate(const QLocale::Language language) {
     const QStringList propertyLabelMap = trackPropertiesLabels();
 
     for (const u8 tab : range(0, tabCount)) {
-        auto* tree = playlistView->tree(tab);
-        auto* model = tree->model();
+        TrackTree* const tree = playlistView->tree(tab);
+        TrackTreeModel* const model = tree->model();
 
-        for (const TrackProperty column : DEFAULT_COLUMN_PROPERTIES) {
+        for (const TrackProperty property : DEFAULT_COLUMN_PROPERTIES) {
+            const u8 column = u8(property);
+
             model->setHeaderData(
                 column,
                 Qt::Horizontal,
@@ -848,7 +854,7 @@ void MainWindow::retranslate(const QLocale::Language language) {
     }
 
     equalizerMenu->retranslate();
-    emit retranslated();
+    searchTrackInput->setPlaceholderText(tr("Track name/property"));
 }
 
 void MainWindow::initializeSettings() {
@@ -1025,9 +1031,10 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
         case Qt::RightButton: {
             const QModelIndex currentIndex = trackTree->currentIndex();
 
-            auto* menu = new QMenu(this);
+            auto* const menu = new QMenu(this);
 
-            const QAction* removeAction = menu->addAction(tr("Remove Track"));
+            const QAction* const removeAction =
+                menu->addAction(tr("Remove Track"));
 
             QModelIndexList selectedRows =
                 trackTree->selectionModel()->selectedRows();
@@ -1037,12 +1044,13 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
                 removeSelectionAction = menu->addAction(tr("Remove Selection"));
             }
 
-            const QAction* clearAction =
+            const QAction* const clearAction =
                 menu->addAction(tr("Clear All Tracks"));
-            const QAction* metadataAction =
+            const QAction* const metadataAction =
                 menu->addAction(tr("Show Track Metadata"));
-            const QAction* coverAction = menu->addAction(tr("Show Cover"));
-            const QAction* setPlaylistBackground =
+            const QAction* const coverAction =
+                menu->addAction(tr("Show Cover"));
+            const QAction* const setPlaylistBackground =
                 menu->addAction(tr("Set Playlist Background"));
 
             const QAction* removePlaylistBackground = nullptr;
@@ -1054,7 +1062,7 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
                     menu->addAction(tr("Remove Playlist Background"));
             }
 
-            const QAction* selectedAction = menu->exec(QCursor::pos());
+            const QAction* const selectedAction = menu->exec(QCursor::pos());
             delete menu;
 
             if (selectedAction == nullptr) {
@@ -1072,7 +1080,7 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
             } else if (selectedAction == clearAction) {
                 trackTreeModel->removeRows(0, trackTreeModel->rowCount());
             } else if (selectedAction == metadataAction) {
-                auto* metadataWindow = new MetadataWindow(
+                auto* const metadataWindow = new MetadataWindow(
                     trackTree->rowMetadata(index.row()),
                     this
                 );
@@ -1082,7 +1090,7 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
                 const HashMap<TrackProperty, QString> metadata =
                     trackTree->rowMetadata(index.row());
 
-                auto* coverWindow = new CoverWindow(
+                auto* const coverWindow = new CoverWindow(
                     metadata[TrackProperty::Path],
                     metadata[TrackProperty::Title]
                 );
@@ -1156,7 +1164,7 @@ void MainWindow::searchTrack() {
         QString value;
 
         bool hasPrefix = false;
-        TrackProperty property = Title;
+        TrackProperty property = TrackProperty::Title;
 
         if (colonPos != -1) {
             prefix = input.sliced(0, colonPos);
@@ -1307,7 +1315,7 @@ void MainWindow::playNext() {
 }
 
 void MainWindow::showSettingsWindow() {
-    auto* settingsWindow = new SettingsWindow(settings, this);
+    auto* const settingsWindow = new SettingsWindow(settings, this);
     settingsWindow->setAttribute(Qt::WA_DeleteOnClose);
     settingsWindow->show();
 
@@ -1320,7 +1328,7 @@ void MainWindow::showSettingsWindow() {
 }
 
 void MainWindow::showHelpWindow() {
-    auto* helpWindow = new HelpWindow(this);
+    auto* const helpWindow = new HelpWindow(this);
     helpWindow->setAttribute(Qt::WA_DeleteOnClose);
     helpWindow->show();
 }
@@ -1384,7 +1392,7 @@ void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
 }
 
 void MainWindow::showAboutWindow() {
-    auto* aboutWindow = new AboutWindow(this);
+    auto* const aboutWindow = new AboutWindow(this);
     aboutWindow->setAttribute(Qt::WA_DeleteOnClose);
     aboutWindow->show();
 }
@@ -1405,15 +1413,12 @@ MainWindow::updateProgressLabel(const u16 second, const QString& duration) {
 }
 
 void MainWindow::updateVolume(const u8 value) {
-    QString formattedVolume;
-    formattedVolume.reserve(4);
-    formattedVolume += QString::number(value);
-    formattedVolume += '%';
+    const QString formattedVolume = QString::number(value) + '%';
 
     volumeLabel->setText(formattedVolume);
     volumeLabelTray->setText(formattedVolume);
 
-    audioWorker->setVolume(f32(value) / 100.0F);
+    audioWorker->setVolume(f32(value) / MAX_VOLUME);
 }
 
 void MainWindow::cancelSearchInput() {
@@ -1422,13 +1427,12 @@ void MainWindow::cancelSearchInput() {
 }
 
 void MainWindow::toggleEqualizerMenu(const bool checked) {
-    if (checked) {
-        equalizerMenu->move(
-            equalizerButton->mapToGlobal(QPoint(0, equalizerButton->height()))
-        );
-    }
-
     equalizerMenu->setHidden(!checked);
+
+    // FIXME: This move doesn't work... on Wayland. Wayland is insane crap
+    equalizerMenu->move(
+        equalizerButton->mapToGlobal(QPoint(0, equalizerButton->height()))
+    );
 }
 
 void MainWindow::toggleRepeat() {
@@ -1480,14 +1484,14 @@ void MainWindow::exit() {
     if (saveResult) {
         QApplication::quit();
     } else {
-        QMessageBox messageBox(this);
+        QMessageBox messageBox = QMessageBox(this);
         messageBox.setWindowTitle(tr("Save Failed!"));
         messageBox.setText(saveResult.error());
         messageBox.setIcon(QMessageBox::Warning);
 
-        QPushButton* tryAgainButton =
+        QPushButton* const tryAgainButton =
             messageBox.addButton(tr("Try Again"), QMessageBox::AcceptRole);
-        QPushButton* cancelButton =
+        QPushButton* const cancelButton =
             messageBox.addButton(tr("Cancel"), QMessageBox::RejectRole);
 
         messageBox.exec();
@@ -1507,15 +1511,20 @@ void MainWindow::onTrayIconActivated(
 }
 
 void MainWindow::setupTrayIcon() {
-    trayIcon->setIcon(
-        QIcon(QApplication::applicationDirPath() + "/icons/rap-logo.png")
-    );
+    trayIcon->setIcon(QIcon(
+        QApplication::applicationDirPath() + '/' +
+        PNG_LOGO_PATH
+#if QT_VERSION_MINOR < 9
+            .toString()
+#endif
+    ));
     trayIcon->show();
 
+#ifdef Q_OS_WINDOWS
     auto* volumeSliderAction = new QWidgetAction(trayIconMenu);
 
-    auto* volumeSliderContainer = new QWidget(trayIconMenu);
-    auto* volumeSliderLayout = new QHBoxLayout(volumeSliderContainer);
+    auto* const volumeSliderContainer = new QWidget(trayIconMenu);
+    auto* const volumeSliderLayout = new QHBoxLayout(volumeSliderContainer);
 
     volumeSliderLayout->addWidget(volumeSliderTray);
     volumeSliderLayout->addWidget(volumeLabelTray);
@@ -1524,24 +1533,28 @@ void MainWindow::setupTrayIcon() {
 
     auto* progressSliderAction = new QWidgetAction(trayIconMenu);
 
-    auto* progressSliderContainer = new QWidget(trayIconMenu);
-    auto* progressSliderLayout = new QHBoxLayout(progressSliderContainer);
+    auto* const progressSliderContainer = new QWidget(trayIconMenu);
+    auto* const progressSliderLayout = new QHBoxLayout(progressSliderContainer);
 
     progressSliderLayout->addWidget(progressSliderTray);
     progressSliderLayout->addWidget(progressLabelTray);
 
     progressSliderAction->setDefaultWidget(progressSliderContainer);
+#endif
 
     trayIconMenu->addActions(
-        { volumeSliderAction,
-          progressSliderAction,
-          actionTogglePlayback,
-          actionStop,
-          actionBackward,
-          actionForward,
-          actionRepeat,
-          actionRandom,
-          actionExit }
+        {
+#ifdef Q_OS_WINDOWS
+            volumeSliderAction,
+            progressSliderAction,
+#endif
+            actionTogglePlayback,
+            actionStop,
+            actionBackward,
+            actionForward,
+            actionRepeat,
+            actionRandom,
+            actionExit }
     );
 
     trayIcon->setContextMenu(trayIconMenu);
@@ -1586,7 +1599,7 @@ auto MainWindow::changePlaylist(const i8 index) -> bool {
 
 void MainWindow::selectTrack(const i32 oldRow, const u16 newRow) {
     if (oldRow != newRow) {
-        auto* tree = playlistView->tree(playingPlaylist);
+        TrackTree* const tree = playlistView->tree(playingPlaylist);
 
         if (tree != nullptr) {
             tree->deselect(oldRow);
@@ -1726,18 +1739,23 @@ void MainWindow::togglePlayback(const QString& path, const u16 startSecond) {
         const ma_device_state state = audioWorker->state();
 
         if (state == ma_device_state_started) {
-            audioWorker->stop();
+            audioWorker->pause();
             playButton->setIcon(startIcon);
             playButton->setToolTip(tr("Play"));
             actionTogglePlayback->setText(tr("Play"));
 
-            if (visualizerWindow != nullptr) {
-                visualizerWindow->visualizer()->clear();
+            if (visualizerDialog != nullptr) {
+                visualizerDialog->clear();
             }
 
             peakVisualizer->stop();
         } else if (state == ma_device_state_stopped) {
-            audioWorker->resume();
+            if (trackTree != nullptr && !trackTree->currentIndex().isValid()) {
+                selectTrack(-1, 0);
+            } else {
+                audioWorker->resume();
+            }
+
             playButton->setIcon(pauseIcon);
             playButton->setToolTip(tr("Pause"));
             actionTogglePlayback->setText(tr("Pause"));
@@ -1745,9 +1763,13 @@ void MainWindow::togglePlayback(const QString& path, const u16 startSecond) {
             if (!peakVisualizer->isHidden()) {
                 peakVisualizer->start();
             }
-        } else if (state == ma_device_state_stopped && trackTree != nullptr &&
+        } else if (state == ma_device_state_uninitialized &&
+                   trackTree != nullptr &&
                    !trackTree->currentIndex().isValid()) {
             selectTrack(-1, 0);
+            if (!peakVisualizer->isHidden()) {
+                peakVisualizer->start();
+            }
         }
     }
 }
@@ -1840,7 +1862,7 @@ void MainWindow::advancePlaylist(const Direction direction) {
 }
 
 void MainWindow::stopPlayback() {
-    auto* tree = playlistView->tree(playingPlaylist);
+    TrackTree* const tree = playlistView->tree(playingPlaylist);
 
     if (tree != nullptr) {
         tree->deselect();
@@ -1852,7 +1874,7 @@ void MainWindow::stopPlayback() {
     trackLabel->clear();
     progressSlider->setRange(0, 0);
     progressSliderTray->setRange(0, 0);
-    updateProgressLabel(0, u"00:00"_s);
+    updateProgressLabel(0, ZERO_DURATION);
     playButton->setIcon(startIcon);
     actionTogglePlayback->setText(tr("Play"));
     setWindowTitle(u"RAP"_s);
@@ -1884,11 +1906,11 @@ void MainWindow::importPlaylist(const bool createNewTab, QString filePath) {
         filePath = fileUrl.toLocalFile();
     }
 
-    const QFileInfo fileInfo = QFileInfo(filePath);
+    const auto fileInfo = QFileInfo(filePath);
     const QString dirPath = fileInfo.absolutePath() + '/';
     const QString extension = fileInfo.suffix().toLower();
 
-    QFile file = QFile(filePath);
+    auto file = QFile(filePath);
     if (!file.open(QFile::ReadOnly | QFile::Text)) {
         QMessageBox::warning(
             this,
@@ -1946,7 +1968,7 @@ void MainWindow::importPlaylist(const bool createNewTab, QString filePath) {
                 return;
             }
         } else if (extension == EXT_M3U || extension == EXT_M3U8) {
-            QTextStream input = QTextStream(&file);
+            auto input = QTextStream(&file);
 
             while (!input.atEnd()) {
                 const QString line = input.readLine().trimmed();
@@ -1981,7 +2003,7 @@ void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
         return;
     }
 
-    const auto* trackTree = playlistView->tree(index);
+    const TrackTree* const trackTree = playlistView->tree(index);
 
     QString outputPath =
         QFileDialog::getExistingDirectory(this, tr("Select Output Directory"));
@@ -2026,7 +2048,7 @@ void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
         const auto pressedButton = QMessageBox::warning(
             this,
             tr("Unable to export playlist"),
-            tr("Error: %1").arg(result.error()),
+            tr("Error: ") + result.error(),
             QMessageBox::Retry
         );
 
@@ -2086,13 +2108,13 @@ auto MainWindow::exportXSPF(
     const QString& outputPath,
     const vector<HashMap<TrackProperty, QString>>& metadataVector
 ) -> result<bool, QString> {
-    QFile file = QFile(outputPath);
+    auto file = QFile(outputPath);
 
     if (!file.open(QFile::WriteOnly | QFile::Text)) {
         return err(file.errorString());
     }
 
-    QTextStream output = QTextStream(&file);
+    auto output = QTextStream(&file);
     output.setEncoding(QStringConverter::Utf8);
 
     output << R"(<?xml version="1.0" encoding="UTF-8"?>)";
@@ -2131,7 +2153,6 @@ auto MainWindow::exportXSPF(
     output << "</playlist>";
     output << '\n';
 
-    file.close();
     return true;
 }
 
@@ -2139,13 +2160,13 @@ auto MainWindow::exportM3U8(
     const QString& outputPath,
     const vector<HashMap<TrackProperty, QString>>& metadataVector
 ) -> result<bool, QString> {
-    QFile outputFile = QFile(outputPath);
+    auto outputFile = QFile(outputPath);
 
     if (!outputFile.open(QFile::WriteOnly | QFile::Text)) {
         return err(outputFile.errorString());
     }
 
-    QTextStream output = QTextStream(&outputFile);
+    auto output = QTextStream(&outputFile);
     output.setEncoding(QStringConverter::Utf8);
 
     output << "#EXTM3U";
@@ -2175,7 +2196,6 @@ auto MainWindow::exportM3U8(
         output << '\n';
     }
 
-    outputFile.close();
     return true;
 }
 
@@ -2251,9 +2271,9 @@ void MainWindow::adjustPlaylistImage(
     const u16 dockWidgetHeight = dockWidget->height();
 
     const QWidget* pageWidget = playlistView->page(currentIndex);
-    auto* leftLabel = pageWidget->findChild<QLabel*>("leftLabel");
-    auto* centerLabel = pageWidget->findChild<QLabel*>("centerLabel");
-    auto* rightLabel = pageWidget->findChild<QLabel*>("rightLabel");
+    auto* leftLabel = pageWidget->findChild<QLabel*>(u"leftLabel"_qsv);
+    auto* centerLabel = pageWidget->findChild<QLabel*>(u"centerLabel"_qsv);
+    auto* rightLabel = pageWidget->findChild<QLabel*>(u"rightLabel"_qsv);
 
     const u16 yPos = playlistView->y();
     const u16 centerLabelHalfWidth = centerLabel->width() / 2;
