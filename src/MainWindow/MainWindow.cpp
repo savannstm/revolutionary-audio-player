@@ -2212,9 +2212,16 @@ void MainWindow::adjustPlaylistTabBar(
     const u8 currentIndex
 ) {
     switch (dockWidgetPosition) {
-        case DockWidgetPosition::Right:
-            playlistTabBar->setScrollAreaWidth(dockWidget->x());
+        case DockWidgetPosition::Right: {
+            const i32 dockWidgetX = dockWidget->x();
+
+            if (dockWidgetX == -1) {
+                playlistTabBar->setScrollAreaWidth(mainArea->width());
+            } else {
+                playlistTabBar->setScrollAreaWidth(dockWidgetX);
+            }
             break;
+        }
         case DockWidgetPosition::Left:
         case DockWidgetPosition::Top:
         case DockWidgetPosition::Bottom:
