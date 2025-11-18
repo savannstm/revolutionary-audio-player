@@ -4,6 +4,7 @@
 #include "Constants.hpp"
 #include "Enums.hpp"
 #include "PlaylistTabBar.hpp"
+#include "Settings.hpp"
 #include "TrackTree.hpp"
 
 #include <QDir>
@@ -18,43 +19,128 @@ class PlaylistView : public QWidget {
    public:
     explicit PlaylistView(QWidget* parent = nullptr);
 
-    [[nodiscard]] auto addTab(
-        const QString& label = QString(),
-        const array<TrackProperty, TRACK_PROPERTY_COUNT>& columnProperties =
-            DEFAULT_COLUMN_PROPERTIES,
-        const array<bool, TRACK_PROPERTY_COUNT>& columnStates =
-            DEFAULT_COLUMN_STATES
-    ) -> u8;
-    [[nodiscard]] auto tabCount() const -> u8;
-    void setCurrentIndex(i8 index);
-    [[nodiscard]] auto currentIndex() const -> i8;
-    void createTabPage(u8 index);
-    [[nodiscard]] auto createPage(
-        const array<TrackProperty, TRACK_PROPERTY_COUNT>& columnProperties =
-            DEFAULT_COLUMN_PROPERTIES,
-        const array<bool, TRACK_PROPERTY_COUNT>& columnStates =
-            DEFAULT_COLUMN_STATES
-    ) -> QWidget*;
+    void setSettings(shared_ptr<Settings> settings_) {
+        settings = std::move(settings_);
+    }
+
     void setBackgroundImage(
         u8 index,
         const QImage& image,
         const QString& path
     ) const;
-    [[nodiscard]] auto backgroundImage(u8 index) const -> QLabel*;
-    [[nodiscard]] auto currentBackgroundImage() const -> QLabel*;
-    [[nodiscard]] auto tree(u8 index) const -> TrackTree*;
-    [[nodiscard]] auto currentTree() const -> TrackTree*;
-    [[nodiscard]] auto tabLabel(u8 index) const -> QString;
-    void setTabLabel(u8 index, const QString& label);
-    [[nodiscard]] auto currentPage() const -> QWidget*;
-    [[nodiscard]] auto page(u8 index) const -> QWidget*;
-    void removeBackgroundImage(u8 index) const;
-    [[nodiscard]] auto backgroundImagePath(u8 index) const -> QString;
-    [[nodiscard]] auto hasBackgroundImage(u8 index) const -> bool;
-    void removePages(TabRemoveMode mode, u8 index);
-    void removePage(u8 index);
 
-    constexpr auto tabBar() -> PlaylistTabBar* { return tabBar_; }
+    void setCurrentIndex(const i8 index) { tabBar_->setCurrentIndex(index); };
+
+    void setTabColor(const u8 index, const QString& color) {
+        tabBar_->setTabColor(index, color);
+    };
+
+    void setTabLabel(const u8 index, const QString& label) {
+        tabBar_->setTabLabel(index, label);
+    };
+
+    [[nodiscard]] constexpr auto tabBar() const -> PlaylistTabBar* {
+        return tabBar_;
+    }
+
+    [[nodiscard]] auto tabCount() const -> u8 { return tabBar_->tabCount(); };
+
+    [[nodiscard]] auto currentIndex() const -> i8 {
+        return tabBar_->currentIndex();
+    };
+
+    [[nodiscard]] auto backgroundImage(const u8 index) const -> QLabel* {
+        return stackedWidget->widget(index)->findChild<QLabel*>(
+            u"centerLabel"_qsv
+        );
+    };
+
+    [[nodiscard]] auto currentBackgroundImage() const -> QLabel* {
+        return stackedWidget->currentWidget()->findChild<QLabel*>(
+            u"centerLabel"_qsv
+        );
+    };
+
+    [[nodiscard]] auto tree(const u8 index) const -> TrackTree* {
+        const QWidget* const widget = stackedWidget->widget(index);
+
+        if (widget == nullptr) {
+            return nullptr;
+        }
+
+        return widget->findChild<TrackTree*>(u"tree"_qsv);
+    };
+
+    [[nodiscard]] auto currentTree() const -> TrackTree* {
+        return stackedWidget->currentWidget()->findChild<TrackTree*>(
+            u"tree"_qsv
+        );
+    };
+
+    [[nodiscard]] auto tabLabel(const u8 index) const -> QString {
+        return tabBar_->tabLabel(index);
+    };
+
+    [[nodiscard]] auto tabColor(const u8 index) const -> QString {
+        return tabBar_->tabColor(index);
+    };
+
+    [[nodiscard]] auto currentPage() const -> QWidget* {
+        return stackedWidget->currentWidget();
+    };
+
+    [[nodiscard]] auto page(const u8 index) const -> QWidget* {
+        return stackedWidget->widget(index);
+    };
+
+    [[nodiscard]] auto backgroundImagePath(const u8 index) const -> QString {
+        const QLabel* const centerLabel = backgroundImage(index);
+        return centerLabel->property("path").toString();
+    };
+
+    [[nodiscard]] auto createPage(
+        optional<array<TrackProperty, TRACK_PROPERTY_COUNT>> defaultColumns =
+            nullopt
+    ) -> QWidget*;
+
+    [[nodiscard]] auto addTab(
+        const QString& label = QString(),
+        const array<TrackProperty, TRACK_PROPERTY_COUNT>& defaultColumns =
+            DEFAULT_COLUMN_PROPERTIES
+    ) -> u8 {
+        const u8 index =
+            u8(stackedWidget->addWidget(createPage(defaultColumns)));
+        tabBar_->addTab(label);
+        return index;
+    };
+
+    void removeBackgroundImage(u8 index) const;
+    void removePages(TabRemoveMode mode, u8 index);
+
+    void createTabPage(const u8 index) {
+        if (stackedWidget->widget(index) != nullptr) {
+            return;
+        }
+
+        stackedWidget->insertWidget(index, createPage());
+    };
+
+    [[nodiscard]] auto hasBackgroundImage(const u8 index) const -> bool {
+        const QWidget* const widget = stackedWidget->widget(index);
+
+        if (widget == nullptr) {
+            return false;
+        }
+
+        const QLabel* const centerLabel = backgroundImage(index);
+        return centerLabel->property("path").isValid();
+    };
+
+    void removePage(const u8 index) {
+        QWidget* const widget = stackedWidget->widget(index);
+        stackedWidget->removeWidget(widget);
+        delete widget;
+    };
 
    signals:
     void renameTabRequested(u8 index);
@@ -63,9 +149,13 @@ class PlaylistView : public QWidget {
     void tabsRemoved(TabRemoveMode mode, u8 startIndex, u8 count);
 
    private:
-    void changePage(i8 index);
+    void changePage(const i8 index) {
+        stackedWidget->setCurrentIndex(index);
+        emit indexChanged(index);
+    };
 
-    PlaylistTabBar* tabBar_ = new PlaylistTabBar(this);
-    QStackedWidget* stackedWidget = new QStackedWidget(this);
-    QVBoxLayout* layout = new QVBoxLayout(this);
+    shared_ptr<Settings> settings;
+    PlaylistTabBar* const tabBar_ = new PlaylistTabBar(this);
+    QStackedWidget* const stackedWidget = new QStackedWidget(this);
+    QVBoxLayout* const layout = new QVBoxLayout(this);
 };

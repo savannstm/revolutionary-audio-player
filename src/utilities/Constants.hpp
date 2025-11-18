@@ -142,34 +142,11 @@ constexpr u16 PROPERTY_ROLE = Qt::UserRole + 1;
 constexpr u16 CUE_OFFSET_ROLE = Qt::UserRole + 2;
 constexpr u16 CUE_FILE_PATH_ROLE = Qt::UserRole + 3;
 
-consteval auto constructStates() -> array<bool, TRACK_PROPERTY_COUNT> {
-    array<bool, TRACK_PROPERTY_COUNT> properties;
-
-    for (const u8 property : range(0, TRACK_PROPERTY_COUNT)) {
-        properties[property] = property > 3;
-    }
-
-    return properties;
-}
-
-consteval auto constructProperties()
-    -> array<TrackProperty, TRACK_PROPERTY_COUNT> {
-    array<TrackProperty, TRACK_PROPERTY_COUNT> properties;
-
-    for (const u8 property : range(0, TRACK_PROPERTY_COUNT)) {
-        properties[property] = TrackProperty(property);
-    }
-
-    return properties;
-}
-
-// Default visible columns in track tree (true = visible)
-constexpr array<bool, TRACK_PROPERTY_COUNT> DEFAULT_COLUMN_STATES =
-    constructStates();
-
 // Default property ordering for track tree columns
-constexpr array<TrackProperty, TRACK_PROPERTY_COUNT> DEFAULT_COLUMN_PROPERTIES =
-    constructProperties();
+constexpr array<TrackProperty, TRACK_PROPERTY_COUNT>
+    DEFAULT_COLUMN_PROPERTIES = { TrackProperty::Title,
+                                  TrackProperty::Artist,
+                                  TrackProperty::TrackNumber };
 
 // Allowed file extensions for tracks
 

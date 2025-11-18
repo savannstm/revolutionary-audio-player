@@ -26,7 +26,7 @@ class CustomDelegate : public QStyledItemDelegate {
     }
 };
 
-PlaylistView::PlaylistView(QWidget* parent) : QWidget(parent) {
+PlaylistView::PlaylistView(QWidget* const parent) : QWidget(parent) {
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(tabBar_, 0, Qt::AlignLeft);
     layout->addWidget(stackedWidget);
@@ -83,90 +83,98 @@ void PlaylistView::removePages(const TabRemoveMode mode, const u8 startIndex) {
     emit tabsRemoved(mode, startIndex, count);
 }
 
-auto PlaylistView::createPage(
-    const array<TrackProperty, TRACK_PROPERTY_COUNT>& columnProperties,
-    const array<bool, TRACK_PROPERTY_COUNT>& columnStates
-) -> QWidget* {
-    auto* page = new QWidget(this);
-    auto* pageLayout = new QVBoxLayout(page);
-    pageLayout->setContentsMargins(0, 0, 0, 0);
+auto compactAndFill(array<TrackProperty, TRACK_PROPERTY_COUNT>& arr) -> u8 {
+    array<TrackProperty, TRACK_PROPERTY_COUNT> result;
+    u8 writeIndex = 0;
+    std::unordered_set<u8> seen;
 
-    auto* pageTree = new TrackTree(page);
-    pageTree->setObjectName("tree");
+    for (const TrackProperty property : arr) {
+        const u8 value = u8(property);
 
-    auto* centerBackgroundLabel = new QLabel(page);
-    centerBackgroundLabel->setObjectName("centerLabel");
-
-    auto* leftBackgroundLabel = new QLabel(page);
-    leftBackgroundLabel->setObjectName("leftLabel");
-
-    auto* rightBackgroundLabel = new QLabel(page);
-    rightBackgroundLabel->setObjectName("rightLabel");
-
-    QColor bgColor = palette().color(QPalette::Window);
-    bgColor.setAlphaF(HALF_TRANSPARENT);
-    pageTree->setStyleSheet(
-        u"TrackTree, MusicHeader { background-color: rgba(%1, %2, %3, %4); }"_s
-            .arg(bgColor.red())
-            .arg(bgColor.green())
-            .arg(bgColor.blue())
-            .arg(QString::number(bgColor.alphaF(), 'f', 2))
-    );
-
-    pageLayout->addWidget(pageTree);
-    auto* pageTreeModel = pageTree->model();
-    pageTreeModel->setColumnCount(TRACK_PROPERTY_COUNT);
-
-    if (columnProperties.empty()) {
-        pageTreeModel->setHorizontalHeaderLabels(trackPropertiesLabels());
-    } else {
-        const QStringList propertyLabelMap = trackPropertiesLabels();
-
-        for (const u8 idx : range(0, TRACK_PROPERTY_COUNT)) {
-            pageTreeModel->setHeaderData(
-                idx,
-                Qt::Horizontal,
-                propertyLabelMap[columnProperties[idx]]
-            );
+        if (value != 0) {
+            result[writeIndex++] = property;
+            seen.insert(value);
         }
     }
 
+    u8 candidate = 1;
+    for (u8 i = writeIndex; i < TRACK_PROPERTY_COUNT; i++) {
+        while (seen.contains(candidate)) {
+            candidate++;
+        }
+
+        result[i] = TrackProperty(candidate++);
+    }
+
+    arr = result;
+    return seen.size();
+}
+
+auto PlaylistView::createPage(
+    optional<array<TrackProperty, TRACK_PROPERTY_COUNT>> defaultColumns
+) -> QWidget* {
+    auto* const page = new QWidget(this);
+    auto* const pageLayout = new QVBoxLayout(page);
+    pageLayout->setContentsMargins(0, 0, 0, 0);
+
+    auto* const pageTree = new TrackTree(page);
+    pageTree->setObjectName(u"tree"_qsv);
+
+    auto* const centerBackgroundLabel = new QLabel(page);
+    centerBackgroundLabel->setObjectName(u"centerLabel"_qsv);
+
+    auto* const leftBackgroundLabel = new QLabel(page);
+    leftBackgroundLabel->setObjectName(u"leftLabel"_qsv);
+
+    auto* const rightBackgroundLabel = new QLabel(page);
+    rightBackgroundLabel->setObjectName(u"rightLabel"_qsv);
+
+    pageLayout->addWidget(pageTree);
+
+    TrackTreeModel* const pageTreeModel = pageTree->model();
+    const QStringList propertyLabels = trackPropertiesLabels();
+
+    pageTreeModel->setColumnCount(TRACK_PROPERTY_COUNT);
     pageTreeModel->setHeaderData(
         0,
         Qt::Horizontal,
         QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaybackStart),
         Qt::DecorationRole
     );
+    pageTreeModel->setHeaderData(0, Qt::Horizontal, propertyLabels[0]);
+    pageTreeModel->setHeaderData(
+        0,
+        Qt::Horizontal,
+        u8(TrackProperty::Play),
+        PROPERTY_ROLE
+    );
 
-    array<bool, TRACK_PROPERTY_COUNT> states =
-        columnStates.empty() ? array<bool, TRACK_PROPERTY_COUNT>()
-                             : columnStates;
-
-    if (columnStates.empty()) {
-        ranges::fill(states, true);
-        ranges::fill_n(states.begin(), 4, true);
+    if (!defaultColumns) {
+        defaultColumns = settings->playlist.defaultColumns;
     }
 
-    for (const auto [idx, state] : views::enumerate(states)) {
-        if (state) {
-            pageTree->hideColumn(i32(idx));
+    const u8 shownColumns = compactAndFill(defaultColumns.value()) + 1;
+
+    for (const u8 idx : range(1, TRACK_PROPERTY_COUNT)) {
+        pageTreeModel->setHeaderData(
+            idx,
+            Qt::Horizontal,
+            propertyLabels[u8(defaultColumns.value()[idx - 1])]
+        );
+
+        pageTreeModel->setHeaderData(
+            idx,
+            Qt::Horizontal,
+            u8(defaultColumns.value()[idx - 1]),
+            PROPERTY_ROLE
+        );
+
+        if (idx >= shownColumns) {
+            pageTree->hideColumn(idx);
         }
     }
 
-    const array<TrackProperty, TRACK_PROPERTY_COUNT> properties =
-        columnProperties.empty() ? array<TrackProperty, TRACK_PROPERTY_COUNT>()
-                                 : columnProperties;
-
-    for (const auto [idx, property] : views::enumerate(properties)) {
-        pageTreeModel->setHeaderData(
-            i32(idx),
-            Qt::Horizontal,
-            i32(columnProperties.empty() ? idx : property),
-            PROPERTY_ROLE
-        );
-    }
-
-    auto* header = pageTree->header();
+    MusicHeader* const header = pageTree->header();
     header->setDefaultAlignment(Qt::AlignLeft);
     header->setSectionsClickable(true);
     header->setSectionsMovable(true);
@@ -207,16 +215,6 @@ auto PlaylistView::createPage(
     return page;
 }
 
-auto PlaylistView::backgroundImagePath(const u8 index) const -> QString {
-    const QLabel* centerLabel = backgroundImage(index);
-    return centerLabel->property("path").toString();
-}
-
-auto PlaylistView::hasBackgroundImage(const u8 index) const -> bool {
-    const QLabel* centerLabel = backgroundImage(index);
-    return centerLabel->property("path").isValid();
-}
-
 void PlaylistView::removeBackgroundImage(const u8 index) const {
     QLabel* centerLabel = backgroundImage(index);
 
@@ -224,7 +222,9 @@ void PlaylistView::removeBackgroundImage(const u8 index) const {
         return;
     }
 
-    QWidget* pageWidget = page(index);
+    tree(index)->setStyleSheet(u"TrackTree, MusicHeader { }"_s);
+
+    QWidget* const pageWidget = page(index);
     auto* leftLabel = pageWidget->findChild<QLabel*>(u"leftLabel"_qsv);
     auto* rightLabel = pageWidget->findChild<QLabel*>(u"rightLabel"_qsv);
 
@@ -250,8 +250,19 @@ void PlaylistView::setBackgroundImage(
         return;
     }
 
-    QLabel* centerLabel = backgroundImage(index);
-    QWidget* pageWidget = page(index);
+    QLabel* const centerLabel = backgroundImage(index);
+    const QWidget* const pageWidget = page(index);
+
+    QColor bgColor = palette().color(QPalette::Window);
+    bgColor.setAlphaF(HALF_TRANSPARENT);
+
+    tree(index)->setStyleSheet(
+        u"TrackTree, MusicHeader { background-color: rgba(%1, %2, %3, %4); }"_s
+            .arg(bgColor.red())
+            .arg(bgColor.green())
+            .arg(bgColor.blue())
+            .arg(QString::number(bgColor.alphaF(), 'f', 2))
+    );
 
     const u16 layoutWidth = screen()->size().width();
 
@@ -272,12 +283,12 @@ void PlaylistView::setBackgroundImage(
     centerLabel->lower();
     centerLabel->show();
 
-    auto* leftLabel = pageWidget->findChild<QLabel*>(u"leftLabel"_qsv);
-    auto* rightLabel = pageWidget->findChild<QLabel*>(u"rightLabel"_qsv);
+    auto* const leftLabel = pageWidget->findChild<QLabel*>(u"leftLabel"_qsv);
+    auto* const rightLabel = pageWidget->findChild<QLabel*>(u"rightLabel"_qsv);
 
     const u16 sideWidth = (layoutWidth - centerPixmap.width()) / 2;
 
-    auto* blurEffect = new QGraphicsBlurEffect();
+    auto* const blurEffect = new QGraphicsBlurEffect();
     blurEffect->setBlurHints(QGraphicsBlurEffect::QualityHint);
     blurEffect->setBlurRadius(BLUR_SIGMA);
 
@@ -314,87 +325,4 @@ void PlaylistView::setBackgroundImage(
     rightLabel->show();
 
     centerLabel->setProperty("path", path);
-}
-
-auto PlaylistView::currentTree() const -> TrackTree* {
-    return stackedWidget->currentWidget()->findChild<TrackTree*>(u"tree"_qsv);
-}
-
-auto PlaylistView::tree(const u8 index) const -> TrackTree* {
-    const auto* widget = stackedWidget->widget(index);
-
-    if (widget == nullptr) {
-        return nullptr;
-    }
-
-    return widget->findChild<TrackTree*>(u"tree"_qsv);
-}
-
-auto PlaylistView::currentBackgroundImage() const -> QLabel* {
-    return stackedWidget->currentWidget()->findChild<QLabel*>(
-        u"centerLabel"_qsv
-    );
-}
-
-auto PlaylistView::backgroundImage(const u8 index) const -> QLabel* {
-    return stackedWidget->widget(index)->findChild<QLabel*>(u"centerLabel"_qsv);
-}
-
-auto PlaylistView::currentPage() const -> QWidget* {
-    return stackedWidget->currentWidget();
-}
-
-auto PlaylistView::page(const u8 index) const -> QWidget* {
-    return stackedWidget->widget(index);
-}
-
-void PlaylistView::createTabPage(const u8 index) {
-    if (stackedWidget->widget(index) != nullptr) {
-        return;
-    }
-
-    stackedWidget->insertWidget(index, createPage());
-}
-
-auto PlaylistView::addTab(
-    const QString& label,
-    const array<TrackProperty, TRACK_PROPERTY_COUNT>& columnProperties,
-    const array<bool, TRACK_PROPERTY_COUNT>& columnStates
-) -> u8 {
-    const u8 index = u8(
-        stackedWidget->addWidget(createPage(columnProperties, columnStates))
-    );
-    tabBar_->addTab(label);
-    return index;
-}
-
-void PlaylistView::removePage(const u8 index) {
-    QWidget* widget = stackedWidget->widget(index);
-    stackedWidget->removeWidget(widget);
-    delete widget;
-}
-
-auto PlaylistView::tabCount() const -> u8 {
-    return tabBar_->tabCount();
-}
-
-void PlaylistView::setCurrentIndex(const i8 index) {
-    tabBar_->setCurrentIndex(index);
-}
-
-auto PlaylistView::currentIndex() const -> i8 {
-    return tabBar_->currentIndex();
-}
-
-void PlaylistView::changePage(const i8 index) {
-    stackedWidget->setCurrentIndex(index);
-    emit indexChanged(index);
-}
-
-auto PlaylistView::tabLabel(const u8 index) const -> QString {
-    return tabBar_->tabLabel(index);
-}
-
-void PlaylistView::setTabLabel(const u8 index, const QString& label) {
-    tabBar_->setTabLabel(index, label);
 }
