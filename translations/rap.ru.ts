@@ -32,6 +32,11 @@
         <translation>Стянуть</translation>
     </message>
     <message>
+        <location filename="../src/CoverWindow/CoverWindow.cpp" line="17"/>
+        <source>: Cover</source>
+        <translation>: Обложка</translation>
+    </message>
+    <message>
         <location filename="../src/CoverWindow/CoverWindow.cpp" line="67"/>
         <source>Unset Always On Top</source>
         <translation>Убрать &quot;всегда наверху&quot;</translation>
@@ -42,35 +47,34 @@
         <translation>Включить &quot;всегда наверху&quot;</translation>
     </message>
     <message>
-        <location filename="../src/CoverWindow/CoverWindow.cpp" line="17"/>
         <source>%1: Cover</source>
-        <translation>%1: Обложка</translation>
+        <translation type="vanished">%1: Обложка</translation>
     </message>
 </context>
 <context>
     <name>DockWidget</name>
     <message>
-        <location filename="../src/DockWidget/DockWidget.cpp" line="13"/>
+        <location filename="../src/DockWidget/DockWidget.cpp" line="16"/>
         <source>Move To Left</source>
         <translation>Сдвинуть влево</translation>
     </message>
     <message>
-        <location filename="../src/DockWidget/DockWidget.cpp" line="14"/>
+        <location filename="../src/DockWidget/DockWidget.cpp" line="18"/>
         <source>Move To Right</source>
         <translation>Сдвинуть вправо</translation>
     </message>
     <message>
-        <location filename="../src/DockWidget/DockWidget.cpp" line="15"/>
+        <location filename="../src/DockWidget/DockWidget.cpp" line="20"/>
         <source>Move To Top</source>
         <translation>Сдвинуть вверх</translation>
     </message>
     <message>
-        <location filename="../src/DockWidget/DockWidget.cpp" line="17"/>
+        <location filename="../src/DockWidget/DockWidget.cpp" line="22"/>
         <source>Move To Bottom</source>
         <translation>Сдвинуть вниз</translation>
     </message>
     <message>
-        <location filename="../src/DockWidget/DockWidget.cpp" line="20"/>
+        <location filename="../src/DockWidget/DockWidget.cpp" line="25"/>
         <source>Show Cover</source>
         <translation variants="yes">
             <lengthvariant>Показать обложку</lengthvariant>
@@ -78,7 +82,7 @@
         </translation>
     </message>
     <message>
-        <location filename="../src/DockWidget/DockWidget.cpp" line="25"/>
+        <location filename="../src/DockWidget/DockWidget.cpp" line="31"/>
         <source>Show Metadata</source>
         <translation>Показывать метаданные</translation>
     </message>
@@ -86,24 +90,28 @@
 <context>
     <name>EqualizerMenu</name>
     <message>
-        <location filename="../src/EqualizerMenu/EqualizerMenu.cpp" line="145"/>
-        <location filename="../src/EqualizerMenu/EqualizerMenu.hpp" line="61"/>
         <source>%1 Hz</source>
-        <translation>%1 Гц</translation>
+        <translation type="vanished">%1 Гц</translation>
     </message>
     <message>
-        <location filename="../src/EqualizerMenu/EqualizerMenu.cpp" line="380"/>
+        <location filename="../src/EqualizerMenu/EqualizerMenu.cpp" line="148"/>
+        <location filename="../src/EqualizerMenu/EqualizerMenu.hpp" line="61"/>
+        <source> Hz</source>
+        <translation> Гц</translation>
+    </message>
+    <message>
+        <location filename="../src/EqualizerMenu/EqualizerMenu.cpp" line="386"/>
         <location filename="../src/EqualizerMenu/EqualizerMenu.hpp" line="48"/>
         <source>Enabled</source>
         <translation>Включено</translation>
     </message>
     <message>
-        <location filename="../src/EqualizerMenu/EqualizerMenu.cpp" line="391"/>
+        <location filename="../src/EqualizerMenu/EqualizerMenu.cpp" line="398"/>
         <source>New preset</source>
         <translation>Новый пресет</translation>
     </message>
     <message>
-        <location filename="../src/EqualizerMenu/EqualizerMenu.cpp" line="130"/>
+        <location filename="../src/EqualizerMenu/EqualizerMenu.cpp" line="133"/>
         <location filename="../src/EqualizerMenu/EqualizerMenu.hpp" line="60"/>
         <source>dB</source>
         <translation>дБ</translation>
@@ -264,35 +272,17 @@
         <translation>Ручки</translation>
     </message>
     <message>
-        <location filename="../src/EqualizerMenu/EqualizerMenu.ui" line="281"/>
-        <source>3</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/EqualizerMenu/EqualizerMenu.ui" line="286"/>
-        <source>5</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/EqualizerMenu/EqualizerMenu.ui" line="291"/>
-        <source>10</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/EqualizerMenu/EqualizerMenu.ui" line="296"/>
-        <source>18</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../src/EqualizerMenu/EqualizerMenu.ui" line="301"/>
-        <source>30</source>
-        <translation></translation>
-    </message>
-    <message>
         <location filename="../src/EqualizerMenu/EqualizerMenu.ui" line="408"/>
-        <location filename="../src/EqualizerMenu/EqualizerMenu.cpp" line="380"/>
+        <location filename="../src/EqualizerMenu/EqualizerMenu.cpp" line="386"/>
         <source>Disabled</source>
         <translation>Выключено</translation>
+    </message>
+</context>
+<context>
+    <name>GLWindow</name>
+    <message>
+        <source>Failed to open preset</source>
+        <translation type="vanished">Не удалось открыть пресет</translation>
     </message>
 </context>
 <context>
@@ -305,11 +295,6 @@
 </context>
 <context>
     <name>MainWindow</name>
-    <message>
-        <location filename="../src/MainWindow/MainWindow.ui" line="26"/>
-        <source>RAP</source>
-        <translation></translation>
-    </message>
     <message>
         <location filename="../src/MainWindow/MainWindow.ui" line="114"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Play&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
@@ -431,6 +416,11 @@
         <translation>Издатель</translation>
     </message>
     <message>
+        <location filename="../src/MainWindow/MainWindow.ui" line="802"/>
+        <source>Русский</source>
+        <translation></translation>
+    </message>
+    <message>
         <location filename="../src/MainWindow/MainWindow.ui" line="820"/>
         <source>Add Playlist</source>
         <translation>Добавить плейлист</translation>
@@ -452,7 +442,7 @@
     </message>
     <message>
         <location filename="../src/MainWindow/MainWindow.ui" line="845"/>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="359"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="369"/>
         <source>Visualizer</source>
         <translation>Визуализатор</translation>
     </message>
@@ -503,6 +493,11 @@
         <translation>Язык</translation>
     </message>
     <message>
+        <location filename="../src/MainWindow/MainWindow.ui" line="26"/>
+        <source>RAP</source>
+        <translation></translation>
+    </message>
+    <message>
         <location filename="../src/MainWindow/MainWindow.ui" line="718"/>
         <source>Open File</source>
         <translation>Открыть файл</translation>
@@ -534,7 +529,7 @@
     </message>
     <message>
         <location filename="../src/MainWindow/MainWindow.ui" line="757"/>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1324"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1420"/>
         <source>Repeat</source>
         <translation>Повторение</translation>
     </message>
@@ -544,23 +539,18 @@
         <translation>Документация по использованию</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.ui" line="802"/>
-        <source>Русский</source>
-        <translation></translation>
-    </message>
-    <message>
         <location filename="../src/MainWindow/MainWindow.ui" line="812"/>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1598"/>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1599"/>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1724"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1699"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1700"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1834"/>
         <source>Play</source>
         <translation>Проиграть</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1586"/>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1587"/>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1609"/>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1610"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1687"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1688"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1715"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1716"/>
         <source>Pause</source>
         <translation>Пауза</translation>
     </message>
@@ -601,22 +591,22 @@
         <translation>Английский</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="910"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="996"/>
         <source>Remove Track</source>
         <translation>Удалить композицию</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="917"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1003"/>
         <source>Remove Selection</source>
         <translation>Удалить выбранное</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="921"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1007"/>
         <source>Clear All Tracks</source>
         <translation>Убрать все композиции</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="416"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="840"/>
         <source>Track name/property</source>
         <translation>Название композиции/свойство</translation>
     </message>
@@ -626,63 +616,71 @@
         <translation>Свойство</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="924"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1011"/>
         <source>Show Cover</source>
         <translation>Показать обложку</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="923"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1009"/>
         <source>Show Track Metadata</source>
         <translation>Показать метаданные композиции</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="114"/>
+        <source>Visualizer warning</source>
+        <translation type="vanished">Визуализатор: предупреждение</translation>
+    </message>
+    <message>
+        <source>You seem to be running the player in a Wayland session. Visualizer work is not guaranteed on Wayland, if you really want it - try to run the application with QT_QPA_PLATFORM=xcb variable, which will run the window through XWayland compatibility layer, which guarantees stable visualizer work.</source>
+        <translation type="vanished">Похоже, что вы сейчас находитесь в сессии Wayland. Работа визуализатора не гарантируется, если он реально нужен вам - попробуйте запустить приложение с переменной среды QT_QPA_PLATFORM=xcb, которая запустит окно через прослойку совместимости XWayland, которая гарантирует стабильную работу визуализатора.</translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="124"/>
         <source>Visualizer disabled</source>
         <translation>Визуализатор выключен</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="115"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="125"/>
         <source>The program was compiled without projectM visualizer library.</source>
         <translation>Программа была скомпилирована без библиотеки визуализатора projectM.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="926"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1013"/>
         <source>Set Playlist Background</source>
         <translation>Установить фон плейлиста</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="934"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1021"/>
         <source>Remove Playlist Background</source>
         <translation>Удалить фон плейлиста</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="990"/>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1229"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1077"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1328"/>
         <source>Select File</source>
         <translation>Выберите файл</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="992"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1079"/>
         <source>Image Files (*.png *.jpg *.jpeg *.webp *.tiff *.bmp)</source>
         <translation>Файлы изображений (*.png *.jpg *.jpeg *.webp *.tiff *.bmp)</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1059"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1146"/>
         <source>Incorrect property!</source>
         <translation>Неверное свойство!</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1207"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1306"/>
         <source>Select Directory</source>
         <translation>Выбор папки</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1219"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1318"/>
         <source>Invalid Path</source>
         <translation>Неправильный путь</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1220"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1319"/>
         <source>Cannot search by root or home path.</source>
         <translation>Нельзя искать по корню или в домашней папке.</translation>
     </message>
@@ -691,87 +689,91 @@
         <translation type="vanished">Аудио/видео файлы (*.mp3 *.flac *.opus *.aac *.wav *.ogg *.m4a *.mp4 *.mkv)</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1308"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1404"/>
         <source>Repeat (Playlist)</source>
         <translation>Повторение (Плейлист)</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1315"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1411"/>
         <source>Repeat (Track)</source>
         <translation>Повторение (Композиция)</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1351"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1447"/>
         <source>Save Failed!</source>
         <translation>Сохранение не удалось!</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1356"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1452"/>
         <source>Try Again</source>
         <translation>Попробовать снова</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1358"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1454"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1739"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1849"/>
         <source>XSPF/M3U/CUE Playlist (*.xspf *.m3u8 *.m3u *.cue)</source>
         <translation>Плейлист XSPF/M3U/CUE (*.xspf *.m3u8 *.m3u *.cue)</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1742"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1852"/>
         <source>Open Playlist File</source>
         <translation>Выберите файл плейлиста</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1762"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1872"/>
         <source>Error when importing playlist</source>
         <translation>Ошибка при импортировании плейлиста</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1812"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1922"/>
         <source>Error</source>
         <translation>Ошибка</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1830"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1940"/>
         <source>No Files Found</source>
         <translation>Файлы не найдены</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1831"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1941"/>
         <source>No valid tracks were found in the playlist.</source>
         <translation>В плейлисте не было обнаружено подходящих композиций.</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1854"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1964"/>
         <source>Select Output Directory</source>
         <translation>Выберите выходную директорию</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1870"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1980"/>
         <source>Playlist already exists</source>
         <translation>Плейлист уже существует</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1871"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="1981"/>
         <source>Playlist already exists. Rewrite it?</source>
         <translation>Плейлист уже существует. Переписать его?</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1895"/>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="2005"/>
         <source>Unable to export playlist</source>
         <translation>Невозможно экспортировать плейлист</translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="1896"/>
-        <source>Error: %1</source>
-        <translation>Ошибка: %1</translation>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="2006"/>
+        <source>Error: </source>
+        <translation>Ошибка: </translation>
     </message>
     <message>
-        <location filename="../src/MainWindow/MainWindow.cpp" line="2159"/>
+        <source>Error: %1</source>
+        <translation type="vanished">Ошибка: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/MainWindow/MainWindow.cpp" line="2274"/>
         <source>Audio/Video Files (</source>
         <translation>Аудио/видео файлы (</translation>
     </message>
@@ -779,17 +781,21 @@
 <context>
     <name>MetadataWindow</name>
     <message>
-        <location filename="../src/MetadataWindow/MetadataWindow.cpp" line="10"/>
         <source>%1: Metadata</source>
-        <translation>%1: Метаданные</translation>
+        <translation type="vanished">%1: Метаданные</translation>
     </message>
     <message>
-        <location filename="../src/MetadataWindow/MetadataWindow.cpp" line="13"/>
+        <location filename="../src/MetadataWindow/MetadataWindow.cpp" line="12"/>
+        <source>: Metadata</source>
+        <translation>: Метаданные</translation>
+    </message>
+    <message>
+        <location filename="../src/MetadataWindow/MetadataWindow.cpp" line="15"/>
         <source>Property</source>
         <translation>Свойство</translation>
     </message>
     <message>
-        <location filename="../src/MetadataWindow/MetadataWindow.cpp" line="13"/>
+        <location filename="../src/MetadataWindow/MetadataWindow.cpp" line="15"/>
         <source>Value</source>
         <translation>Значение</translation>
     </message>
@@ -801,22 +807,27 @@
         <translation type="vanished">Скрыть</translation>
     </message>
     <message>
-        <location filename="../src/PeakVisualizer/PeakVisualizer.cpp" line="24"/>
+        <location filename="../src/PeakVisualizer/PeakVisualizer.cpp" line="46"/>
         <source>Mode</source>
         <translation>Режим</translation>
     </message>
     <message>
-        <location filename="../src/PeakVisualizer/PeakVisualizer.cpp" line="26"/>
+        <location filename="../src/PeakVisualizer/PeakVisualizer.cpp" line="48"/>
         <source>Relative</source>
         <translation>Относительный</translation>
     </message>
     <message>
-        <location filename="../src/PeakVisualizer/PeakVisualizer.cpp" line="29"/>
+        <location filename="../src/PeakVisualizer/PeakVisualizer.cpp" line="51"/>
         <source>dBFS</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/PeakVisualizer/PeakVisualizer.cpp" line="38"/>
+        <location filename="../src/PeakVisualizer/PeakVisualizer.cpp" line="60"/>
+        <source>Band Count</source>
+        <translation>Кол-во столбцов</translation>
+    </message>
+    <message>
+        <location filename="../src/PeakVisualizer/PeakVisualizer.cpp" line="82"/>
         <source>Presets</source>
         <translation>Пресеты</translation>
     </message>
@@ -824,22 +835,27 @@
 <context>
     <name>PlaylistTab</name>
     <message>
-        <location filename="../src/PlaylistTab/PlaylistTab.cpp" line="88"/>
+        <location filename="../src/PlaylistTab/PlaylistTab.cpp" line="93"/>
         <source>Rename Tab</source>
         <translation>Переименовать вкладку</translation>
     </message>
     <message>
-        <location filename="../src/PlaylistTab/PlaylistTab.cpp" line="90"/>
+        <location filename="../src/PlaylistTab/PlaylistTab.cpp" line="96"/>
+        <source>Change Background Color</source>
+        <translation>Изменить цвет фона</translation>
+    </message>
+    <message>
+        <location filename="../src/PlaylistTab/PlaylistTab.cpp" line="99"/>
         <source>Remove All Tabs To Left</source>
         <translation>Удалить все вкладки слева</translation>
     </message>
     <message>
-        <location filename="../src/PlaylistTab/PlaylistTab.cpp" line="92"/>
+        <location filename="../src/PlaylistTab/PlaylistTab.cpp" line="101"/>
         <source>Remove All Other Tabs</source>
         <translation>Удалить все другие вкладки</translation>
     </message>
     <message>
-        <location filename="../src/PlaylistTab/PlaylistTab.cpp" line="94"/>
+        <location filename="../src/PlaylistTab/PlaylistTab.cpp" line="103"/>
         <source>Remove All Tabs To Right</source>
         <translation>Удалить все вкладки справа</translation>
     </message>
@@ -847,9 +863,13 @@
 <context>
     <name>PlaylistTabBar</name>
     <message>
-        <location filename="../src/PlaylistTabBar/PlaylistTabBar.cpp" line="53"/>
         <source>Playlist %1</source>
-        <translation>Плейлист %1</translation>
+        <translation type="vanished">Плейлист %1</translation>
+    </message>
+    <message>
+        <location filename="../src/PlaylistTabBar/PlaylistTabBar.cpp" line="49"/>
+        <source>Playlist </source>
+        <translation>Плейлист </translation>
     </message>
 </context>
 <context>
@@ -959,7 +979,7 @@
         <translation>Формат</translation>
     </message>
     <message>
-        <location filename="../src/SettingsWindow/AssociationsWindows.hpp" line="472"/>
+        <location filename="../src/SettingsWindow/AssociationsWindows.inl" line="263"/>
         <source>Open directory in RAP</source>
         <translation>Открыть директорию в RAP</translation>
     </message>
@@ -977,12 +997,27 @@
 <context>
     <name>RepeatRangeMenu</name>
     <message>
-        <location filename="../src/RepeatRangeMenu/RepeatRangeMenu.hpp" line="114"/>
+        <location filename="../src/RepeatRangeMenu/RepeatRangeMenu.hpp" line="45"/>
+        <source>Skip sections</source>
+        <translation>Пропуск секций</translation>
+    </message>
+    <message>
+        <location filename="../src/RepeatRangeMenu/RepeatRangeMenu.hpp" line="54"/>
+        <source>Start Time</source>
+        <translation>Время начала</translation>
+    </message>
+    <message>
+        <location filename="../src/RepeatRangeMenu/RepeatRangeMenu.hpp" line="54"/>
+        <source>End Time</source>
+        <translation>Время конца</translation>
+    </message>
+    <message>
+        <location filename="../src/RepeatRangeMenu/RepeatRangeMenu.hpp" line="193"/>
         <source>End time:</source>
         <translation>Время конца:</translation>
     </message>
     <message>
-        <location filename="../src/RepeatRangeMenu/RepeatRangeMenu.hpp" line="120"/>
+        <location filename="../src/RepeatRangeMenu/RepeatRangeMenu.hpp" line="201"/>
         <source>Start time:</source>
         <translation>Время начала:</translation>
     </message>
@@ -995,117 +1030,235 @@
         <translation>Настройки RAP</translation>
     </message>
     <message>
-        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="44"/>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="42"/>
+        <source>Core</source>
+        <translation>Основные</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="47"/>
+        <source>Shell Integration</source>
+        <translation>Интеграция с оболочкой</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="52"/>
+        <source>Playlists</source>
+        <translation>Плейлисты</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="127"/>
         <source>Style</source>
         <translation>Стиль</translation>
     </message>
     <message>
-        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="84"/>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="167"/>
+        <source>Theme</source>
+        <translation>Тема</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="138"/>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="175"/>
+        <source>System</source>
+        <translation>Система</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="180"/>
+        <source>Light</source>
+        <translation>Светлая</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="185"/>
+        <source>Dark</source>
+        <translation>Тёмная</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="273"/>
+        <source>Settings Directory</source>
+        <translation>Папка с настройками</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="329"/>
+        <source>Playlists Directory</source>
+        <translation>Папка с плейлистами</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="399"/>
+        <source>Associations for file formats:</source>
+        <translation>Ассоциации для форматов файлов:</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="427"/>
+        <source>Enable all audio</source>
+        <translation>Включить всё аудио</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="434"/>
+        <source>Enable all video</source>
+        <translation>Включить всё видео</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="441"/>
+        <source>Enable all playlists</source>
+        <translation>Включить все плейлисты</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="448"/>
+        <source>Enable all</source>
+        <translation>Включить всё</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="455"/>
+        <source>Clear all</source>
+        <translation>Очистить всё</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="462"/>
+        <source>Set</source>
+        <translation>Установить</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="535"/>
         <source>Playlist Naming</source>
         <translation>Название плейлистов</translation>
     </message>
     <message>
-        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="95"/>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="546"/>
         <source>Directory Name</source>
         <translation>Название папки</translation>
     </message>
     <message>
-        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="100"/>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="551"/>
         <source>Track Metadata</source>
         <translation>Метаданные композиций</translation>
     </message>
     <message>
-        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="105"/>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="556"/>
         <source>Numbered</source>
         <translation>Нумерованное</translation>
     </message>
     <message>
-        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="119"/>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="585"/>
+        <source>Default columns and their ordering</source>
+        <translation>Столбцы по-умолчанию и их порядок</translation>
+    </message>
+    <message>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="374"/>
         <source>Create &quot;Open in RAP&quot; directory context menu item</source>
         <translation>Создать пункт &quot;Открыть в RAP&quot; в контекстном меню папок</translation>
     </message>
     <message>
-        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="147"/>
         <source>Set file associations for audio and playlist files</source>
-        <translation>Установить ассоциации для аудио файлов и плейлистов</translation>
+        <translation type="vanished">Установить ассоциации для аудио файлов и плейлистов</translation>
     </message>
     <message>
         <source>Set file associations for audio files</source>
         <translation type="vanished">Установить ассоциации для аудиофайлов</translation>
     </message>
     <message>
-        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="160"/>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="494"/>
         <source>Automatically set playlist background when playing a track</source>
         <translation>Автоматически ставить задний фон плейлиста при проигрывании</translation>
     </message>
     <message>
-        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="173"/>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="501"/>
         <source>Prioritize external cover (cover.png, cover.jpg...) over embedded</source>
         <translation>Ставить в приоритет внешнюю обложку (cover.png, cover.jpg...) вместо внутренней</translation>
     </message>
     <message>
-        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="201"/>
+        <location filename="../src/SettingsWindow/SettingsWindow.ui" line="229"/>
         <source>Output Device</source>
         <translation>Устройство вывода</translation>
     </message>
     <message>
-        <location filename="../src/SettingsWindow/SettingsWindow.cpp" line="205"/>
+        <location filename="../src/SettingsWindow/SettingsWindow.cpp" line="311"/>
+        <location filename="../src/SettingsWindow/SettingsWindow.hpp" line="41"/>
         <source>Default Device</source>
         <translation>Вывод по-умолчанию</translation>
     </message>
 </context>
 <context>
+    <name>VisualizerDialog</name>
+    <message>
+        <location filename="../src/Visualizer/VisualizerDialog.cpp" line="20"/>
+        <source>Visualizer Settings</source>
+        <translation>Настройки визуализатора</translation>
+    </message>
+    <message>
+        <location filename="../src/Visualizer/VisualizerDialog.cpp" line="36"/>
+        <source>Load Preset</source>
+        <translation>Загрузить пресет</translation>
+    </message>
+    <message>
+        <location filename="../src/Visualizer/VisualizerDialog.cpp" line="37"/>
+        <source>Apply Settings</source>
+        <translation>Применить настройки</translation>
+    </message>
+    <message>
+        <location filename="../src/Visualizer/VisualizerDialog.cpp" line="40"/>
+        <source>Mesh Width:</source>
+        <translation>Ширина сетки:</translation>
+    </message>
+    <message>
+        <location filename="../src/Visualizer/VisualizerDialog.cpp" line="41"/>
+        <source>Mesh Height:</source>
+        <translation>Высота сетки:</translation>
+    </message>
+    <message>
+        <location filename="../src/Visualizer/VisualizerDialog.cpp" line="69"/>
+        <source>Visualizer</source>
+        <translation>Визуализатор</translation>
+    </message>
+    <message>
+        <location filename="../src/Visualizer/VisualizerDialog.cpp" line="236"/>
+        <source>Select Preset</source>
+        <translation>Выбрать пресет</translation>
+    </message>
+    <message>
+        <location filename="../src/Visualizer/VisualizerDialog.cpp" line="238"/>
+        <source>Milkdrop Presets (*.milk)</source>
+        <translation>Пресеты Milkdrop (*.milk)</translation>
+    </message>
+</context>
+<context>
     <name>VisualizerWidget</name>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWidget.hpp" line="82"/>
         <source>Failed to open preset</source>
-        <translation>Не удалось открыть пресет</translation>
+        <translation type="vanished">Не удалось открыть пресет</translation>
     </message>
     <message>
         <source>Failed to initialize GLEW. It might be because OpenGL context is not made current, checking that: %1, or because your PC is not sufficient to support required OpenGL context.</source>
         <translation type="vanished">Не удалось инициализовать GLEW. Возможно это из-за того что контекст OpenGL не сделан текущим, проверяем это: %1, либо потому что ваш ПК недостаточен для поддержки необходимого контекста OpenGL.</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWidget.cpp" line="31"/>
         <source>OpenGL 3.3 is not supported</source>
-        <translation>OpenGL 3.3 не поддерживается</translation>
+        <translation type="vanished">OpenGL 3.3 не поддерживается</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWidget.cpp" line="32"/>
         <source>Your system does not support OpenGL 3.3. Visualizer won&apos;t work. Try to update your GPU drivers, install system updates, or install Mesa, if you&apos;re using Linux.</source>
-        <translation>Ваша система не поддерживает OpenGL 3.3. Визуализатор не запустится. Попробуйте обновить драйвера видеокарты, установить системные обновления, или установить Mesa, если вы линуксоид.</translation>
+        <translation type="vanished">Ваша система не поддерживает OpenGL 3.3. Визуализатор не запустится. Попробуйте обновить драйвера видеокарты, установить системные обновления, или установить Mesa, если вы линуксоид.</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWidget.cpp" line="53"/>
         <source>Failed to initialize GLEW</source>
-        <translation>Не удалось инициализовать GLEW</translation>
+        <translation type="vanished">Не удалось инициализовать GLEW</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWidget.cpp" line="54"/>
         <source>Failed to initialize GLEW: %1. It might be because OpenGL context is not made current, checking that: %2, or because your PC is not sufficient to support required OpenGL context.</source>
-        <translation>Не удалось инициализовать GLEW: %1. Возможно это из-за того что контекст OpenGL не сделан текущим, проверяем это: %2, либо потому что ваш ПК недостаточен для поддержки необходимого контекста OpenGL.</translation>
+        <translation type="vanished">Не удалось инициализовать GLEW: %1. Возможно это из-за того что контекст OpenGL не сделан текущим, проверяем это: %2, либо потому что ваш ПК недостаточен для поддержки необходимого контекста OpenGL.</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWidget.cpp" line="60"/>
-        <location filename="../src/VisualizerWindow/VisualizerWidget.cpp" line="80"/>
         <source>context IS current</source>
-        <translation>контекст ЯВЛЯЕТСЯ текущим</translation>
+        <translation type="vanished">контекст ЯВЛЯЕТСЯ текущим</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWidget.cpp" line="61"/>
-        <location filename="../src/VisualizerWindow/VisualizerWidget.cpp" line="81"/>
         <source>context IS NOT current</source>
-        <translation>контекст НЕ ЯВЛЯЕТСЯ текущим</translation>
+        <translation type="vanished">контекст НЕ ЯВЛЯЕТСЯ текущим</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWidget.cpp" line="74"/>
         <source>Unable to initialize projectM</source>
-        <translation>Не удалось инициализовать projectM</translation>
+        <translation type="vanished">Не удалось инициализовать projectM</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWidget.cpp" line="75"/>
         <source>Unable to initialize projectM. It might be because OpenGL context is not made current, checking that: %1, or because your PC is not sufficient to support required OpenGL context. We also could&apos;ve screwed building the app, so you might want to report it.</source>
-        <translation>Не удалось инициализовать projectM. Возможно это из-за того что контекст OpenGL не сделан текущим, проверяем это: %1, либо потому что ваш ПК недостаточен для поддержки необходимого контекста OpenGL. Мы также могли облажаться при билдинге приложения, так что вам наверное нужно сообщить об этом.</translation>
+        <translation type="vanished">Не удалось инициализовать projectM. Возможно это из-за того что контекст OpenGL не сделан текущим, проверяем это: %1, либо потому что ваш ПК недостаточен для поддержки необходимого контекста OpenGL. Мы также могли облажаться при билдинге приложения, так что вам наверное нужно сообщить об этом.</translation>
     </message>
 </context>
 <context>
@@ -1119,54 +1272,44 @@
         <translation type="vanished">Загрузить пресет...</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWindow.cpp" line="13"/>
         <source>Visualizer</source>
-        <translation>Визуализатор</translation>
+        <translation type="vanished">Визуализатор</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWindow.cpp" line="34"/>
         <source>Mesh Width:</source>
-        <translation>Ширина сетки:</translation>
+        <translation type="vanished">Ширина сетки:</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWindow.cpp" line="35"/>
         <source>Mesh Height:</source>
-        <translation>Высота сетки:</translation>
+        <translation type="vanished">Высота сетки:</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWindow.cpp" line="132"/>
         <source>Load Preset</source>
-        <translation>Загрузить пресет</translation>
+        <translation type="vanished">Загрузить пресет</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWindow.cpp" line="140"/>
         <source>Minimize</source>
-        <translation>Стянуть</translation>
+        <translation type="vanished">Стянуть</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWindow.cpp" line="142"/>
         <source>Maximize To Fullscreen</source>
-        <translation>Растянуть на весь экран</translation>
+        <translation type="vanished">Растянуть на весь экран</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWindow.cpp" line="148"/>
         <source>Unset Always On Top</source>
-        <translation>Убрать &quot;всегда наверху&quot;</translation>
+        <translation type="vanished">Убрать &quot;всегда наверху&quot;</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWindow.cpp" line="150"/>
         <source>Set Always On Top</source>
-        <translation>Включить &quot;всегда наверху&quot;</translation>
+        <translation type="vanished">Включить &quot;всегда наверху&quot;</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWindow.cpp" line="158"/>
         <source>Select Preset</source>
-        <translation>Выбрать пресет</translation>
+        <translation type="vanished">Выбрать пресет</translation>
     </message>
     <message>
-        <location filename="../src/VisualizerWindow/VisualizerWindow.cpp" line="160"/>
         <source>Milkdrop Presets (*.milk)</source>
-        <translation>Пресеты Milkdrop (*.milk)</translation>
+        <translation type="vanished">Пресеты Milkdrop (*.milk)</translation>
     </message>
 </context>
 </TS>
