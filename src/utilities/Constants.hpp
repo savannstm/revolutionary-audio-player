@@ -7,6 +7,13 @@
 
 #include <QSize>
 
+constexpr QStringView PATHS_FILE_NAME = u"rap-paths.txt"_qsv;
+constexpr QStringView PLAYLISTS_FILE_NAME = u"rap-playlists.json"_qsv;
+constexpr QStringView SETTINGS_FILE_NAME = u"rap-settings.json"_qsv;
+constexpr QStringView PNG_LOGO_PATH = u"icons/rap-logo.png"_qsv;
+constexpr QStringView PNG_LOGO32_PATH = u"icons/rap-logo-32px.png"_qsv;
+constexpr QStringView ICO_LOGO_PATH = u"icons/rap-logo.ico"_qsv;
+
 // Audio Constants
 enum SampleSize : u8 {
     U8 = 1,
