@@ -104,3 +104,22 @@ void CoverWindow::toggleFullscreen(const bool isFullscreen) {
         showFullScreen();
     }
 }
+
+void CoverWindow::resizeEvent(QResizeEvent* const event) {
+    QDialog::resizeEvent(event);
+
+    if (originalPixmap.isNull()) {
+        return;
+    }
+
+    const QSize availableSize = size();
+
+    const QPixmap scaled = originalPixmap.scaled(
+        availableSize,
+        Qt::KeepAspectRatio,
+        Qt::SmoothTransformation
+    );
+
+    coverLabel->setPixmap(scaled);
+    coverLabel->resize(scaled.size());
+}

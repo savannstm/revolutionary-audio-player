@@ -20,30 +20,7 @@ class CoverWindow : public QDialog {
     void updateCover(const QString& coverPath);
 
    protected:
-    // FIXME: Fix not resizing width when there's height resized
-    void resizeEvent(QResizeEvent* const event) override {
-        QDialog::resizeEvent(event);
-
-        if (width() < originalPixmap.width()) {
-            resize(originalPixmap.width(), height());
-        }
-
-        const u16 newHeight = height();
-
-        const f64 aspectRatio =
-            f64(originalPixmap.width()) / originalPixmap.height();
-        const u16 newWidth = u16(newHeight * aspectRatio);
-
-        const QPixmap scaledPixmap = originalPixmap.scaled(
-            newWidth,
-            newHeight,
-            Qt::KeepAspectRatio,
-            Qt::SmoothTransformation
-        );
-
-        coverLabel->setPixmap(scaledPixmap);
-        coverLabel->resize(scaledPixmap.size());
-    }
+    void resizeEvent(QResizeEvent* event) override;
 
     void keyPressEvent(QKeyEvent* const event) override {
         if (event->key() == Qt::Key_F11) {
@@ -55,8 +32,8 @@ class CoverWindow : public QDialog {
     void showContextMenu(const QPoint& pos);
     void toggleFullscreen(bool isFullscreen);
 
-    QHBoxLayout* const layout = new QHBoxLayout(this);
-
-    QLabel* const coverLabel = new QLabel(this);
     QPixmap originalPixmap;
+
+    QHBoxLayout* const layout = new QHBoxLayout(this);
+    QLabel* const coverLabel = new QLabel(this);
 };
