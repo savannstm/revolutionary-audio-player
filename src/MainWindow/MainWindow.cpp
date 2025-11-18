@@ -1240,10 +1240,22 @@ void MainWindow::onAudioProgressUpdated(u16 seconds) {
         if (repeat == RepeatMode::Track) {
             u16 startSecond = repeatRangeMenu->startSecond();
             u16 endSecond = repeatRangeMenu->endSecond();
+            auto skipSections = repeatRangeMenu->skipSections();
 
             if (CUEOffset != UINT16_MAX) {
                 startSecond += CUEOffset;
                 endSecond += CUEOffset;
+
+                for (auto& section : skipSections) {
+                    section.start += CUEOffset;
+                    section.end += CUEOffset;
+                }
+            }
+
+            for (const auto& section : skipSections) {
+                if (seconds >= section.start && seconds <= section.end) {
+                    audioWorker->seekSecond(section.end);
+                }
             }
 
             if (seconds < startSecond && seconds < startSecond - 1) {
