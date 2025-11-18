@@ -88,7 +88,7 @@ class MainWindow : public QMainWindow {
     updateProgressLabel(u16 second, const QString& duration = QString());
     inline void updateVolume(u8 value);
     inline void cancelSearchInput();
-    inline void toggleEqualizerMenu(bool checked);
+    inline void toggleEqualizerMenu();
     inline void toggleRepeat();
     inline void toggleRandom();
     inline void exit();

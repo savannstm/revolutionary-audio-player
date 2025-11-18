@@ -37,14 +37,14 @@
 #include <QWidgetAction>
 #include <QXmlStreamReader>
 
-MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
+MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
     QMainWindow(parent) {
     dockWidget->dockCoverLabel = dockCoverLabel;
     dockWidget->dockMetadataTree = dockMetadataTree;
 
     connect(
         equalizerButton,
-        &QPushButton::toggled,
+        &QPushButton::pressed,
         this,
         &MainWindow::toggleEqualizerMenu
     );
@@ -398,8 +398,6 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* parent) :
             );
 
             repeatRangeMenu->show();
-        } else {
-            repeatRangeMenu->hide();
         }
     }
     );
@@ -947,12 +945,7 @@ void MainWindow::loadSettings() {
     updateVolume(settings->core.volume);
 
     settings->core.defaultStyle = QApplication::style()->name();
-
-    if (settings->core.applicationStyle != -1) {
-        QApplication::setStyle(
-            APPLICATION_STYLES[u8(settings->core.applicationStyle)].toString()
-        );
-    }
+    QApplication::setStyle(settings->core.applicationStyle);
 
     SettingsWindow::setTheme(settings->core.applicationTheme);
 
@@ -1426,13 +1419,14 @@ void MainWindow::cancelSearchInput() {
     searchTrackInput->hide();
 }
 
-void MainWindow::toggleEqualizerMenu(const bool checked) {
-    equalizerMenu->setHidden(!checked);
+void MainWindow::toggleEqualizerMenu() {
+    if (equalizerMenu->isHidden()) {
+        equalizerMenu->show();
 
-    // FIXME: This move doesn't work... on Wayland. Wayland is insane crap
-    equalizerMenu->move(
-        equalizerButton->mapToGlobal(QPoint(0, equalizerButton->height()))
-    );
+        equalizerMenu->move(
+            equalizerButton->mapToGlobal(QPoint(0, equalizerButton->height()))
+        );
+    }
 }
 
 void MainWindow::toggleRepeat() {
@@ -1708,7 +1702,6 @@ void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
 
     const u16 seconds = timeToSecs(metadata[TrackProperty::Duration]);
     repeatRangeMenu->setDuration(seconds);
-    repeatRangeMenu->setStartSecond(0);
     progressSlider->setRange(0, seconds);
     progressSliderTray->setRange(0, seconds);
     progressSlider->setValue(0);

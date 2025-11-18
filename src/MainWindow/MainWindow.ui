@@ -29,7 +29,7 @@
    <bool>false</bool>
   </property>
   <property name="tabShape">
-   <enum>QTabWidget::TabShape::Rounded</enum>
+   <enum>QTabWidget::Rounded</enum>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="sizePolicy">
@@ -54,7 +54,7 @@
     <property name="bottomMargin">
      <number>0</number>
     </property>
-    <item alignment="Qt::AlignmentFlag::AlignTop">
+    <item alignment="Qt::AlignTop">
      <widget class="QWidget" name="controlContainer" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -69,14 +69,14 @@
        </size>
       </property>
       <property name="contextMenuPolicy">
-       <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+       <enum>Qt::CustomContextMenu</enum>
       </property>
       <layout class="QHBoxLayout" name="controlLayout" stretch="0,0,0,0,0,0,0,0,0,0,0,0">
        <property name="spacing">
         <number>4</number>
        </property>
        <property name="sizeConstraint">
-        <enum>QLayout::SizeConstraint::SetFixedSize</enum>
+        <enum>QLayout::SetFixedSize</enum>
        </property>
        <property name="leftMargin">
         <number>0</number>
@@ -243,7 +243,7 @@
           </font>
          </property>
          <property name="contextMenuPolicy">
-          <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+          <enum>Qt::CustomContextMenu</enum>
          </property>
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Repeat&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -326,7 +326,7 @@
           <iconset theme="QIcon::ThemeIcon::AudioCard"/>
          </property>
          <property name="checkable">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
         </widget>
        </item>
@@ -369,7 +369,7 @@
           <number>100</number>
          </property>
          <property name="orientation">
-          <enum>Qt::Orientation::Horizontal</enum>
+          <enum>Qt::Horizontal</enum>
          </property>
         </widget>
        </item>
@@ -388,7 +388,7 @@
           <string notr="true">100%</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignJustify|Qt::AlignmentFlag::AlignVCenter</set>
+          <set>Qt::AlignJustify|Qt::AlignVCenter</set>
          </property>
          <property name="margin">
           <number>4</number>
@@ -428,7 +428,7 @@
           <number>0</number>
          </property>
          <property name="orientation">
-          <enum>Qt::Orientation::Horizontal</enum>
+          <enum>Qt::Horizontal</enum>
          </property>
         </widget>
        </item>
@@ -447,10 +447,10 @@
           <string notr="true">00:00/00:00</string>
          </property>
          <property name="textFormat">
-          <enum>Qt::TextFormat::PlainText</enum>
+          <enum>Qt::PlainText</enum>
          </property>
          <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignCenter</set>
+          <set>Qt::AlignCenter</set>
          </property>
          <property name="wordWrap">
           <bool>false</bool>
@@ -491,7 +491,7 @@
        </sizepolicy>
       </property>
       <property name="orientation">
-       <enum>Qt::Orientation::Horizontal</enum>
+       <enum>Qt::Horizontal</enum>
       </property>
       <property name="opaqueResize">
        <bool>false</bool>
@@ -512,20 +512,20 @@
         </sizepolicy>
        </property>
        <property name="contextMenuPolicy">
-        <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+        <enum>Qt::CustomContextMenu</enum>
        </property>
        <property name="layoutDirection">
-        <enum>Qt::LayoutDirection::LeftToRight</enum>
+        <enum>Qt::LeftToRight</enum>
        </property>
        <property name="orientation">
-        <enum>Qt::Orientation::Vertical</enum>
+        <enum>Qt::Vertical</enum>
        </property>
        <property name="opaqueResize">
         <bool>true</bool>
        </property>
        <widget class="QTreeWidget" name="dockMetadataTree">
         <property name="selectionBehavior">
-         <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+         <enum>QAbstractItemView::SelectRows</enum>
         </property>
         <property name="indentation">
          <number>2</number>
@@ -653,7 +653,7 @@
          <string notr="true"/>
         </property>
         <property name="alignment">
-         <set>Qt::AlignmentFlag::AlignCenter</set>
+         <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </widget>
@@ -667,7 +667,7 @@
      <x>0</x>
      <y>0</y>
      <width>649</width>
-     <height>33</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -738,7 +738,7 @@
     <string>Forward</string>
    </property>
    <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
+    <enum>QAction::NoRole</enum>
    </property>
   </action>
   <action name="actionBackward">
@@ -746,7 +746,7 @@
     <string>Backward</string>
    </property>
    <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
+    <enum>QAction::NoRole</enum>
    </property>
   </action>
   <action name="actionRepeat">
@@ -757,7 +757,7 @@
     <string>Repeat</string>
    </property>
    <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
+    <enum>QAction::NoRole</enum>
    </property>
   </action>
   <action name="actionStop">
@@ -765,7 +765,7 @@
     <string>Stop</string>
    </property>
    <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
+    <enum>QAction::NoRole</enum>
    </property>
   </action>
   <action name="actionRandom">
@@ -779,7 +779,7 @@
     <string>Random</string>
    </property>
    <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
+    <enum>QAction::NoRole</enum>
    </property>
   </action>
   <action name="actionDocumentation">
@@ -812,7 +812,7 @@
     <string>Play</string>
    </property>
    <property name="menuRole">
-    <enum>QAction::MenuRole::NoRole</enum>
+    <enum>QAction::NoRole</enum>
    </property>
   </action>
   <action name="actionAddPlaylist">
