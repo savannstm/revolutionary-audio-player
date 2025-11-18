@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.10.0 - Polishing & Wayland issues
+## v0.10.0 - Polishing, Linux improvements, Wayland fixes
 
 ### Changes
 
@@ -39,6 +39,7 @@
     -   Associations for file formats can now be enabled/disabled per format.
     -   Added ability to change default playlist columns and their ordering.
     -   Added "Default" application style option.
+-   Implemented playback devices hot reload.
 
 #### File & System Integration
 
@@ -61,14 +62,13 @@
 -   Fixed system window bar not appearing after maximizing cover window.
 -   Implemented skip sections for repeat menu. Now you can enter custom sections to skip.
 -   Allowed using theme plugins by linking Qt dynamically.
+-   Fixed some dialog window appearing in the center of the screen instead of where they should.
 
 ### Broken
 
--   Sliders in tray icon menu don't display on KDE (possibly other DEs)
--   Shell context menu entries in different Linux DEs (WIP)
--   Equalizer menu doesn't move itself beneath equalizer button, it draws in the center of the screen on Wayland
--   Set Always On Top does not work on Wayland
--   No devices hot reload in settings
+-   Sliders in tray icon menu don't display on KDE (possibly other DEs).
+-   Shell context menu entries in different Linux DEs (WIP).
+-   Set Always On Top does not work on Wayland (and it shouldn't, because in Wayland the compositor decides which properties should window have).
 
 ### Coming in v0.11.0
 
