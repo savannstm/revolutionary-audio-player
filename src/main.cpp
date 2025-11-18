@@ -5,58 +5,54 @@
 
 #include <QApplication>
 #include <QLocalSocket>
-#include <QSharedMemory>
+#include <QLockFile>
 
 auto main(i32 argCount, char* args[]) -> i32 {
-#ifdef PROJECTM
-    QApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
-#endif
-
     const auto app = QApplication(argCount, args);
 
-    QSharedMemory sharedMemory;
-    sharedMemory.setKey("revolutionary-audio-player");
+    const QString lockFilePath =
+        QDir::tempPath() + u"/revolutionary-audio-player.lock"_qssv;
 
+    auto lockFile = QLockFile(lockFilePath);
     const QStringList paths = QApplication::arguments().mid(1);
 
-    if (!sharedMemory.create(1)) {
-        QLocalSocket socket;
-        socket.connectToServer(u"revolutionary-audio-player-server"_s);
+    if (!lockFile.tryLock()) {
+        if (!paths.empty()) {
+            QLocalSocket socket;
+            socket.connectToServer(u"revolutionary-audio-player-server"_s);
 
-        if (socket.waitForConnected(SECOND_MS)) {
-            if (argCount > 1) {
+            if (socket.waitForConnected(SECOND_MS)) {
                 QByteArray data = paths.join('\n').toUtf8();
+
                 socket.write(data);
                 socket.flush();
                 socket.waitForBytesWritten(SECOND_MS);
+                socket.disconnectFromServer();
             }
-
-            socket.disconnectFromServer();
         }
 
         return 0;
     }
-
-//! We specifically initialize the lowest required OpenGL version (3.3) with
-//! compatibility profile, for wider range of supported systems.
-#ifdef PROJECTM
-    QSurfaceFormat fmt;
-    fmt.setRenderableType(QSurfaceFormat::OpenGL);
-    fmt.setVersion(3, 3);
-    fmt.setProfile(QSurfaceFormat::CompatibilityProfile);
-    QSurfaceFormat::setDefaultFormat(fmt);
-#endif
 
     // Use system default locale
     std::locale::global(std::locale(""));
 
     QApplication::setOrganizationName(u"savannstm"_s);
     QApplication::setApplicationName(u"revolutionary-audio-player"_s);
-    QApplication::setWindowIcon(
-        QIcon(QApplication::applicationDirPath() + "/icons/rap-logo.png")
-    );
+    QApplication::setWindowIcon(QIcon(
+        QApplication::applicationDirPath() + '/' +
+        PNG_LOGO_PATH
+#if QT_VERSION_MINOR < 9
+            .toString()
+#endif
+    ));
 
-    MainWindow window = MainWindow(paths);
+    QApplication::connect(&app, &QApplication::aboutToQuit, [&] -> void {
+        lockFile.unlock();
+        QFile::remove(lockFilePath);
+    });
+
+    auto window = MainWindow(paths);
     window.showMaximized();
 
     return QApplication::exec();
