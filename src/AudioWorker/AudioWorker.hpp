@@ -6,11 +6,6 @@
 #include <QObject>
 #include <miniaudio.h>
 
-enum PlaybackAction : u8 {
-    None,
-    Seek,
-};
-
 class AudioWorker : public QObject {
     Q_OBJECT
 
@@ -26,10 +21,18 @@ class AudioWorker : public QObject {
 
     void start(const QString& path, u16 startSecond = UINT16_MAX);
 
+    void pause() {
+        if (deviceInitialized) {
+            ma_device_stop(&device);
+        }
+    }
+
     void stop() {
         if (deviceInitialized) {
             ma_device_stop(&device);
         }
+
+        audioStreamer->reset();
     }
 
     void resume() {
@@ -39,8 +42,10 @@ class AudioWorker : public QObject {
     }
 
     void seekSecond(const u16 second) {
-        seekTargetSecond = second;
-        playbackAction.store(PlaybackAction::Seek, std::memory_order_release);
+        seeked = true;
+
+        audioStreamer->seekSecond(second);
+        ma_device_start(&device);
     }
 
     constexpr void setVolume(const f32 volume) {
@@ -52,6 +57,10 @@ class AudioWorker : public QObject {
     }
 
     [[nodiscard]] auto state() const -> ma_device_state {
+        if (!deviceInitialized) {
+            return ma_device_state_uninitialized;
+        }
+
         return ma_device_get_state(&device);
     }
 
@@ -70,12 +79,10 @@ class AudioWorker : public QObject {
     void changeGain(const u8 band) { audioStreamer->changeGain(band); }
 
     void togglePeakVisualizer(const bool enabled) {
-        audioStreamer->togglePeakVisualizer(enabled);
+        peakVisualizerEnabled = enabled;
     }
 
-    void toggleVisualizer(const bool enabled) {
-        audioStreamer->toggleVisualizer(enabled);
-    }
+    void toggleVisualizer(const bool enabled) { visualizerEnabled = enabled; }
 
     [[nodiscard]] auto channels() -> AudioChannels {
         return audioStreamer->channels();
@@ -97,14 +104,33 @@ class AudioWorker : public QObject {
 
     void startDevice();
 
-    shared_ptr<Settings> settings;
-    AudioStreamer* audioStreamer = nullptr;
+    void prepareBuffer() { audioStreamer->prepareBuffer(); }
+
+    void endStream() {
+        ma_device_stop(&device);
+        emit streamEnded();
+    }
 
     ma_device device;
     ma_device_config deviceConfig;
-    bool deviceInitialized = false;
+
+    shared_ptr<Settings> settings;
+
+    AudioStreamer* audioStreamer = nullptr;
+    usize buffersIndex = 0;
+    usize bufferOffset = 0;
+
+    f32* peakVisualizerBuffer;
+    f32* visualizerBuffer;
+
     f32 volume_ = 1.0F;
 
-    atomic<PlaybackAction> playbackAction = PlaybackAction::None;
+    u16 lastPlaybackSecond = 0;
     u16 seekTargetSecond = 0;
+
+    bool peakVisualizerEnabled = false;
+    bool visualizerEnabled = false;
+
+    bool deviceInitialized = false;
+    bool seeked = false;
 };

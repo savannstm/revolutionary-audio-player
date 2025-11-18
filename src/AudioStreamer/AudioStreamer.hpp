@@ -19,10 +19,10 @@ extern "C" {
 
 using namespace FFmpeg;
 
-// TODO: Playback stutters seem to only happen when I/O can't keep up
-// When tested with tracks located on HDD, stutters, on SSD it doesn't
-// A solution for that is deque that asynchronously reads buffers, but that
-// requires thinking
+struct Buffer {
+    vector<u8> buf;
+    u16 second;
+};
 
 class AudioStreamer : public QObject {
     Q_OBJECT
@@ -37,10 +37,6 @@ class AudioStreamer : public QObject {
     void start(const QString& path, u16 startSecond);
     auto reset() -> bool;
 
-    [[nodiscard]] constexpr auto progress() const -> u16 {
-        return playbackSecond;
-    }
-
     [[nodiscard]] constexpr auto sampleRate() const -> u32 {
         return sampleRate_;
     }
@@ -49,18 +45,19 @@ class AudioStreamer : public QObject {
         return channels_;
     }
 
-    auto readData(u8* output) -> u64;
-
     void changeGain(const u8 band) { changedGains = true; }
 
-    void togglePeakVisualizer(const bool enabled) {
-        peakVisualizerEnabled = enabled;
-    }
+    void prepareBuffer();
 
-    void toggleVisualizer(const bool enabled) { visualizerEnabled = enabled; }
+    void flushBuffers() { preparedBuffers = 0; };
 
-    f32* peakVisualizerBuffer;
-    f32* visualizerBuffer;
+    array<Buffer, BUFFERS_QUEUE_SIZE> buffers{};
+
+    usize bufferSize = 0;
+    usize preparedBuffers = 0;
+
+    u16 minBufferSize = 0;
+    alignas(4) bool encodedLoselessFormat = false;
 
    signals:
     void streamEnded();
@@ -68,12 +65,11 @@ class AudioStreamer : public QObject {
     void progressUpdate(u16 second);
 
    private:
-    inline void prepareBuffer();
     inline void decodeRaw();
-    inline void convertBuffer(u32 bytesRead);
+    inline void convertBuffer();
     inline void equalizeBuffer();
     inline void processFrame();
-    inline void initializeFilters();
+    inline void initializeFilters(bool force = false);
     [[nodiscard]] inline auto buildEqualizerArgs() const -> string;
 
     auto
@@ -96,18 +92,12 @@ class AudioStreamer : public QObject {
         return false;
     };
 
-    array<u8, UINT16_MAX + 1> arrayBuffer;
     array<u8, MIN_BUFFER_SIZE> leftoverBuffer;
-    vector<u8> buffer;
+    Buffer* buffer;
 
-    usize bufferSize = 0;
     usize bufferOffset = 0;
 
-    // FLAC/ALAC format may contain frames as big as 2 MB - but all lossy
-    // formats have frames less than UINT16_MAX even for highest available
-    // channel count and sample rate. So we keep array buffer as our main
-    // buffer, and make vector buffer our FLAC/ALAC buffer.
-    u8* buf = nullptr;
+    const AVStream* audioStream;
 
     FormatContext formatContext;
     CodecContext codecContext;
@@ -128,20 +118,15 @@ class AudioStreamer : public QObject {
     u32 fileKbps = 0;
 
     u16 leftoverSize = 0;
-    u16 minBufferSize = 0;
-
-    u16 playbackSecond = 0;
-    u16 lastPlaybackSecond = 0;
+    u16 rawBufferSize = 0;
 
     AudioChannels channels_;
-
-    u8 audioStreamIndex = 0;
-    bool planarFormat = false;
-    bool rawPCM = false;
-    bool encodedLoselessFormat = false;
     SampleSize sampleSize;
 
-    bool peakVisualizerEnabled = false;
-    bool visualizerEnabled = false;
+    u8 audioStreamIndex = 0;
+
+    bool planarFormat = false;
+    bool rawPCM = false;
+
     bool changedGains = false;
 };

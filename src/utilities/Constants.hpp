@@ -15,21 +15,10 @@ constexpr QStringView PNG_LOGO32_PATH = u"icons/rap-logo-32px.png"_qsv;
 constexpr QStringView ICO_LOGO_PATH = u"icons/rap-logo.ico"_qsv;
 
 // Audio Constants
-enum SampleSize : u8 {
-    U8 = 1,
-    S16,
-    S24,
-    S32
-};
+constexpr u8 BUFFERS_QUEUE_SIZE = 8;
 
-enum AudioChannels : u8 {
-    Zero = 0,
-    Mono = 1,
-    Stereo = 2,
-    Quad = 4,
-    Surround51 = 6,
-    Surround71 = 8,
-};
+constexpr u16 FFT_SAMPLE_COUNT = 1024;
+constexpr u16 FFT_OUTPUT_SAMPLE_COUNT = (FFT_SAMPLE_COUNT / 2) + 1;
 
 constexpr u8 F32_SAMPLE_SIZE = sizeof(f32);
 
