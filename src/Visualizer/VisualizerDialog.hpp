@@ -41,6 +41,9 @@ class VisualizerDialog : public QDialog {
     void addSamples(const f32* buffer);
     void clear();
 
+   signals:
+    void ready();
+
    private:
     auto initSharedMemory() -> bool;
 

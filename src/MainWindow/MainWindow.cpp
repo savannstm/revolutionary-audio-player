@@ -74,27 +74,30 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         }
 
         visualizerDialog = new VisualizerDialog(settings);
-        visualizerDialog->setChannels(audioWorker->channels());
-        visualizerDialog->show();
 
-        audioWorker->toggleVisualizer(true);
+        connect(visualizerDialog, &VisualizerDialog::ready, this, [&] -> void {
+            visualizerDialog->setChannels(audioWorker->channels());
+            visualizerDialog->show();
 
-        connect(
-            audioWorker,
-            &AudioWorker::audioProperties,
-            visualizerDialog,
-            [this](const u32 /* sampleRate */, const AudioChannels channels)
-                -> void { visualizerDialog->setChannels(channels); }
-        );
+            audioWorker->toggleVisualizer(true);
 
-        connect(
-            audioWorker,
-            &AudioWorker::processedSamples,
-            visualizerDialog,
-            [&] -> void {
-            visualizerDialog->addSamples(visualizerBuffer.data());
-        }
-        );
+            connect(
+                audioWorker,
+                &AudioWorker::audioProperties,
+                visualizerDialog,
+                [this](const u32 /* sampleRate */, const AudioChannels channels)
+                    -> void { visualizerDialog->setChannels(channels); }
+            );
+
+            connect(
+                audioWorker,
+                &AudioWorker::processedSamples,
+                visualizerDialog,
+                [&] -> void {
+                visualizerDialog->addSamples(visualizerBuffer.data());
+            }
+            );
+        });
 
         connect(
             audioWorker,
@@ -114,7 +117,6 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         },
             Qt::SingleShotConnection
         );
-
 #else
         QMessageBox::information(
             this,

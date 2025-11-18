@@ -64,25 +64,21 @@ VisualizerDialog::VisualizerDialog(
 #endif
 
     process = new QProcess(this);
-    process->start(
-        visualizerPath,
-        { tr("Visualizer"),
-          QApplication::applicationDirPath() + "/visualizer/textures" },
-        QProcess::ReadOnly
-    );
-
-    if (!process->waitForStarted(SECOND_MS * 2)) {
-        reject();
-        return;
-    }
 
     connect(process, &QProcess::readyReadStandardOutput, this, [this] -> void {
         const QByteArray data = process->readAllStandardOutput();
+
         LOG_INFO(data);
     });
 
     connect(process, &QProcess::readyReadStandardError, this, [this] -> void {
         const QByteArray data = process->readAllStandardError();
+
+        // Doesn't work with stdout
+        if (data == "initialized\n") {
+            emit ready();
+        }
+
         LOG_ERROR(data);
     });
 
@@ -99,6 +95,18 @@ VisualizerDialog::VisualizerDialog(
         return;
     }
     );
+
+    process->start(
+        visualizerPath,
+        { tr("Visualizer"),
+          QApplication::applicationDirPath() + "/visualizer/textures" },
+        QProcess::ReadOnly
+    );
+
+    if (!process->waitForStarted(SECOND_MS * 2)) {
+        reject();
+        return;
+    }
 
     applySettings();
     openPreset(settings->visualizer.presetPath);

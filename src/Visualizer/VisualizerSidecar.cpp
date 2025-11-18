@@ -1,5 +1,3 @@
-
-
 #include <array>
 #include <atomic>
 #include <iostream>
@@ -391,10 +389,11 @@ class SharedMemory {
 #else
     i32 fd = -1;
 
-    bool create(const char* const name) {
+    auto create(const char* const name) -> bool {
         fd = shm_open(name, O_CREAT | O_RDWR, 0666);
-        if (fd == -1)
+        if (fd == -1) {
             return false;
+        }
 
         if (ftruncate(fd, sizeof(VisualizerSharedData)) == -1) {
             close(fd);
@@ -420,12 +419,14 @@ class SharedMemory {
     }
 
     ~SharedMemory() {
-        if (data && data != MAP_FAILED) {
+        if ((data != nullptr) && data != MAP_FAILED) {
             munmap(data, sizeof(VisualizerSharedData));
             shm_unlink("rap-visualizer");
         }
-        if (fd != -1)
+
+        if (fd != -1) {
             close(fd);
+        }
     }
 #endif
 };
@@ -592,6 +593,8 @@ auto main(i32 argc, char* argv[]) -> i32 {
         const_cast<const char**>(&argv[2]),
         1
     );
+
+    println(cerr, "initialized");
 
     f64 nextFrameTime = glfwGetTime();
 
