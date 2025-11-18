@@ -84,13 +84,13 @@ class CoreSettings {
     QString outputDevice;
 
     QString defaultStyle;
+    QString applicationStyle;
 
     QLocale::Language language = QLocale().language();
 
     u8 volume = MAX_VOLUME;
     i8 currentTab = -1;
 
-    i8 applicationStyle = -1;
     Qt::ColorScheme applicationTheme;
 };
 

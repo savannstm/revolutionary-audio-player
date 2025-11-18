@@ -192,7 +192,7 @@ CoreSettings::CoreSettings(const QJsonObject& obj) {
     volume = obj[u"volume"_qsv].toInt();
     currentTab = i8(obj[u"currentTab"_qsv].toInt());
 
-    applicationStyle = i8(obj[u"applicationStyle"_qsv].toInt());
+    applicationStyle = obj[u"applicationStyle"_qsv].toString();
     applicationTheme = Qt::ColorScheme(obj[u"applicationTheme"_qsv].toInt());
 }
 
@@ -207,7 +207,7 @@ auto CoreSettings::stringify() const -> QJsonObject {
     json[u"volume"_qsv] = volume;
     json[u"currentTab"_qsv] = currentTab;
 
-    json[u"applicationStyle"_qsv] = u8(applicationStyle);
+    json[u"applicationStyle"_qsv] = applicationStyle;
     json[u"applicationTheme"_qsv] = u8(applicationTheme);
 
     return json;

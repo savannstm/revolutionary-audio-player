@@ -32,10 +32,12 @@ SettingsWindow::SettingsWindow(
     }
     );
 
-    if (settings->core.applicationStyle != -1) {
-        styleSelect->setCurrentText(
-            APPLICATION_STYLES[settings->core.applicationStyle].toString()
-        );
+    if (!settings->core.applicationStyle.isEmpty()) {
+        for (const u8 idx : range(0, styleSelect->count())) {
+            if (settings->core.applicationStyle == styleSelect->itemText(idx)) {
+                styleSelect->setCurrentText(settings->core.applicationStyle);
+            }
+        }
     }
 
     const ma_result devicesFetched = fetchDevices();
@@ -169,10 +171,9 @@ SettingsWindow::SettingsWindow(
         &QComboBox::currentTextChanged,
         this,
         [&](const QString& itemText) -> void {
-        const i8 styleIndex = i8(find_index(APPLICATION_STYLES, itemText));
-        settings->core.applicationStyle = styleIndex;
+        settings->core.applicationStyle = itemText;
 
-        if (styleIndex == -1) {
+        if (styleSelect->currentIndex() == 0) {
             QApplication::setStyle(settings->core.defaultStyle);
         } else {
             QApplication::setStyle(itemText);
