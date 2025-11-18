@@ -5,12 +5,16 @@
 #include "FFMpeg.hpp"
 #include "Settings.hpp"
 
+#include <QFrame>
 #include <QScreen>
 #include <QTimer>
-#include <QWidget>
 
-// TODO: Make different presets (18, 30 peaks)
-class PeakVisualizer : public QWidget {
+// TODO: Allow changing width
+// TODO: Implement gain factor for visualization
+// TODO: Allow setting a gap between peaks
+// TODO: Make floatable
+
+class PeakVisualizer : public QFrame {
     Q_OBJECT
 
    public:
@@ -22,22 +26,7 @@ class PeakVisualizer : public QWidget {
         gradient = gradient_;
     }
 
-    void reset();
-
-    void loadSettings(const PeakVisualizerSettings& settings) {
-        setHidden(settings.hidden);
-        gradientPreset = settings.preset;
-        gradient = QGradient(gradientPreset);
-        mode = settings.mode;
-    };
-
-    void saveSettings(PeakVisualizerSettings& settings) {
-        settings.hidden = isHidden();
-        settings.preset = gradientPreset;
-        settings.mode = mode;
-    }
-
-    void setAudioProperties(const u32 rate, const AudioChannels chn) {
+    constexpr void setAudioProperties(const u32 rate, const AudioChannels chn) {
         sampleRate = rate;
         channels = chn;
 
@@ -48,9 +37,38 @@ class PeakVisualizer : public QWidget {
         }
     }
 
-    void start() { timer.start(SECOND_MS / u16(screen()->refreshRate())); }
+    constexpr void setBandCount(const Bands bands) {
+        bandCount = bands;
+        frequencies =
+            span<const f32>(getFrequenciesForBands(bands), usize(bandCount));
+    }
 
-    void stop() { timer.stop(); }
+    void reset();
+
+    void loadSettings(const PeakVisualizerSettings& settings) {
+        setHidden(settings.hidden);
+        gradientPreset = settings.preset;
+        gradient = QGradient(gradientPreset);
+        mode = settings.mode;
+        setBandCount(settings.bands);
+    };
+
+    void saveSettings(PeakVisualizerSettings& settings) {
+        settings.hidden = isHidden();
+        settings.preset = gradientPreset;
+        settings.mode = mode;
+        settings.bands = bandCount;
+    }
+
+    void start() {
+        timer.start(SECOND_MS / u16(screen()->refreshRate()));
+        setUpdatesEnabled(true);
+    }
+
+    void stop() {
+        timer.stop();
+        setUpdatesEnabled(false);
+    }
 
     const f32* buffer;
 
@@ -59,26 +77,35 @@ class PeakVisualizer : public QWidget {
 
    private:
     inline void buildPeaks();
-    [[nodiscard]] inline auto getBandIndices(u16 fftSize) const
-        -> array<u16, TEN_BANDS>;
 
+    array<f32, MIN_BUFFER_SIZE> fftSamples;
+    alignas(
+        sizeof(i32) * CHAR_BIT
+    ) array<AVComplexFloat, FFT_OUTPUT_SAMPLE_COUNT> fftOutput;
+    array<f32, FFT_OUTPUT_SAMPLE_COUNT> fftMagnitudes;
+    array<f32, usize(Bands::Thirty) + 1> fftBandBins;
+    array<f32, usize(Bands::Thirty)> peaks;
+
+    QGradient gradient = QGradient(QGradient::MorpheusDen);
+
+    QTimer timer;
+
+    span<const f32> frequencies = span<const f32>(
+        getFrequenciesForBands(Bands::Eighteen),
+        usize(Bands::Eighteen)
+    );
     FFmpeg::TXContext fftCtx;
-    av_tx_fn fft = nullptr;
+    av_tx_fn fft;
+
+    QGradient::Preset gradientPreset = QGradient::MorpheusDen;
 
     u32 sampleRate = 0;
-    AudioChannels channels;
     u16 bufferSize;
 
-    f32 fftScale = 0;
-    u16 lastFFTSampleCount = 0;
-    u16 fftOutputSampleCount = 0;
-
-    array<f32, MIN_BUFFER_SIZE / F32_SAMPLE_SIZE> fftSamples;
     u16 fftSampleCount = 0;
 
-    array<f32, TEN_BANDS> peaks;
+    AudioChannels channels;
+
+    Bands bandCount = Bands::Eighteen;
     PeakVisualizerMode mode = PeakVisualizerMode::DBFS;
-    QGradient gradient = QGradient(QGradient::MorpheusDen);
-    QGradient::Preset gradientPreset = QGradient::MorpheusDen;
-    QTimer timer;
 };
