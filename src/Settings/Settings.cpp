@@ -1,6 +1,7 @@
 #include "Settings.hpp"
 
 #include "Enums.hpp"
+#include "Logger.hpp"
 
 #include <QApplication>
 #include <QJsonDocument>
@@ -174,7 +175,7 @@ CoreSettings::CoreSettings(const QJsonObject& obj) {
             nullptr,
             nullptr
         ) != MA_SUCCESS) {
-        // TODO
+        LOG_ERROR(u"Failed to get audio playback devices"_s);
     }
 
     playbackDevices = span<ma_device_info>(playbackInfos, playbackCount);
