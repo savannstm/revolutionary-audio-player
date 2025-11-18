@@ -4,11 +4,16 @@
 #include "Constants.hpp"
 #include "PlaylistTabLabel.hpp"
 
+#include <QColorDialog>
 #include <QDrag>
 #include <QMenu>
 #include <QMimeData>
 
-PlaylistTab::PlaylistTab(const QString& text, bool closable, QWidget* parent) :
+PlaylistTab::PlaylistTab(
+    const QString& text,
+    bool closable,
+    QWidget* const parent
+) :
     QPushButton(parent),
     label_(new PlaylistTabLabel(text, parent)) {
     setObjectName(text);
@@ -83,17 +88,21 @@ void PlaylistTab::selectTab() {
 }
 
 void PlaylistTab::createContextMenu() {
-    auto* menu = new QMenu(this);
+    auto* const menu = new QMenu(this);
 
-    const QAction* renameTabAction = menu->addAction(tr("Rename Tab"));
-    const QAction* removeToLeftAction =
+    const QAction* const renameTabAction = menu->addAction(tr("Rename Tab"));
+
+    const QAction* const changeTabColor =
+        menu->addAction(tr("Change Background Color"));
+
+    const QAction* const removeToLeftAction =
         menu->addAction(tr("Remove All Tabs To Left"));
-    const QAction* removeOtherTabs =
+    const QAction* const removeOtherTabs =
         menu->addAction(tr("Remove All Other Tabs"));
-    const QAction* removeToRightAction =
+    const QAction* const removeToRightAction =
         menu->addAction(tr("Remove All Tabs To Right"));
 
-    const QAction* selectedAction =
+    const QAction* const selectedAction =
         menu->exec(mapToGlobal(QPoint(0, this->height())));
     delete menu;
 
@@ -101,7 +110,16 @@ void PlaylistTab::createContextMenu() {
         return;
     }
 
-    if (selectedAction == renameTabAction) {
+    if (selectedAction == changeTabColor) {
+        const QColor color = QColorDialog::getColor();
+        const QString colorName = color.name();
+
+        if (colorName == u"#ffffff"_qsv || colorName == u"#000000"_qsv) {
+            setStyleSheet(QString());
+        } else {
+            setColor(colorName);
+        }
+    } else if (selectedAction == renameTabAction) {
         label_->setReadOnly(false);
         label_->setStyleSheet(QString());
         label_->setFocus();
@@ -117,11 +135,11 @@ void PlaylistTab::createContextMenu() {
     }
 }
 
-auto PlaylistTab::eventFilter(QObject* obj, QEvent* event) -> bool {
+auto PlaylistTab::eventFilter(QObject* const obj, QEvent* const event) -> bool {
     if (obj == label_) {
         switch (event->type()) {
             case QEvent::MouseButtonRelease: {
-                const auto* mouseEvent = as<QMouseEvent*>(event);
+                const auto* const mouseEvent = as<QMouseEvent*>(event);
 
                 if ((mouseEvent->buttons() & Qt::LeftButton) != 0) {
                     return false;
@@ -164,20 +182,20 @@ void PlaylistTab::deselectLabel() {
 
     label_->deselect();
     label_->setReadOnly(true);
-    label_->setStyleSheet("background: transparent;");
+    label_->setStyleSheet(u"background: transparent;"_s);
     label_->setFixedWidth(labelTextWidth());
 
     setFixedSize(layout_->sizeHint());
 }
 
-void PlaylistTab::mousePressEvent(QMouseEvent* event) {
+void PlaylistTab::mousePressEvent(QMouseEvent* const event) {
     if (event->button() == Qt::LeftButton) {
         dragStartPos = event->pos();
         dragging = false;
     }
 }
 
-void PlaylistTab::mouseMoveEvent(QMouseEvent* event) {
+void PlaylistTab::mouseMoveEvent(QMouseEvent* const event) {
     if ((event->buttons() & Qt::LeftButton) != 0 && !dragging &&
         (event->pos() - dragStartPos).manhattanLength() > START_DRAG_DISTANCE) {
         dragging = true;
@@ -188,8 +206,8 @@ void PlaylistTab::mouseMoveEvent(QMouseEvent* event) {
 }
 
 void PlaylistTab::grab() {
-    auto* drag = new QDrag(this);
-    auto* mimeData = new QMimeData();
+    auto* const drag = new QDrag(this);
+    auto* const mimeData = new QMimeData();
 
     mimeData->setText(objectName());
     drag->setMimeData(mimeData);

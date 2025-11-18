@@ -19,11 +19,27 @@ class PlaylistTab : public QPushButton {
         QWidget* parent = nullptr
     );
 
-    [[nodiscard]] auto label() const -> QString { return label_->text(); }
+    [[nodiscard]] auto labelText() const -> QString { return label_->text(); }
 
-    void setLabel(const QString& label) { label_->setText(label); };
+    void setLabelText(const QString& label) { label_->setText(label); };
 
-    constexpr auto labelPtr() -> PlaylistTabLabel* { return label_; };
+    [[nodiscard]] constexpr auto label() const -> PlaylistTabLabel* {
+        return label_;
+    };
+
+    [[nodiscard]] constexpr auto color() const -> const QString& {
+        return color_;
+    }
+
+    void setColor(const QString& color) {
+        color_ = color;
+
+        setStyleSheet(
+            u"PlaylistTab { background-color: %1; }\nQToolButton { background-color: %2; }"_s
+                .arg(color)
+                .arg(QColor(color).lighter(50).name())
+        );
+    }
 
    signals:
     void clicked();
@@ -43,11 +59,14 @@ class PlaylistTab : public QPushButton {
     inline void deselectLabel();
     inline void grab();
 
-    bool addTab = false;
-    PlaylistTabLabel* label_;
-    QToolButton* tabButton = new QToolButton(this);
-    QHBoxLayout* layout_ = new QHBoxLayout(this);
+    PlaylistTabLabel* label_ = nullptr;
+
+    QToolButton* const tabButton = new QToolButton(this);
+    QHBoxLayout* const layout_ = new QHBoxLayout(this);
 
     QPoint dragStartPos;
-    bool dragging;
+    QString color_;
+
+    bool dragging = false;
+    bool addTab = false;
 };
