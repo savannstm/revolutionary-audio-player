@@ -21,9 +21,9 @@ class DeviceMonitor : public QObject {
 
    signals:
     void defaultDeviceChanged(const QString& deviceName);
-    void deviceAdded(const QString& deviceName, const QString& deviceID);
-    void deviceRemoved(const QString& deviceName, const QString& deviceID);
-    void deviceStateChanged(const QString& deviceName, const QString& deviceID);
+    void deviceAdded(const QString& deviceName);
+    void deviceRemoved(const QString& deviceName);
+    void deviceStateChanged(const QString& deviceName);
 
    private:
 #ifdef Q_OS_WINDOWS

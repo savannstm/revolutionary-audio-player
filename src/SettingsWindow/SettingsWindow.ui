@@ -54,7 +54,7 @@
      </item>
     </widget>
    </item>
-   <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
+   <item alignment="Qt::AlignLeft|Qt::AlignTop">
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -63,7 +63,7 @@
       </sizepolicy>
      </property>
      <property name="layoutDirection">
-      <enum>Qt::LayoutDirection::LeftToRight</enum>
+      <enum>Qt::LeftToRight</enum>
      </property>
      <widget class="QWidget" name="coreSettingsPage">
       <property name="sizePolicy">
@@ -88,7 +88,7 @@
        <property name="bottomMargin">
         <number>8</number>
        </property>
-       <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
+       <item alignment="Qt::AlignLeft|Qt::AlignTop">
         <widget class="QWidget" name="styleSelectContainer" native="true">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -101,7 +101,7 @@
            <number>8</number>
           </property>
           <property name="sizeConstraint">
-           <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
+           <enum>QLayout::SetDefaultConstraint</enum>
           </property>
           <property name="leftMargin">
            <number>0</number>
@@ -127,7 +127,7 @@
              <string>Style</string>
             </property>
             <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignCenter</set>
+             <set>Qt::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -143,7 +143,7 @@
          </layout>
         </widget>
        </item>
-       <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
+       <item alignment="Qt::AlignLeft|Qt::AlignTop">
         <widget class="QWidget" name="themeSelectContainer" native="true">
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <property name="spacing">
@@ -190,7 +190,7 @@
          </layout>
         </widget>
        </item>
-       <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
+       <item alignment="Qt::AlignLeft|Qt::AlignTop">
         <widget class="QWidget" name="outputDeviceContainer" native="true">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
@@ -199,7 +199,7 @@
           </sizepolicy>
          </property>
          <property name="layoutDirection">
-          <enum>Qt::LayoutDirection::LeftToRight</enum>
+          <enum>Qt::LeftToRight</enum>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
           <property name="spacing">
@@ -238,12 +238,17 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <item>
+             <property name="text">
+              <string>Default</string>
+             </property>
+            </item>
            </widget>
           </item>
          </layout>
         </widget>
        </item>
-       <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
+       <item alignment="Qt::AlignLeft|Qt::AlignTop">
         <widget class="QWidget" name="settingsDirInputContainer" native="true">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
@@ -293,7 +298,7 @@
          </layout>
         </widget>
        </item>
-       <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
+       <item alignment="Qt::AlignLeft|Qt::AlignTop">
         <widget class="QWidget" name="playlistDirInputContainer" native="true">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
@@ -505,7 +510,7 @@
          </property>
         </widget>
        </item>
-       <item alignment="Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop">
+       <item alignment="Qt::AlignLeft|Qt::AlignTop">
         <widget class="QWidget" name="playlistNamingSelectContainer" native="true">
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <property name="spacing">
@@ -535,7 +540,7 @@
              <string>Playlist Naming</string>
             </property>
             <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignCenter</set>
+             <set>Qt::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -589,13 +594,10 @@
           <item>
            <widget class="QListWidget" name="columnList">
             <property name="dragDropMode">
-             <enum>QAbstractItemView::DragDropMode::DragDrop</enum>
+             <enum>QAbstractItemView::DragDrop</enum>
             </property>
             <property name="defaultDropAction">
-             <enum>Qt::DropAction::MoveAction</enum>
-            </property>
-            <property name="supportedDragActions">
-             <set>Qt::DropAction::MoveAction</set>
+             <enum>Qt::MoveAction</enum>
             </property>
            </widget>
           </item>

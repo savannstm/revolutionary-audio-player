@@ -66,7 +66,7 @@ auto WindowsDeviceMonitor::OnDeviceAdded(LPCWSTR wDeviceID) -> HRESULT {
     if (isOutputDevice(wDeviceID)) {
         const QString name = getDeviceName(wDeviceID);
         const QString deviceID = QString::fromWCharArray(wDeviceID);
-        emit deviceAdded(name, deviceID);
+        emit deviceAdded(name);
     }
 
     return S_OK;
@@ -76,7 +76,7 @@ auto WindowsDeviceMonitor::OnDeviceRemoved(const LPCWSTR wDeviceID) -> HRESULT {
     if (isOutputDevice(wDeviceID)) {
         const QString name = getDeviceName(wDeviceID);
         const QString deviceID = QString::fromWCharArray(wDeviceID);
-        emit deviceRemoved(name, deviceID);
+        emit deviceRemoved(name);
     }
 
     return S_OK;
@@ -89,7 +89,7 @@ auto WindowsDeviceMonitor::OnDeviceStateChanged(
     if (isOutputDevice(wDeviceID)) {
         const QString name = getDeviceName(wDeviceID);
         const QString deviceID = QString::fromWCharArray(wDeviceID);
-        emit deviceStateChanged(name, deviceID, newState);
+        emit deviceStateChanged(name, newState);
     }
 
     return S_OK;

@@ -246,6 +246,49 @@ SettingsWindow::SettingsWindow(
         this,
         [&](const u16 row) -> void { stackedWidget->setCurrentIndex(row); }
     );
+
+    connect(
+        deviceMonitor,
+        &DeviceMonitor::defaultDeviceChanged,
+        this,
+        [&](const QString& deviceName) -> void {
+        for (const u8 idx : range(1, outputDeviceSelect->count())) {
+            if (outputDeviceSelect->itemText(idx) == deviceName) {
+                outputDeviceSelect->setCurrentIndex(idx);
+                break;
+            }
+        }
+    }
+    );
+
+    connect(
+        deviceMonitor,
+        &DeviceMonitor::deviceAdded,
+        this,
+        [&](const QString& deviceName) -> void {
+        for (const u8 idx : range(1, outputDeviceSelect->count())) {
+            if (outputDeviceSelect->itemText(idx) == deviceName) {
+                return;
+            }
+        }
+
+        outputDeviceSelect->addItem(deviceName);
+    }
+    );
+
+    connect(
+        deviceMonitor,
+        &DeviceMonitor::deviceRemoved,
+        this,
+        [&](const QString& deviceName) -> void {
+        for (const u8 idx : range(1, outputDeviceSelect->count())) {
+            if (outputDeviceSelect->itemText(idx) == deviceName) {
+                outputDeviceSelect->removeItem(idx);
+                break;
+            }
+        }
+    }
+    );
 }
 
 SettingsWindow::~SettingsWindow() {
@@ -309,10 +352,8 @@ auto SettingsWindow::fetchDevices() -> ma_result {
         }
     }
 
-    outputDeviceSelect->addItem(tr("Default Device"));
-
     if (settings->core.outputDevice.isEmpty()) {
-        outputDeviceSelect->setCurrentIndex(outputDeviceSelect->count() - 1);
+        outputDeviceSelect->setCurrentIndex(0);
     };
 
     return MA_SUCCESS;

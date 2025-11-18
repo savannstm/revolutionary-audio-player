@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DeviceMonitor.hpp"
 #include "Settings.hpp"
 #include "TrackProperties.hpp"
 #include "ui_SettingsWindow.h"
@@ -7,7 +8,6 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialog>
-#include <QLabel>
 
 QT_BEGIN_NAMESPACE
 
@@ -16,8 +16,6 @@ namespace Ui {
 }  // namespace Ui
 
 QT_END_NAMESPACE
-
-// TODO: Add hot-reload of available output devices
 
 class SettingsWindow : public QDialog {
     Q_OBJECT
@@ -74,13 +72,15 @@ class SettingsWindow : public QDialog {
         }
     }
 
-    Ui::SettingsWindow* const ui = setupUi();
+    ma_context context;
+    const ma_context_config config = ma_context_config_init();
+
+    span<ma_device_info> playbackDevices;
 
     shared_ptr<Settings> settings;
 
-    ma_context context;
-    const ma_context_config config = ma_context_config_init();
-    span<ma_device_info> playbackDevices;
+    DeviceMonitor* const deviceMonitor = new DeviceMonitor(this);
+    Ui::SettingsWindow* const ui = setupUi();
 
     QStackedWidget* const stackedWidget = ui->stackedWidget;
     QListWidget* const settingsList = ui->settingsList;

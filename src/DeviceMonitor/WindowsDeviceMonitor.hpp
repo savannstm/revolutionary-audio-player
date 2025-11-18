@@ -39,13 +39,9 @@ class WindowsDeviceMonitor : public QObject, public IMMNotificationClient {
     ) override;
 
    signals:
-    void deviceAdded(const QString& deviceName, const QString& deviceID);
-    void deviceRemoved(const QString& deviceName, const QString& deviceID);
-    void deviceStateChanged(
-        const QString& deviceName,
-        const QString& deviceID,
-        DWORD state
-    );
+    void deviceAdded(const QString& deviceName);
+    void deviceRemoved(const QString& deviceName);
+    void deviceStateChanged(const QString& deviceName, DWORD state);
     void defaultDeviceChanged(const QString& deviceName);
 
    private:
