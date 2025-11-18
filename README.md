@@ -40,6 +40,8 @@ This audio player emphasizes clean codebase, little amount of dependencies, simp
 
 You can get those in **Releases** section.
 
+Built releases require AVX instructions, which means the minimum supported processors are Sandy Bridge (3th Gen) for Intel and Bulldozer for AMD (FX-4xxx, FX-6xxx, FX-8xxx).
+
 ### Visualizer Presets
 
 We don't ship any presets for our visualizer.
@@ -61,196 +63,13 @@ You can also download an enormous 130k+ presets from the MegaPack [here](https:/
 
 ### Linux
 
-Unfortunately, we had to give up on building static Linux binaries from Alpine. The main reason for that is sheer vastness of Linux audio backends (ALSA, PulseAudio, PipeWire, OSS, etc.), and the impossibility of building all them statically and linking to the binary. We tried to link only those dynamically, and everything else statically, but that pulls Alpine's musl libc implementation into the linked libraries, and most of the distributions don't provide musl libc libraries.
+Unfortunately, we had to give up on building static Linux binaries from Alpine.
 
-You'll usually need the following shared libraries in your distribution to seamlessly run the player:
+The main reason for that is sheer vastness of Linux audio backends (ALSA, PulseAudio, PipeWire, OSS, etc.), and the impossibility of building all them statically and linking to the binary. We tried to link only those dynamically, and everything else statically, but that pulls Alpine's musl libc implementation into the linked libraries, and most of the distributions don't provide musl libc libraries.
 
--   GNU libc
-    -   libc
-    -   libstdc++
-    -   libgcc_s
-    -   libm
-    -   librt
-    -   ld-linux
--   libX11
-    -   libXau
-    -   libXdmcp
--   libxcb
-    -   libxcb-cursor
-    -   libxcb-icccm
-    -   libxcb-image
-    -   libxcb-keysyms
-    -   libxcb-randr
-    -   libxcb-render-util
-    -   libxcb-shm
-    -   libxcb-sync
-    -   libxcb-xfixes
-    -   libxcb-render
-    -   libxcb-shape
-    -   libxcb-xkb
-    -   libxcb-xinput
-    -   libxcb-util
-    -   libICE
-    -   libSM
--   libxkbcommon
-    -   libxkbcommon-x11
--   libffi
--   libOpenGL
-    -   libGLX
-    -   libEGL
-    -   libGLdispatch
--   libwayland
-    -   libwayland-client
-    -   libwayland-cursor
-    -   libwayland-egl
+The second reason - is that static Qt is unable to load plugins on runtime.
 
-On different distros, you get them different ways:
-
-```bash
-# Debian, Debian-based (Ubuntu, Kubuntu etc.)
-sudo apt update
-sudo apt install -y \
-    libxkbcommon-x11-0 \
-    libxkbcommon0 \
-    libxcb-cursor0 \
-    libxcb-icccm4 \
-    libxcb-image0 \
-    libxcb-keysyms1 \
-    libxcb-randr0 \
-    libxcb-render-util0 \
-    libxcb-shm0 \
-    libxcb-sync1 \
-    libxcb-xfixes0 \
-    libxcb-render0 \
-    libxcb-shape0 \
-    libxcb-xkb1 \
-    libxcb-xinput0 \
-    libxcb1 \
-    libxcb-util1 \
-    libxau6 \
-    libxdmcp6 \
-    libsm6 \
-    libice6 \
-    libc6 \
-    libstdc++6 \
-    libgcc-s1 \
-    libffi8 \
-    libglx0 \
-    libopengl0 \
-    libegl1 \
-    libgl1 \
-    libwayland-client0 \
-    libwayland-cursor0 \
-    libwayland-egl1
-
-# Arch, Arch-based (Endeavour, Cachy), Manjaro
-sudo pacman -Syu --needed \
-    libxkbcommon-x11 \
-    libxkbcommon \
-    libxcb \
-    xcb-util-cursor \
-    xcb-util-keysyms \
-    xcb-util-wm \
-    libxau \
-    libxdmcp \
-    gcc-libs \
-    glibc \
-    libffi \
-    libglvnd \
-    wayland
-
-# Alpine
-apk add \
-    libxkbcommon-x11 \
-    libxkbcommon \
-    libxcb \
-    xcb-util \
-    xcb-util-cursor \
-    xcb-util-keysyms \
-    xcb-util-wm \
-    xcb-util-image \
-    libxau \
-    libxdmcp \
-    libc6-compat \
-    libstdc++ \
-    gcc \
-    musl \
-    libffi \
-    libglvnd \
-    wayland-libs-client \
-    wayland-libs-cursor \
-    wayland-libs-egl
-
-
-# OpenSUSE
-sudo zypper install -y \
-    libxkbcommon-x11-0 \
-    libxkbcommon0 \
-    libxcb-cursor0 \
-    libxcb-icccm4 \
-    libxcb-image0 \
-    libxcb-keysyms1 \
-    libxcb-randr0 \
-    libxcb-render-util0 \
-    libxcb-shm0 \
-    libxcb-sync1 \
-    libxcb-xfixes0 \
-    libxcb-render0 \
-    libxcb-shape0 \
-    libxcb-xkb1 \
-    libxcb-xinput0 \
-    libxcb1 \
-    libxcb-util1 \
-    libXau6 \
-    libXdmcp6 \
-    libsm6 \
-    libice6 \
-    glibc \
-    libstdc++6 \
-    libgcc_s1 \
-    libffi8 \
-    libGLX0 \
-    libEGL1 \
-    libOpenGL0 \
-    libGLdispatch0 \
-    libwayland-client0 \
-    libwayland-cursor0 \
-    libwayland-egl1
-```
-
-Also, you'll need PulseAudio-compatible audio backend. It's either PulseAudio directly or PipeWire-pulse.
-
-On different distros, you get them different ways:
-
-```bash
-# PipeWire-pulse
-
-## Debian, Debian-based (Ubuntu, Kubuntu etc.)
-sudo apt install libpipewire-0.3-0 libpipewire-0.3-modules
-
-## Arch, Arch-based (Endeavour, Cachy), Manjaro
-sudo pacman -S pipewire pipewire-pulse
-
-## Alpine
-sudo apk add pipewire-libs pipewire-pulse
-
-## OpenSUSE
-sudo zypper install libpipewire-0_3 pipewire-pulseaudio
-
-# PulseAudio
-
-## Debian, Debian-based (Ubuntu, Kubuntu etc.)
-sudo apt install pulseaudio pulseaudio-utils
-
-## Arch, Arch-based (Endeavour, Cachy), Manjaro
-sudo pacman -S pulseaudio pulseaudio-alsa
-
-## Alpine
-sudo apk add pulseaudio pulseaudio-utils
-
-## OpenSUSE
-sudo zypper install pulseaudio pulseaudio-utils
-```
+[Dependencies you'll need](./docs/linux-deps.md).
 
 ### Windows
 
@@ -260,44 +79,4 @@ Minimum supported Windows version is Windows 10.
 
 ## Build
 
-You need a C++23 compatible compiler: `clang`, `gcc`, `msvc`. The project uses CMake as build system.
-
-Libraries you'll need:
-
--   Qt6 (>= 6.8.0)
-    -   Core
-    -   Concurrent
-    -   Thread
-    -   Network
-    -   Harfbuzz
-    -   Widgets
-    -   GUI
-    -   PNG (optional, for PNG support)
-    -   JPEG (optional, for JPEG support)
-    -   QtTools (optional, for translations creation; you may need to patch CMakeLists if you won't build qtlinguist)
-    -   QtImageFormats (optional, for WEBP/TIFF support)
-    -   **Linux:** XCB (for `qxcb` plugin, necessary for drawing windows in X11/Wayland), Qt6Svg (for `.svg` icons), Wayland (optional, for `qwayland` plugin), fontconfig (optional, for auto system font detection)
--   miniaudio (>=0.11.23)
--   rapidhash
--   FFmpeg (>=7.1.1)
-    -   avformat
-    -   avcodec
-    -   avfilter
-    -   swresample
--   libprojectM (optional, >= 4.1.4)
-    -   GLEW (optional, Windows dependency)
-
-Clone the repository: `git clone https://github.com/savannstm/revolutionary-audio-player`.
-
-From there you can use `build.ps1` (PowerShell) and `build.sh` (Bash) scripts to build the project into `build` directory.
-
-Script supports `-r` argument for building in `Release` mode.
-
-Build artifacts are output to `build/target` directory.
-
-Default builds of the program include:
-
--   FFmpeg built with the following configuration: `--enable-asm --enable-optimizations --enable-stripping --disable-debug --enable-static --disable-all --enable-avformat --enable-avcodec --enable-avfilter --enable-swresample --enable-decoder=mp3,flac,opus,aac,alac,vorbis,png,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,jpeg,mjpeg,bmp,webp,ac3,eac3 --enable-demuxer=mp3,flac,ogg,aac,wav,mov,matroska,ac3,mjpeg,eac3 --enable-filter=aformat,firequalizer,aresample,alimiter --enable-protocol=file --disable-autodetect --enable-zlib`
--   Qt6 built with the following configuration:
-    -   Linux: `-static -release -nomake tests -nomake examples -nomake benchmarks -opengl desktop -system-harfbuzz -system-freetype -system-libpng -system-libjpeg -system-webp -system-tiff -system-zlib -system-doubleconversion -system-pcre -no-gtk -no-glib -no-ico -no-directfb -no-eglfs -no-gbm -no-kms -no-linuxfb -no-evdev -no-mtdev -no-tslib -no-emojisegmenter -no-cups -no-ssl -no-openssl -no-bundled-xcb-xinput -no-xcb-xlib -no-dbus -no-icu -xcb -fontconfig -gui -widgets -submodules qtbase,qtsvg,qtimageformats,qtwayland,qttools -qpa "xcb;wayland"`
-    -   Windows: `-static -release -nomake tests -nomake examples -nomake benchmarks -opengl desktop -system-harfbuzz -system-freetype -system-libpng -system-libjpeg -system-webp -system-tiff -system-zlib -system-doubleconversion -system-pcre -no-emojisegmenter -no-icu -gui -widgets -submodules qtbase,qtimageformats,qttools -qpa "windows"`
+See [BUILDING.MD](./docs/building.md).
