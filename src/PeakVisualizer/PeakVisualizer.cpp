@@ -84,8 +84,8 @@ PeakVisualizer::PeakVisualizer(
         constexpr auto unfilteredPresetRange =
             range(1, QGradient::Preset::NumPresets);
 
-        constexpr array<u16, 9> missingPresets = { 39,  40,  74, 141, 130,
-                                                   135, 119, 71, 27 };
+        constexpr array<u16, 10> missingPresets = { 39,  40,  74, 141, 130,
+                                                    135, 119, 71, 27,  105 };
 
         // For some idiotic reasons, those indices aren't in Preset enum
         auto filteredPresetRange =
