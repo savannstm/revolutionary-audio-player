@@ -104,8 +104,10 @@ class PeakVisualizer : public QFrame {
 
     u16 fftSampleCount = 0;
 
-    AudioChannels channels;
+    u8 peakPadding = 0;
 
-    Bands bandCount = Bands::Eighteen;
     PeakVisualizerMode mode = PeakVisualizerMode::DBFS;
+
+    AudioChannels channels;
+    Bands bandCount = Bands::Eighteen;
 };

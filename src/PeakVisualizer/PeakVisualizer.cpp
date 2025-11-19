@@ -8,7 +8,6 @@
 #include <numbers>
 
 constexpr u8 VISUALIZER_WIDTH = 128;
-constexpr u8 PEAK_PADDING = 4;
 
 PeakVisualizer::PeakVisualizer(
     const f32* const bufferData,
@@ -110,8 +109,26 @@ PeakVisualizer::PeakVisualizer(
 
         menu->addMenu(presetMenu);
 
+        auto* const paddingMenu = new QMenu(menu);
+        paddingMenu->setTitle(tr("Peak Padding"));
+
+        paddingMenu->addAction("0");
+        paddingMenu->addAction("1");
+        paddingMenu->addAction("2");
+        paddingMenu->addAction("3");
+        paddingMenu->addAction("4");
+
+        for (QAction* const action : paddingMenu->actions()) {
+            action->setCheckable(true);
+
+            if (action->text().toInt() == peakPadding) {
+                action->setChecked(true);
+            }
+        }
+
+        menu->addMenu(paddingMenu);
+
         const QAction* const selectedAction = menu->exec(QCursor::pos());
-        delete menu;
 
         if (selectedAction == nullptr) {
             return;
@@ -121,11 +138,17 @@ PeakVisualizer::PeakVisualizer(
             mode = PeakVisualizerMode::Relative;
         } else if (selectedAction == dBFSAction) {
             mode = PeakVisualizerMode::DBFS;
+        } else if (selectedAction == equalAction) {
+            mode = PeakVisualizerMode::Equal;
         } else if (selectedAction == eighteenBandsAction) {
             setBandCount(Bands::Eighteen);
         } else if (selectedAction == thirtyBandsAction) {
             setBandCount(Bands::Thirty);
+        } else if (paddingMenu->actions().contains(selectedAction)) {
+            peakPadding = selectedAction->text().toInt();
         }
+
+        delete menu;
     });
 
     connect(&timer, &QTimer::timeout, this, [&] -> void {
@@ -278,7 +301,7 @@ void PeakVisualizer::paintEvent(QPaintEvent* const event) {
         const QRectF bar = QRectF(
             peakWidth * f32(band),
             height - peakHeight,
-            peakWidth,
+            peakWidth - f32(peakPadding),
             peakHeight
         );
 
