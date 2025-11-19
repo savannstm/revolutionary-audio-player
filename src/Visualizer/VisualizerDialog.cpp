@@ -75,7 +75,7 @@ VisualizerDialog::VisualizerDialog(
         const QByteArray data = process->readAllStandardError();
 
         // Doesn't work with stdout
-        if (data == "initialized\n") {
+        if (data.startsWith("initialized")) {
             emit ready();
         }
 
