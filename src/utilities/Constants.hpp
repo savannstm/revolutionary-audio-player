@@ -108,6 +108,9 @@ constexpr QMargins TAB_MARGINS = { 8, 4, 8, 4 };
 constexpr u8 TAB_LABEL_RIGHT_MARGIN = 8;
 constexpr QSize PLAYLIST_TAB_CLOSE_BUTTON_SIZE = QSize(16, 16);
 
+constexpr u8 BRIGHTNESS_THRESHOLD = 128;
+constexpr u8 LIGHTNESS_FACTOR = 50;
+
 // Header handle width (used for resizing column headers)
 constexpr u8 HEADER_HANDLE_WIDTH = 4;
 

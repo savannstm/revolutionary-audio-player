@@ -31,15 +31,7 @@ class PlaylistTab : public QPushButton {
         return color_;
     }
 
-    void setColor(const QString& color) {
-        color_ = color;
-
-        setStyleSheet(
-            u"PlaylistTab { background-color: %1; }\nQToolButton { background-color: %2; }"_s
-                .arg(color)
-                .arg(QColor(color).lighter(50).name())
-        );
-    }
+    void setColor(const QString& color);
 
    signals:
     void clicked();
@@ -59,7 +51,7 @@ class PlaylistTab : public QPushButton {
     inline void deselectLabel();
     inline void grab();
 
-    PlaylistTabLabel* label_ = nullptr;
+    PlaylistTabLabel* const label_ = nullptr;
 
     QToolButton* const tabButton = new QToolButton(this);
     QHBoxLayout* const layout_ = new QHBoxLayout(this);

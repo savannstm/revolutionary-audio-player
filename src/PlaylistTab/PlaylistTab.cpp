@@ -213,3 +213,22 @@ void PlaylistTab::grab() {
     drag->setMimeData(mimeData);
     drag->exec(Qt::MoveAction);
 }
+
+void PlaylistTab::setColor(const QString& color) {
+    color_ = color;
+
+    const auto qcolor = QColor(color);
+    const u8 brightness =
+        u8((0.299F * f32(qcolor.red())) + (0.587F * f32(qcolor.green())) +
+           (0.114F * f32(qcolor.blue())));
+
+    setStyleSheet(
+        u"PlaylistTab { background-color: %1; }\nPlaylistTabLabel { color: %2 }\nQToolButton { color: %2; background-color: %3; }"_s
+            .arg(color)
+            .arg(
+                (brightness > BRIGHTNESS_THRESHOLD) ? u"#000000"_s
+                                                    : u"#FFFFFF"_s
+            )
+            .arg(qcolor.lighter(LIGHTNESS_FACTOR).name())
+    );
+}
