@@ -808,7 +808,6 @@ auto MainWindow::saveSettings() -> result<bool, QString> {
     settings->dockWidget.size = dockWidget->width();
     settings->dockWidget.imageSize = dockCoverLabel->height();
 
-    peakVisualizer->saveSettings(settings->peakVisualizer);
     settings->save(settingsFile);
 
     QFile rapPathsFile = QFile(
@@ -963,8 +962,6 @@ void MainWindow::loadSettings() {
     loadPlaylists();
     playlistView->setCurrentIndex(settings->core.currentTab);
     equalizerMenu->loadSettings();
-
-    peakVisualizer->loadSettings(settings->peakVisualizer);
 
     // Directly update system associations, in case if binary was moved
     // somewhere
