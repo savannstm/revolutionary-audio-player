@@ -61,14 +61,6 @@ class TrackTree : public QTreeView {
     void dropEvent(QDropEvent* event) override;
     void startDrag(Qt::DropActions supportedActions) override;
 
-    void changeEvent(QEvent* const event) override {
-        if (event->type() == QEvent::PaletteChange) {
-            setOpacity(opacity_);
-        }
-
-        QTreeView::changeEvent(event);
-    }
-
    private:
     inline void reselectCurrentElement(
         const QItemSelection& /* unused */,

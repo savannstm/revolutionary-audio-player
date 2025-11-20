@@ -9,7 +9,6 @@
 #include "TrackProperties.hpp"
 #include "TrackTreeItem.hpp"
 
-#include <QApplication>
 #include <QDir>
 #include <QDrag>
 #include <QMimeData>

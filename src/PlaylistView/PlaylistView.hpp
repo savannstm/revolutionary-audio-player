@@ -148,6 +148,19 @@ class PlaylistView : public QWidget {
     void indexChanged(i8 index);
     void tabsRemoved(TabRemoveMode mode, u8 startIndex, u8 count);
 
+   protected:
+    // If this is put into a track tree, causes a deadlock
+    void changeEvent(QEvent* const event) override {
+        if (event->type() == QEvent::PaletteChange) {
+            for (const u8 idx : range(0, tabCount())) {
+                TrackTree* tree = this->tree(idx);
+                tree->setOpacity(tree->opacity());
+            }
+        }
+
+        QWidget::changeEvent(event);
+    }
+
    private:
     void setTreeOpacity(u8 index, f32 opacity) const;
 
