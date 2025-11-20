@@ -55,11 +55,16 @@ void PlaylistTabBar::insertTab(
     tabContainerLayout->insertWidget(index, tab);
 
     if (closable) {
-        connect(tab, &PlaylistTab::removeTabRequested, this, [&, tab] -> void {
+        connect(
+            tab,
+            &PlaylistTab::removeTabRequested,
+            this,
+            [this, tab] -> void {
             removeTabs(TabRemoveMode::Single, tabIndex(tab));
-        });
+        }
+        );
 
-        connect(tab, &PlaylistTab::clicked, this, [&, tab] -> void {
+        connect(tab, &PlaylistTab::clicked, this, [this, tab] -> void {
             setCurrentIndex(tabIndex(tab));
         });
 
@@ -67,12 +72,12 @@ void PlaylistTabBar::insertTab(
             tab,
             &PlaylistTab::removeTabsRequested,
             this,
-            [&, tab](const TabRemoveMode mode) -> void {
+            [this, tab](const TabRemoveMode mode) -> void {
             removeTabs(mode, tabIndex(tab));
         }
         );
     } else {
-        connect(tab, &PlaylistTab::addButtonClicked, this, [&] -> void {
+        connect(tab, &PlaylistTab::addButtonClicked, this, [this] -> void {
             insertTab(tabCount(), QString(), true);
         });
     }

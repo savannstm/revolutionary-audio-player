@@ -2,8 +2,7 @@
 
 #include "Aliases.hpp"
 #include "Enums.hpp"
-#include "MusicItem.hpp"
-#include "RapidHasher.hpp"
+#include "TrackTreeItem.hpp"
 
 #include <QStandardItemModel>
 
@@ -14,12 +13,12 @@ class TrackTreeModel : public QStandardItemModel {
     explicit TrackTreeModel(QObject* parent = nullptr);
 
     [[nodiscard]] auto item(const i32 row, const i32 column = 0) const
-        -> MusicItem* {
-        return as<MusicItem*>(QStandardItemModel::item(row, column));
+        -> TrackTreeItem* {
+        return as<TrackTreeItem*>(QStandardItemModel::item(row, column));
     }
 
     [[nodiscard]] auto itemFromIndex(const QModelIndex& index) const
-        -> MusicItem*;
+        -> TrackTreeItem*;
 
     [[nodiscard]] auto trackProperty(u8 column) const -> TrackProperty;
     auto

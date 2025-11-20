@@ -1,10 +1,10 @@
-#include "MusicHeader.hpp"
+#include "TrackTreeHeader.hpp"
 
 #include "Constants.hpp"
 
 #include <QApplication>
 
-void MusicHeader::mousePressEvent(QMouseEvent* const event) {
+void TrackTreeHeader::mousePressEvent(QMouseEvent* const event) {
     pressedIndex = i8(logicalIndexAt(event->pos()));
     pressPos = event->pos();
     mousePressed = true;
@@ -13,7 +13,7 @@ void MusicHeader::mousePressEvent(QMouseEvent* const event) {
     QHeaderView::mousePressEvent(event);
 }
 
-void MusicHeader::mouseMoveEvent(QMouseEvent* const event) {
+void TrackTreeHeader::mouseMoveEvent(QMouseEvent* const event) {
     if (mousePressed) {
         isDragging = true;
     }
@@ -21,7 +21,7 @@ void MusicHeader::mouseMoveEvent(QMouseEvent* const event) {
     QHeaderView::mouseMoveEvent(event);
 }
 
-void MusicHeader::mouseReleaseEvent(QMouseEvent* const event) {
+void TrackTreeHeader::mouseReleaseEvent(QMouseEvent* const event) {
     if (!isDragging && pressedIndex != -1) {
         const u16 posX = event->pos().x();
         const u16 sectionStart = sectionPosition(pressedIndex);

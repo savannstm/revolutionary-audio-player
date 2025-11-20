@@ -5,7 +5,7 @@
 #include <QHeaderView>
 #include <QMouseEvent>
 
-class MusicHeader : public QHeaderView {
+class TrackTreeHeader : public QHeaderView {
     Q_OBJECT
 
    public:

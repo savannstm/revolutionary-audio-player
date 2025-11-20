@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Enums.hpp"
-#include "MusicHeader.hpp"
+#include "TrackTreeHeader.hpp"
 #include "TrackTreeModel.hpp"
 
 #include <QTreeView>
@@ -12,8 +11,6 @@ struct CUETrack {
     QString trackNumber;
     u16 offset;
 };
-
-// TODO: Customizable opacity
 
 class TrackTree : public QTreeView {
     Q_OBJECT
@@ -31,12 +28,15 @@ class TrackTree : public QTreeView {
         return trackTreeModel;
     };
 
-    [[nodiscard]] constexpr auto header() const -> MusicHeader* {
+    [[nodiscard]] constexpr auto header() const -> TrackTreeHeader* {
         return musicHeader;
     };
 
-    [[nodiscard]] auto rowMetadata(u16 row) const
-        -> HashMap<TrackProperty, QString>;
+    void setOpacity(f32 opacity);
+
+    [[nodiscard]] constexpr auto opacity() const -> f32 { return opacity_; }
+
+    [[nodiscard]] auto rowMetadata(u16 row) const -> TrackMetadata;
     void sortByPath();
     void fillTable(
         const QStringList& paths,
@@ -44,7 +44,7 @@ class TrackTree : public QTreeView {
         bool fromArgs = false
     );
     void fillTableCUE(
-        HashMap<TrackProperty, QString>& metadata,
+        TrackMetadata& metadata,
         const QList<CUETrack>& tracks,
         const QString& cueFilePath
     );
@@ -61,6 +61,14 @@ class TrackTree : public QTreeView {
     void dropEvent(QDropEvent* event) override;
     void startDrag(Qt::DropActions supportedActions) override;
 
+    void changeEvent(QEvent* const event) override {
+        if (event->type() == QEvent::PaletteChange) {
+            setOpacity(opacity_);
+        }
+
+        QTreeView::changeEvent(event);
+    }
+
    private:
     inline void reselectCurrentElement(
         const QItemSelection& /* unused */,
@@ -68,20 +76,22 @@ class TrackTree : public QTreeView {
     );
     inline void postFill();
     inline void resizeColumnsToContents();
-    inline void addFile(const HashMap<TrackProperty, QString>& metadata);
+    inline void addFile(const TrackMetadata& metadata);
     inline void addFileCUE(
         const CUETrack& track,
-        const HashMap<TrackProperty, QString>& metadata,
+        const TrackMetadata& metadata,
         const QString& cueFilePath
     );
     inline void handleHeaderPress(u8 index, Qt::MouseButton button);
     inline void resetSorting(i32 /* unused */, Qt::SortOrder sortOrder);
 
+    vector<u16> order;
     QModelIndex index;
-    MusicHeader* const musicHeader = new MusicHeader(Qt::Horizontal, this);
+
+    TrackTreeHeader* const musicHeader =
+        new TrackTreeHeader(Qt::Horizontal, this);
     TrackTreeModel* const trackTreeModel = new TrackTreeModel(this);
 
-    vector<u16> order;
-
+    f32 opacity_ = 1.0F;
     u16 draggedRow;
 };

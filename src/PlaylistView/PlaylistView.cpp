@@ -1,13 +1,13 @@
 #include "PlaylistView.hpp"
 
 #include "Aliases.hpp"
+#include "Constants.hpp"
 #include "Enums.hpp"
 #include "ImageEffect.hpp"
 #include "PlaylistTabBar.hpp"
 #include "TrackProperties.hpp"
 #include "TrackTree.hpp"
 
-#include <QFileDialog>
 #include <QGraphicsBlurEffect>
 #include <QLabel>
 #include <QStyledItemDelegate>
@@ -30,6 +30,8 @@ PlaylistView::PlaylistView(QWidget* const parent) : QWidget(parent) {
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(tabBar_, 0, Qt::AlignLeft);
     layout->addWidget(stackedWidget);
+
+    setContextMenuPolicy(Qt::CustomContextMenu);
 
     connect(
         tabBar_,
@@ -86,7 +88,8 @@ void PlaylistView::removePages(const TabRemoveMode mode, const u8 startIndex) {
 auto compactAndFill(array<TrackProperty, TRACK_PROPERTY_COUNT>& arr) -> u8 {
     array<TrackProperty, TRACK_PROPERTY_COUNT> result;
     u8 writeIndex = 0;
-    std::unordered_set<u8> seen;
+    HashSet<u8> seen;
+    seen.reserve(TRACK_PROPERTY_COUNT);
 
     for (const TrackProperty property : arr) {
         const u8 value = u8(property);
@@ -174,7 +177,7 @@ auto PlaylistView::createPage(
         }
     }
 
-    MusicHeader* const header = pageTree->header();
+    TrackTreeHeader* const header = pageTree->header();
     header->setDefaultAlignment(Qt::AlignLeft);
     header->setSectionsClickable(true);
     header->setSectionsMovable(true);
@@ -186,7 +189,7 @@ auto PlaylistView::createPage(
 
     connect(
         header,
-        &MusicHeader::sectionMoved,
+        &TrackTreeHeader::sectionMoved,
         this,
         [=](const u8, const u8 oldIndex, const u8 newIndex) -> void {
         const QVariant oldProperty =
@@ -215,6 +218,10 @@ auto PlaylistView::createPage(
     return page;
 }
 
+void PlaylistView::setTreeOpacity(const u8 index, const f32 opacity) const {
+    this->tree(index)->setOpacity(opacity);
+}
+
 void PlaylistView::removeBackgroundImage(const u8 index) const {
     QLabel* centerLabel = backgroundImage(index);
 
@@ -222,7 +229,7 @@ void PlaylistView::removeBackgroundImage(const u8 index) const {
         return;
     }
 
-    tree(index)->setStyleSheet(u"TrackTree, MusicHeader { }"_s);
+    setTreeOpacity(index, 1.0F);
 
     QWidget* const pageWidget = page(index);
     auto* leftLabel = pageWidget->findChild<QLabel*>(u"leftLabel"_qsv);
@@ -253,15 +260,11 @@ void PlaylistView::setBackgroundImage(
     QLabel* const centerLabel = backgroundImage(index);
     const QWidget* const pageWidget = page(index);
 
-    QColor bgColor = palette().color(QPalette::Window);
-    bgColor.setAlphaF(HALF_TRANSPARENT);
+    const f32 currentOpacity = treeOpacity(index);
 
-    tree(index)->setStyleSheet(
-        u"TrackTree, MusicHeader { background-color: rgba(%1, %2, %3, %4); }"_s
-            .arg(bgColor.red())
-            .arg(bgColor.green())
-            .arg(bgColor.blue())
-            .arg(QString::number(bgColor.alphaF(), 'f', 2))
+    setTreeOpacity(
+        index,
+        treeOpacity(index) == 1.0F ? HALF_TRANSPARENT : currentOpacity
     );
 
     const u16 layoutWidth = screen()->size().width();
@@ -325,4 +328,8 @@ void PlaylistView::setBackgroundImage(
     rightLabel->show();
 
     centerLabel->setProperty("path", path);
+}
+
+auto PlaylistView::treeOpacity(const u8 index) const -> f32 {
+    return tree(index)->opacity();
 }

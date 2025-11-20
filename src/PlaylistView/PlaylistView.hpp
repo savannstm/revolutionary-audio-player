@@ -149,6 +149,10 @@ class PlaylistView : public QWidget {
     void tabsRemoved(TabRemoveMode mode, u8 startIndex, u8 count);
 
    private:
+    void setTreeOpacity(u8 index, f32 opacity) const;
+
+    [[nodiscard]] auto treeOpacity(u8 index) const -> f32;
+
     void changePage(const i8 index) {
         stackedWidget->setCurrentIndex(index);
         emit indexChanged(index);

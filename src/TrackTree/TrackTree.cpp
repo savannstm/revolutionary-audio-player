@@ -5,10 +5,9 @@
 #include "Enums.hpp"
 #include "ExtractMetadata.hpp"
 #include "Logger.hpp"
-#include "MusicItem.hpp"
 #include "OptionMenu.hpp"
-#include "RapidHasher.hpp"
 #include "TrackProperties.hpp"
+#include "TrackTreeItem.hpp"
 
 #include <QApplication>
 #include <QDir>
@@ -34,14 +33,14 @@ TrackTree::TrackTree(QWidget* const parent) : QTreeView(parent) {
 
     connect(
         musicHeader,
-        &MusicHeader::headerPressed,
+        &TrackTreeHeader::headerPressed,
         this,
         &TrackTree::handleHeaderPress
     );
 
     connect(
         musicHeader,
-        &MusicHeader::sortIndicatorChanged,
+        &TrackTreeHeader::sortIndicatorChanged,
         this,
         &TrackTree::resetSorting
     );
@@ -180,9 +179,8 @@ void TrackTree::setCurrentIndex(const QModelIndex& newIndex) {
     QTreeView::setCurrentIndex(index);
 }
 
-auto TrackTree::rowMetadata(const u16 row) const
-    -> HashMap<TrackProperty, QString> {
-    HashMap<TrackProperty, QString> result;
+auto TrackTree::rowMetadata(const u16 row) const -> TrackMetadata {
+    TrackMetadata result;
     result.reserve(TRACK_PROPERTY_COUNT);
 
     for (const u8 column : range(1, TRACK_PROPERTY_COUNT)) {
@@ -201,14 +199,14 @@ auto TrackTree::rowMetadata(const u16 row) const
     return result;
 }
 
-void TrackTree::addFile(const HashMap<TrackProperty, QString>& metadata) {
+void TrackTree::addFile(const TrackMetadata& metadata) {
     const u16 row = trackTreeModel->rowCount();
     const QModelIndex index = currentIndex();
 
     for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
         const TrackProperty headerProperty =
             trackTreeModel->trackProperty(column);
-        auto* const item = new MusicItem();
+        auto* const item = new TrackTreeItem();
 
         if (headerProperty == TrackProperty::TrackNumber) {
             QString number;
@@ -242,14 +240,14 @@ void TrackTree::addFile(const HashMap<TrackProperty, QString>& metadata) {
 
 void TrackTree::addFileCUE(
     const CUETrack& track,
-    const HashMap<TrackProperty, QString>& metadata,
+    const TrackMetadata& metadata,
     const QString& cueFilePath
 ) {
     const u16 row = trackTreeModel->rowCount();
 
     for (const u8 column : range(0, TRACK_PROPERTY_COUNT)) {
         const auto headerProperty = trackTreeModel->trackProperty(column);
-        auto* item = new MusicItem();
+        auto* item = new TrackTreeItem();
 
         if (column == 0) {
             item->setData(track.offset, CUE_OFFSET_ROLE);
@@ -340,10 +338,12 @@ void TrackTree::fillTable(
                     }
 
                     const auto& tracks = cueInfos[path].tracks;
-                    const auto& offsets =
-                        views::transform(tracks, [&](const auto& track) -> u16 {
+                    const auto& offsets = views::transform(
+                        tracks,
+                        [this](const auto& track) -> u16 {
                         return track.offset;
-                    });
+                    }
+                    );
 
                     const isize idx = find_index(offsets, cueOffset);
 
@@ -396,7 +396,7 @@ void TrackTree::fillTable(
 
                 const auto pathsView = views::transform(
                     entries,
-                    [&](const QString& entry) -> QString {
+                    [this, &dir](const QString& entry) -> QString {
                     return dir.absoluteFilePath(entry);
                 }
                 );
@@ -444,7 +444,7 @@ void TrackTree::fillTable(
 }
 
 void TrackTree::fillTableCUE(
-    HashMap<TrackProperty, QString>& metadata,
+    TrackMetadata& metadata,
     const QList<CUETrack>& tracks,
     const QString& cueFilePath
 ) {
@@ -554,5 +554,33 @@ void TrackTree::resetSorting(
 ) {
     if (musicHeader->sortIndicatorSection() == -1) {
         sortByPath();
+    }
+};
+
+void TrackTree::setOpacity(const f32 opacity) {
+    opacity_ = opacity;
+
+    if (opacity == 1.0F) {
+        setStyleSheet(QString());
+    } else {
+        const QPalette palette = QApplication::palette();
+
+        QColor treeBackgroundColor = palette.color(QPalette::Base);
+        QColor headerBackgroundColor = palette.color(QPalette::Button);
+
+        treeBackgroundColor.setAlphaF(opacity);
+        headerBackgroundColor.setAlphaF(opacity);
+
+        setStyleSheet(
+            u"TrackTree { background-color: rgba(%1, %2, %3, %4) }\nTrackTreeHeader { background-color: rgba(%5, %6, %7, %8) }"_s
+                .arg(treeBackgroundColor.red())
+                .arg(treeBackgroundColor.green())
+                .arg(treeBackgroundColor.blue())
+                .arg(QString::number(treeBackgroundColor.alphaF(), 'f', 2))
+                .arg(headerBackgroundColor.red())
+                .arg(headerBackgroundColor.green())
+                .arg(headerBackgroundColor.blue())
+                .arg(QString::number(headerBackgroundColor.alphaF(), 'f', 2))
+        );
     }
 };

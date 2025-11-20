@@ -2,7 +2,7 @@
 
 #include "Constants.hpp"
 #include "Enums.hpp"
-#include "MusicItem.hpp"
+#include "TrackTreeItem.hpp"
 
 TrackTreeModel::TrackTreeModel(QObject* const parent) :
     QStandardItemModel(parent) {
@@ -23,8 +23,8 @@ void TrackTreeModel::setItem(
 }
 
 auto TrackTreeModel::itemFromIndex(const QModelIndex& index) const
-    -> MusicItem* {
-    return as<MusicItem*>(QStandardItemModel::itemFromIndex(index));
+    -> TrackTreeItem* {
+    return as<TrackTreeItem*>(QStandardItemModel::itemFromIndex(index));
 }
 
 auto TrackTreeModel::trackProperty(const u8 column) const -> TrackProperty {
