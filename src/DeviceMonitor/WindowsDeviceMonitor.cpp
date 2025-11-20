@@ -2,6 +2,7 @@
 
 #ifdef Q_OS_WINDOWS
 #include <comdef.h>
+#include <utility>
 
 WindowsDeviceMonitor::WindowsDeviceMonitor(QObject* parent) : QObject(parent) {}
 
@@ -14,7 +15,7 @@ WindowsDeviceMonitor::~WindowsDeviceMonitor() {
 }
 
 auto WindowsDeviceMonitor::initialize() -> bool {
-    CoInitialize(nullptr);
+    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
     HRESULT result = CoCreateInstance(
         __uuidof(MMDeviceEnumerator),
@@ -42,11 +43,6 @@ auto WindowsDeviceMonitor::AddRef() -> ULONG {
 
 auto WindowsDeviceMonitor::Release() -> ULONG {
     const ULONG ulRef = InterlockedDecrement(&refCount);
-
-    if (ulRef == 0) {
-        delete this;
-    }
-
     return ulRef;
 }
 
@@ -62,7 +58,7 @@ auto WindowsDeviceMonitor::QueryInterface(REFIID riid, VOID** ppvInterface)
     return E_NOINTERFACE;
 }
 
-auto WindowsDeviceMonitor::OnDeviceAdded(LPCWSTR wDeviceID) -> HRESULT {
+auto WindowsDeviceMonitor::OnDeviceAdded(const LPCWSTR wDeviceID) -> HRESULT {
     if (isOutputDevice(wDeviceID)) {
         const QString name = getDeviceName(wDeviceID);
         const QString deviceID = QString::fromWCharArray(wDeviceID);
@@ -89,7 +85,19 @@ auto WindowsDeviceMonitor::OnDeviceStateChanged(
     if (isOutputDevice(wDeviceID)) {
         const QString name = getDeviceName(wDeviceID);
         const QString deviceID = QString::fromWCharArray(wDeviceID);
-        emit deviceStateChanged(name, newState);
+
+        switch (newState) {
+            case DEVICE_STATE_DISABLED:
+            case DEVICE_STATE_NOTPRESENT:
+            case DEVICE_STATE_UNPLUGGED:
+                emit deviceRemoved(name);
+                break;
+            case DEVICE_STATE_ACTIVE:
+                emit deviceAdded(name);
+                break;
+            default:
+                std::unreachable();
+        }
     }
 
     return S_OK;
