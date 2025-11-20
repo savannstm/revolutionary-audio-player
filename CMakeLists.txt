@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.25)
 
 # Project definition
 set(PROJECT_NAME rap)
-set(PROJECT_VERSION "0.10.0")
+set(PROJECT_VERSION "0.11.0")
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES C CXX)
 
 option(ENABLE_PROJECTM "Enable projectM visualizer. If this option is enabled, projectM visualizer executable will be built alongside the application. Disable if you don't want audio visualization through OpenGL." ON)
