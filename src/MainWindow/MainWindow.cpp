@@ -529,89 +529,94 @@ void MainWindow::closeEvent(QCloseEvent* const event) {
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent* const event) {
-    if (event->mimeData()->hasUrls()) {
+    if (event->mimeData()->hasUrls() || event->mimeData()->hasText()) {
         event->acceptProposedAction();
     }
 }
 
 void MainWindow::dropEvent(QDropEvent* const event) {
+    const QString data = event->mimeData()->text();
+
+    if (data == "spectrumvisualizer") {
+        spectrumVisualizer->setParent(ui->controlContainer);
+        ui->controlLayout->insertWidget(7, spectrumVisualizer);
+        spectrumVisualizer->show();
+        return;
+    }
+
     const QPoint dropPos = event->position().toPoint();
     TrackTree* tree = trackTree;
 
-    if (event->mimeData()->hasUrls()) {
-        const QList<QUrl> urls = event->mimeData()->urls();
+    const QList<QUrl> urls = event->mimeData()->urls();
 
-        QStringList filePaths;
-        filePaths.reserve(urls.size());
+    QStringList filePaths;
+    filePaths.reserve(urls.size());
 
-        QStringList dirPaths;
-        dirPaths.reserve(urls.size());
+    QStringList dirPaths;
+    dirPaths.reserve(urls.size());
 
-        QStringList playlistPaths;
-        playlistPaths.reserve(urls.size());
+    QStringList playlistPaths;
+    playlistPaths.reserve(urls.size());
 
-        for (const QUrl& url : urls) {
-            const QString path = url.toLocalFile();
+    for (const QUrl& url : urls) {
+        const QString path = url.toLocalFile();
 
-            if (url.isEmpty()) {
-                continue;
-            }
-
-            const auto info = QFileInfo(path);
-
-            if (info.isDir()) {
-                dirPaths.append(path);
-                continue;
-            }
-
-            const QString extension = info.suffix().toLower();
-
-            if (ranges::contains(ALLOWED_PLAYLIST_EXTENSIONS, extension)) {
-                playlistPaths.append(path);
-                continue;
-            }
-
-            if (ranges::contains(ALLOWED_PLAYABLE_EXTENSIONS, extension)) {
-                filePaths.append(path);
-            }
+        if (url.isEmpty()) {
+            continue;
         }
 
-        const bool outsideTree =
-            tree == nullptr ||
-            !QRect(tree->mapToGlobal(QPoint(0, 0)), tree->size())
-                 .contains(dropPos);
+        const auto info = QFileInfo(path);
 
-        if (outsideTree) {
-            for (const QString& dirPath : dirPaths) {
-                const auto info = QFileInfo(dirPath);
-                auto* newTree =
-                    playlistView->tree(playlistView->addTab(info.fileName()));
-                newTree->fillTable({ dirPath });
-            }
+        if (info.isDir()) {
+            dirPaths.append(path);
+            continue;
+        }
 
-            for (const QString& playlistPath : playlistPaths) {
-                importPlaylist(true, playlistPath);
-            }
+        const QString extension = info.suffix().toLower();
 
-            if (!filePaths.isEmpty()) {
-                const auto info = QFileInfo(filePaths[0]);
+        if (ranges::contains(ALLOWED_PLAYLIST_EXTENSIONS, extension)) {
+            playlistPaths.append(path);
+            continue;
+        }
 
-                tree = playlistView->tree(
-                    playlistView->addTab(info.dir().dirName())
-                );
+        if (ranges::contains(ALLOWED_PLAYABLE_EXTENSIONS, extension)) {
+            filePaths.append(path);
+        }
+    }
 
-                tree->fillTable(filePaths);
-            }
-        } else {
-            tree->fillTable(dirPaths);
+    const bool outsideTree =
+        tree == nullptr ||
+        !QRect(tree->mapToGlobal(QPoint(0, 0)), tree->size()).contains(dropPos);
 
-            if (!filePaths.isEmpty()) {
-                tree->fillTable(filePaths);
-            }
+    if (outsideTree) {
+        for (const QString& dirPath : dirPaths) {
+            const auto info = QFileInfo(dirPath);
+            auto* newTree =
+                playlistView->tree(playlistView->addTab(info.fileName()));
+            newTree->fillTable({ dirPath });
+        }
 
-            for (const QString& playlistPath : playlistPaths) {
-                importPlaylist(false, playlistPath);
-            }
+        for (const QString& playlistPath : playlistPaths) {
+            importPlaylist(true, playlistPath);
+        }
+
+        if (!filePaths.isEmpty()) {
+            const auto info = QFileInfo(filePaths[0]);
+
+            tree =
+                playlistView->tree(playlistView->addTab(info.dir().dirName()));
+
+            tree->fillTable(filePaths);
+        }
+    } else {
+        tree->fillTable(dirPaths);
+
+        if (!filePaths.isEmpty()) {
+            tree->fillTable(filePaths);
+        }
+
+        for (const QString& playlistPath : playlistPaths) {
+            importPlaylist(false, playlistPath);
         }
     }
 }
