@@ -654,9 +654,12 @@ void MainWindow::loadPlaylists() {
             PlaylistObject(playlistObject.toObject());
 
         const u8 index =
-            playlistView->addTab(playlist.label, playlist.defaultColumns);
+            playlistView->addTab(playlist.tabLabel, playlist.defaultColumns);
+
+        playlistView->setTabColor(index, playlist.tabColor);
 
         TrackTree* const tree = playlistView->tree(index);
+        tree->setOpacity(playlist.backgroundOpacity);
         tree->fillTable(playlist.tracks, playlist.cueOffsets);
 
         if (!playlist.order.empty()) {
@@ -728,14 +731,15 @@ auto MainWindow::savePlaylists() -> result<bool, QString> {
     for (const u8 tab : range(0, tabCount)) {
         const TrackTree* const tree = playlistView->tree(tab);
         const TrackTreeModel* const model = tree->model();
-        const QString& tabColor = playlistView->tabColor(tab);
 
         const u16 rowCount = model->rowCount();
 
         PlaylistObject playlistObject = PlaylistObject(rowCount);
-        playlistObject.label = playlistView->tabLabel(tab);
+        playlistObject.tabLabel = playlistView->tabLabel(tab);
         playlistObject.backgroundImagePath =
             playlistView->backgroundImagePath(tab);
+        playlistObject.tabColor = playlistView->tabColor(tab);
+        playlistObject.backgroundOpacity = tree->opacity();
 
         for (const u16 row : range(0, rowCount)) {
             const HashMap<TrackProperty, QString> rowMetadata =
