@@ -4,16 +4,11 @@
 #include "Enums.hpp"
 #include "Settings.hpp"
 
-#include <QComboBox>
+#include <QCheckBox>
 #include <QDialog>
-#include <QFileDialog>
-#include <QFormLayout>
-#include <QGroupBox>
-#include <QLineEdit>
 #include <QProcess>
 #include <QPushButton>
 #include <QSpinBox>
-#include <QTimer>
 
 #ifdef Q_OS_WINDOWS
 #include <windows.h>
@@ -25,14 +20,12 @@
 #include <unistd.h>
 #endif
 
-// TODO: Random preset each new track
-
 class VisualizerDialog : public QDialog {
     Q_OBJECT
 
    public:
     explicit VisualizerDialog(
-        shared_ptr<Settings> settings,
+        const shared_ptr<Settings>& settings_,
         QWidget* parent = nullptr
     );
     ~VisualizerDialog() override;
@@ -51,7 +44,10 @@ class VisualizerDialog : public QDialog {
     void applySettings();
     void openPreset(const QString& path);
 
-    shared_ptr<Settings> settings;
+    VisualizerSettings settings;
+
+    QCheckBox* useRandomPresetsCheckbox;
+    QLineEdit* randomPresetDirInput;
 
     QSpinBox* fpsSpin;
     QSpinBox* meshWidthSpin;
@@ -66,6 +62,6 @@ class VisualizerDialog : public QDialog {
 #ifdef Q_OS_WINDOWS
     HANDLE hMapFile = nullptr;
 #else
-    int shmFd = -1;
+    i32 shmFd = -1;
 #endif
 };

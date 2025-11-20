@@ -74,6 +74,8 @@ struct VisualizerSharedData {
     atomic<bool> running = true;
     atomic<bool> hasNewData = false;
 
+    atomic<bool> newTrack = false;
+
     atomic<AudioChannels> channels = AudioChannels::Zero;
 };
 
@@ -619,6 +621,14 @@ auto main(i32 argc, char* argv[]) -> i32 {
                 sharedMemory.data->presetPath.data()
             );
 
+            projectm_load_preset_file(
+                projectM,
+                sharedMemory.data->presetPath.data(),
+                true
+            );
+        }
+
+        if (sharedMemory.data->newTrack.exchange(false)) {
             projectm_load_preset_file(
                 projectM,
                 sharedMemory.data->presetPath.data(),
