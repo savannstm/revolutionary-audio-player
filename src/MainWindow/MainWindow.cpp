@@ -1067,6 +1067,9 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
                     menu->addAction(tr("Remove Playlist Background"));
             }
 
+            const QAction* const changeOpacityAction =
+                menu->addAction(tr("Change Opacity"));
+
             const QAction* const selectedAction = menu->exec(QCursor::pos());
             delete menu;
 
@@ -1140,6 +1143,28 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
             } else if (selectedAction == removePlaylistBackground) {
                 playlistView->removeBackgroundImage(
                     playlistView->currentIndex()
+                );
+            } else if (selectedAction == changeOpacityAction) {
+                auto* const opacityInput = new InputPopup(
+                    QString::number(trackTree->opacity(), 'f', 2),
+                    QCursor::pos(),
+                    this
+                );
+
+                auto* const doubleValidator =
+                    new QDoubleValidator(0.0, 1.0, 2, opacityInput);
+
+                opacityInput->setValidator(doubleValidator);
+                opacityInput->show();
+
+                connect(
+                    opacityInput,
+                    &InputPopup::finished,
+                    this,
+                    [this](const QString& text) -> void {
+                    trackTree->setOpacity(QLocale::system().toFloat(text));
+                },
+                    Qt::SingleShotConnection
                 );
             }
             break;
