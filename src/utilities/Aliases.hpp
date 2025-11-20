@@ -14,6 +14,7 @@
 #include <qtypes.h>
 #include <queue>
 #include <ranges>
+#include <rapidhash.h>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -142,3 +143,42 @@ constexpr auto operator""_qssv(const char16_t* chr, const size_t size)
     );
 }
 #endif
+
+struct RapidHasher {
+    template <typename T>
+    constexpr auto operator()(const T& value) const -> u64 {
+        if constexpr (std::is_same_v<T, QString>) {
+            return rapidhash(value.toUtf8().constData(), value.size());
+        } else if constexpr (std::is_same_v<T, string>) {
+            return rapidhash(value.data(), value.size());
+        } else if constexpr (std::is_trivially_copyable_v<T>) {
+            return rapidhash(&value, sizeof(T));
+        } else {
+            static_assert(sizeof(T) == 0, "Unsupported type for RapidHasher");
+        }
+    }
+};
+
+template <typename K, typename V>
+using rapidhashmap = std::unordered_map<K, V, RapidHasher>;
+template <typename E>
+using rapidhashset = std::unordered_set<E, RapidHasher>;
+
+template <typename K, typename V>
+class HashMap : public rapidhashmap<K, V> {
+   public:
+    using rapidhashmap<K, V>::rapidhashmap;
+
+    [[nodiscard]] auto operator[](const K& key) const -> const V& {
+        return rapidhashmap<K, V>::find(key)->second;
+    }
+};
+
+template <typename E>
+class HashSet : public rapidhashset<E> {
+   public:
+    using rapidhashset<E>::rapidhashset;
+};
+
+enum class TrackProperty : u8;
+using TrackMetadata = HashMap<TrackProperty, QString>;
