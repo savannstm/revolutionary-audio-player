@@ -229,11 +229,9 @@ class MainWindow : public QMainWindow {
 
     // Audio
     array<f32, MIN_BUFFER_SIZE / F32_SAMPLE_SIZE> visualizerBuffer;
-    array<f32, MIN_BUFFER_SIZE / F32_SAMPLE_SIZE> peakVisualizerBuffer;
+    array<f32, MIN_BUFFER_SIZE / F32_SAMPLE_SIZE> spectrumVisualizerBuffer;
 
-    PeakVisualizer* const peakVisualizer =
-        new PeakVisualizer(peakVisualizerBuffer.data(), this);
-
+    SpectrumVisualizer* spectrumVisualizer;
     AudioWorker* audioWorker;
 
     // Search

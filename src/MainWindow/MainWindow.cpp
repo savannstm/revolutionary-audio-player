@@ -352,11 +352,6 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         &MainWindow::adjustPlaylistView
     );
 
-    ui->controlLayout->insertWidget(
-        ui->controlLayout->indexOf(equalizerButton) + 1,
-        peakVisualizer
-    );
-
     connect(
         ui->controlContainer,
         &QWidget::customContextMenuRequested,
@@ -465,6 +460,16 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         &MainWindow::playNext
     );
 
+    loadSettings();
+
+    spectrumVisualizer =
+        new SpectrumVisualizer(spectrumVisualizerBuffer.data(), settings, this);
+
+    ui->controlLayout->insertWidget(
+        ui->controlLayout->indexOf(equalizerButton) + 1,
+        spectrumVisualizer
+    );
+
     connect(
         audioWorker,
         &AudioWorker::audioProperties,
@@ -472,7 +477,6 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         &PeakVisualizer::setAudioProperties
     );
 
-    loadSettings();
     processArgs(paths);
 }
 
