@@ -320,10 +320,11 @@ PlaylistObject::PlaylistObject(const QJsonObject& obj) {
         cueOffsets.append(element.toVariant());
     }
 
-    label = obj[u"label"_qsv].toString();
+    tabLabel = obj[u"tabLabel"_qsv].toString();
     backgroundImagePath = obj[u"backgroundImagePath"_qsv].toString();
 
-    color = obj[u"color"_qsv].toString();
+    tabColor = obj[u"tabColor"_qsv].toString();
+    backgroundOpacity = f32(obj[u"backgroundOpacity"_qsv].toDouble());
 }
 
 auto PlaylistObject::stringify() const -> QJsonObject {
@@ -336,10 +337,11 @@ auto PlaylistObject::stringify() const -> QJsonObject {
     json[u"cueOffsets"_qsv] = toJsonArray(cueOffsets);
     json[u"cueFilePaths"_qsv] = toJsonArray(cueFilePaths);
 
-    json[u"label"_qsv] = label;
+    json[u"tabLabel"_qsv] = tabLabel;
     json[u"backgroundImagePath"_qsv] = backgroundImagePath;
 
-    json[u"color"_qsv] = color;
+    json[u"tabColor"_qsv] = tabColor;
+    json[u"backgroundOpacity"_qsv] = backgroundOpacity;
 
     return json;
 }

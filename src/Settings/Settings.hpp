@@ -184,8 +184,10 @@ class PlaylistObject {
     QStringList cueFilePaths;
     QVariantList cueOffsets;
 
-    QString label;
+    QString tabLabel;
     QString backgroundImagePath;
 
-    QString color;
+    QString tabColor;
+
+    f32 backgroundOpacity;
 };
