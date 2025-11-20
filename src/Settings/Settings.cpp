@@ -120,16 +120,20 @@ auto DockWidgetSettings::stringify() const -> QJsonObject {
     return json;
 }
 
-PeakVisualizerSettings::PeakVisualizerSettings(const QJsonObject& obj) {
+SpectrumVisualizerSettings::SpectrumVisualizerSettings(const QJsonObject& obj) {
+    gainFactor = f32(obj[u"gainFactor"_qsv].toDouble());
+    peakPadding = obj[u"peakPadding"_qsv].toInt();
     hidden = obj[u"hidden"_qsv].toBool();
-    mode = PeakVisualizerMode(obj[u"mode"_qsv].toInt());
+    mode = SpectrumVisualizerMode(obj[u"mode"_qsv].toInt());
     bands = Bands(obj[u"bands"_qsv].toInt());
     preset = QGradient::Preset(obj[u"preset"_qsv].toInt());
 }
 
-auto PeakVisualizerSettings::stringify() const -> QJsonObject {
+auto SpectrumVisualizerSettings::stringify() const -> QJsonObject {
     QJsonObject json;
 
+    json[u"gainFactor"_qsv] = gainFactor;
+    json[u"peakPadding"_qsv] = peakPadding;
     json[u"hidden"_qsv] = hidden;
     json[u"mode"_qsv] = u8(mode);
     json[u"bands"_qsv] = u8(bands);
@@ -139,6 +143,8 @@ auto PeakVisualizerSettings::stringify() const -> QJsonObject {
 }
 
 VisualizerSettings::VisualizerSettings(const QJsonObject& obj) {
+    useRandomPresets = obj[u"useRandomPresets"_qsv].toBool();
+    randomPresetDir = obj[u"randomPresetDir"_qsv].toString();
     meshWidth = obj[u"meshWidth"_qsv].toInt();
     meshHeight = obj[u"meshHeight"_qsv].toInt();
     fps = obj[u"fps"_qsv].toInt();
@@ -148,6 +154,8 @@ VisualizerSettings::VisualizerSettings(const QJsonObject& obj) {
 auto VisualizerSettings::stringify() const -> QJsonObject {
     QJsonObject json;
 
+    json[u"useRandomPresets"_qsv] = useRandomPresets;
+    json[u"randomPresetDir"_qsv] = randomPresetDir;
     json[u"meshWidth"_qsv] = meshWidth;
     json[u"meshHeight"_qsv] = meshHeight;
     json[u"fps"_qsv] = fps;
@@ -269,8 +277,8 @@ Settings::Settings(const QJsonObject& settingsObject) {
     dockWidget =
         DockWidgetSettings(settingsObject[u"dockWidget"_qsv].toObject());
 
-    peakVisualizer = PeakVisualizerSettings(
-        settingsObject[u"peakVisualizer"_qsv].toObject()
+    spectrumVisualizer = SpectrumVisualizerSettings(
+        settingsObject[u"spectrumVisualizer"_qsv].toObject()
     );
 
     visualizer =
@@ -285,7 +293,7 @@ auto Settings::stringify() const -> QJsonObject {
     json[u"playlist"_qsv] = playlist.stringify();
     json[u"equalizer"_qsv] = equalizer.stringify();
     json[u"dockWidget"_qsv] = dockWidget.stringify();
-    json[u"peakVisualizer"_qsv] = peakVisualizer.stringify();
+    json[u"spectrumVisualizer"_qsv] = spectrumVisualizer.stringify();
     json[u"visualizer"_qsv] = visualizer.stringify();
 
     return json;

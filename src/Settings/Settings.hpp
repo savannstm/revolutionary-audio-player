@@ -30,7 +30,7 @@ class EqualizerSettings {
                                                         { Bands::Eighteen, {} },
                                                         { Bands::Thirty, {} } };
 
-    array<i8, usize(Bands::Thirty)> gains;
+    array<i8, THIRTY_BANDS> gains;
 
     const f32* frequencies = nullptr;
 
@@ -53,18 +53,21 @@ class DockWidgetSettings {
     DockWidgetPosition position = DockWidgetPosition::Right;
 };
 
-class PeakVisualizerSettings {
+class SpectrumVisualizerSettings {
    public:
-    explicit PeakVisualizerSettings() = default;
-    explicit PeakVisualizerSettings(const QJsonObject& obj);
+    explicit SpectrumVisualizerSettings() = default;
+    explicit SpectrumVisualizerSettings(const QJsonObject& obj);
 
     [[nodiscard]] auto stringify() const -> QJsonObject;
 
     QGradient::Preset preset = QGradient::MorpheusDen;
 
+    f32 gainFactor = 0.0F;
+    u8 peakPadding = 0;
+
     bool hidden = false;
     Bands bands = Bands::Eighteen;
-    PeakVisualizerMode mode = PeakVisualizerMode::DBFS;
+    SpectrumVisualizerMode mode = SpectrumVisualizerMode::DBFS;
 };
 
 class CoreSettings {
@@ -133,10 +136,14 @@ class VisualizerSettings {
 
     [[nodiscard]] auto stringify() const -> QJsonObject;
 
+    bool useRandomPresets = false;
+    QString randomPresetDir =
+        QApplication::applicationDirPath() + u"/visualizer/presets"_qssv;
+    QString presetPath;
+
     u16 meshWidth = DEFAULT_MESH_WIDTH;
     u16 meshHeight = DEFAULT_MESH_HEIGHT;
     u16 fps = 0;
-    QString presetPath;
 };
 
 class Settings {
@@ -151,7 +158,7 @@ class Settings {
     ShellIntegrationSettings shell;
     PlaylistSettings playlist;
     EqualizerSettings equalizer;
-    PeakVisualizerSettings peakVisualizer;
+    SpectrumVisualizerSettings spectrumVisualizer;
     VisualizerSettings visualizer;
     DockWidgetSettings dockWidget;
 };
