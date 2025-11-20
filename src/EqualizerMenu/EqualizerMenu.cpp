@@ -12,12 +12,11 @@
 #include <QSlider>
 
 EqualizerMenu::EqualizerMenu(
-    shared_ptr<Settings> settings_,
+    const shared_ptr<Settings>& settings_,
     QWidget* const parent
 ) :
     QDialog(parent, Qt::FramelessWindowHint | Qt::Popup),
-    settings(std::move(settings_)),
-    eqSettings(settings->equalizer) {
+    settings(settings_->equalizer) {
     connect(
         bandSelect,
         &QComboBox::currentTextChanged,
@@ -53,7 +52,7 @@ EqualizerMenu::EqualizerMenu(
         &EqualizerMenu::createNewPreset
     );
 
-    connect(deletePresetButton, &QPushButton::pressed, this, [&] -> void {
+    connect(deletePresetButton, &QPushButton::pressed, this, [this] -> void {
         const u16 index = presetSelect->currentIndex();
         presetSelect->setCurrentIndex(0);
         presetSelect->removeItem(index);
@@ -68,7 +67,7 @@ EqualizerMenu::EqualizerMenu(
         presetSelect,
         &QComboBox::editTextChanged,
         this,
-        [&](const QString& text) -> void {
+        [this](const QString& text) -> void {
         const i32 currentIndex = presetSelect->currentIndex();
         const QString previousText = presetSelect->itemText(currentIndex);
 
@@ -77,22 +76,19 @@ EqualizerMenu::EqualizerMenu(
         }
 
         const QVector<i8> previousPreset =
-            eqSettings.presets[eqSettings.bandCount][previousText];
+            settings.presets[settings.bandCount][previousText];
 
-        if (!eqSettings.presets[eqSettings.bandCount].contains(text)) {
-            eqSettings.presets[eqSettings.bandCount].insert(
-                text,
-                QVector<i8>()
-            );
+        if (!settings.presets[settings.bandCount].contains(text)) {
+            settings.presets[settings.bandCount].insert(text, QVector<i8>());
         }
 
         std::swap(
-            eqSettings.presets[eqSettings.bandCount][previousText],
-            eqSettings.presets[eqSettings.bandCount][text]
+            settings.presets[settings.bandCount][previousText],
+            settings.presets[settings.bandCount][text]
         );
 
         presetSelect->setItemText(currentIndex, text);
-        eqSettings.presets[eqSettings.bandCount].remove(previousText);
+        settings.presets[settings.bandCount].remove(previousText);
     }
     );
 }
@@ -113,20 +109,20 @@ auto EqualizerMenu::createSliderElement(const u8 band, QWidget* const parent)
     dbLayout->setAlignment(Qt::AlignCenter);
 
     auto* const dbInput =
-        new CustomInput(QString::number(eqSettings.gains[band]), dbContainer);
+        new CustomInput(QString::number(settings.gains[band]), dbContainer);
     auto* const intValidator = new IntValidator(MIN_GAIN, MAX_GAIN, dbInput);
     dbInput->setValidator(intValidator);
     dbInput->setFixedWidth(GAIN_INPUT_FIXED_WIDTH);
 
-    connect(dbInput, &CustomInput::inputRejected, this, [&, band] -> void {
+    connect(dbInput, &CustomInput::inputRejected, this, [this, band] -> void {
         onDbInputRejected(band);
     });
 
-    connect(dbInput, &CustomInput::editingFinished, this, [&, band] -> void {
+    connect(dbInput, &CustomInput::editingFinished, this, [this, band] -> void {
         onDbInputEditingFinished(band);
     });
 
-    connect(dbInput, &CustomInput::unfocused, this, [&, band] -> void {
+    connect(dbInput, &CustomInput::unfocused, this, [this, band] -> void {
         onDbInputUnfocused(band);
     });
 
@@ -145,7 +141,7 @@ auto EqualizerMenu::createSliderElement(const u8 band, QWidget* const parent)
     hzLayout->setAlignment(Qt::AlignCenter);
 
     auto* const hzLabel = new QLabel(
-        QString::number(eqSettings.frequencies[band]) + tr(" Hz"),
+        QString::number(settings.frequencies[band]) + tr(" Hz"),
         sliderContainer
     );
 
@@ -156,7 +152,9 @@ auto EqualizerMenu::createSliderElement(const u8 band, QWidget* const parent)
         slider,
         &QSlider::valueChanged,
         this,
-        [&, band](const i8 gain) -> void { onSliderValueChanged(gain, band); }
+        [this, band](const i8 gain) -> void {
+        onSliderValueChanged(gain, band);
+    }
     );
 
     return { .container = sliderContainer,
@@ -179,15 +177,14 @@ void EqualizerMenu::buildBands() {
         delete childWidget;
     }
 
-    eqSettings.frequencies = getFrequenciesForBands(eqSettings.bandCount);
-    eqSettings.gains.fill(0);
+    settings.frequencies = getFrequenciesForBands(settings.bandCount);
+    settings.gains.fill(0);
 
-    for (const u8 band : range(0, u8(eqSettings.bandCount))) {
+    for (const u8 band : range(0, u8(settings.bandCount))) {
         QWidget* const parent =
-            band < u8(Bands::Thirty) / 2 ? firstSliderRow : secondSliderRow;
-        QHBoxLayout* const parentLayout = band < u8(Bands::Thirty) / 2
-                                              ? firstSliderLayout
-                                              : secondSliderLayout;
+            band < THIRTY_BANDS / 2 ? firstSliderRow : secondSliderRow;
+        QHBoxLayout* const parentLayout =
+            band < THIRTY_BANDS / 2 ? firstSliderLayout : secondSliderLayout;
 
         const SliderContainer elements = createSliderElement(band, parent);
 
@@ -198,7 +195,7 @@ void EqualizerMenu::buildBands() {
     firstSliderRow->resize(firstSliderLayout->sizeHint());
     secondSliderRow->resize(secondSliderLayout->sizeHint());
 
-    if (u8(eqSettings.bandCount) < (u8(Bands::Thirty) / 2)) {
+    if (u8(settings.bandCount) < (THIRTY_BANDS / 2)) {
         secondSliderRow->hide();
     } else {
         secondSliderRow->show();
@@ -210,20 +207,20 @@ void EqualizerMenu::buildBands() {
 }
 
 void EqualizerMenu::saveSettings() {
-    eqSettings.bandIndex = u8(bandSelect->currentIndex());
+    settings.bandIndex = u8(bandSelect->currentIndex());
 
     const u16 presetIndex = u16(presetSelect->currentIndex());
-    eqSettings.presetIndex = presetIndex;
+    settings.presetIndex = presetIndex;
 
     if (presetIndex > DEFAULT_PRESET_COUNT) {
         const QString presetName = presetSelect->itemText(presetIndex);
 
-        eqSettings.presets[eqSettings.bandCount][presetName] =
-            QVector<i8>(isize(eqSettings.bandCount));
+        settings.presets[settings.bandCount][presetName] =
+            QVector<i8>(isize(settings.bandCount));
 
         for (const auto& [idx, container] :
-             views::enumerate(views::take(sliders, u8(eqSettings.bandCount)))) {
-            eqSettings.presets[eqSettings.bandCount][presetName][idx] =
+             views::enumerate(views::take(sliders, u8(settings.bandCount)))) {
+            settings.presets[settings.bandCount][presetName][idx] =
                 i8(container.dbInput->text().toInt());
         }
     }
@@ -243,7 +240,7 @@ void EqualizerMenu::updateGain(
     slider->setValue(gain);
     input->clearFocus();
 
-    eqSettings.gains[band] = gain;
+    settings.gains[band] = gain;
     emit gainChanged(band);
 }
 
@@ -288,17 +285,17 @@ void EqualizerMenu::onSliderValueChanged(const i8 gain, const u8 band) {
     CustomInput* const dbInput = sliders[band].dbInput;
     dbInput->setText(QString::number(gain));
 
-    eqSettings.gains[band] = gain;
+    settings.gains[band] = gain;
     emit gainChanged(band);
 }
 
 void EqualizerMenu::changeBands(const QString& count) {
-    eqSettings.bandCount = Bands(count.toUInt());
+    settings.bandCount = Bands(count.toUInt());
     buildBands();
 
     presetSelect->setCurrentIndex(0);
 
-    switch (eqSettings.bandCount) {
+    switch (settings.bandCount) {
         case Bands::Three:
         case Bands::Five:
             presetSelect->setEnabled(false);
@@ -315,21 +312,19 @@ void EqualizerMenu::changeBands(const QString& count) {
             break;
     }
 
-    presetSelect->addItems(
-        settings->equalizer.presets[eqSettings.bandCount].keys()
-    );
+    presetSelect->addItems(settings.presets[settings.bandCount].keys());
 }
 
 void EqualizerMenu::selectPreset(const i32 index) {
     if (previousPresetIndex > DEFAULT_PRESET_COUNT) {
         const QString presetName = presetSelect->itemText(previousPresetIndex);
 
-        eqSettings.presets[eqSettings.bandCount][presetName] =
-            QVector<i8>(isize(eqSettings.bandCount));
+        settings.presets[settings.bandCount][presetName] =
+            QVector<i8>(isize(settings.bandCount));
 
         for (const auto& [idx, container] :
-             views::enumerate(views::take(sliders, u8(eqSettings.bandCount)))) {
-            eqSettings.presets[eqSettings.bandCount][presetName][idx] =
+             views::enumerate(views::take(sliders, u8(settings.bandCount)))) {
+            settings.presets[settings.bandCount][presetName][idx] =
                 i8(container.dbInput->text().toInt());
         }
     }
@@ -344,20 +339,20 @@ void EqualizerMenu::selectPreset(const i32 index) {
         presetName = presetSelect->itemText(index);
         deletePresetButton->setEnabled(true);
 
-        if (!eqSettings.presets[eqSettings.bandCount].contains(presetName)) {
-            eqSettings.presets[eqSettings.bandCount].insert(
+        if (!settings.presets[settings.bandCount].contains(presetName)) {
+            settings.presets[settings.bandCount].insert(
                 presetName,
-                QVector<i8>(isize(eqSettings.bandCount))
+                QVector<i8>(isize(settings.bandCount))
             );
         }
     }
 
     for (const auto& [idx, elements] :
-         views::enumerate(views::take(sliders, u8(eqSettings.bandCount)))) {
+         views::enumerate(views::take(sliders, u8(settings.bandCount)))) {
         i8 gain = 0;
 
         if (index < DEFAULT_PRESET_COUNT) {
-            switch (eqSettings.bandCount) {
+            switch (settings.bandCount) {
                 case Bands::Ten:
                     gain = PRESETS_10[index][idx];
                     break;
@@ -372,7 +367,7 @@ void EqualizerMenu::selectPreset(const i32 index) {
             }
         } else {
             const u16 newIndex = index - DEFAULT_PRESET_COUNT;
-            gain = eqSettings.presets[eqSettings.bandCount][presetName][idx];
+            gain = settings.presets[settings.bandCount][presetName][idx];
         }
 
         elements.slider->setValue(gain);
@@ -382,13 +377,12 @@ void EqualizerMenu::selectPreset(const i32 index) {
 }
 
 void EqualizerMenu::toggleEqualizer(const bool checked) {
-    eqSettings.enabled = checked;
+    settings.enabled = checked;
     toggleButton->setText(checked ? tr("Enabled") : tr("Disabled"));
 }
 
 void EqualizerMenu::resetGains() {
-    for (const auto& container :
-         views::take(sliders, u8(eqSettings.bandCount))) {
+    for (const auto& container : views::take(sliders, u8(settings.bandCount))) {
         container.slider->setValue(0);
         container.dbInput->setText(u"0"_s);
     }
@@ -402,18 +396,18 @@ void EqualizerMenu::createNewPreset() {
 void EqualizerMenu::retranslate() {
     ui->retranslateUi(this);
 
-    if (eqSettings.enabled) {
+    if (settings.enabled) {
         toggleButton->setText(tr("Enabled"));
     }
 
     const span<const f32> frequencies = span(
-        getFrequenciesForBands(eqSettings.bandCount),
-        usize(eqSettings.bandCount)
+        getFrequenciesForBands(settings.bandCount),
+        usize(settings.bandCount)
     );
 
     for (const auto& [container, frequency] : views::zip(
-             views::take(sliders, u8(eqSettings.bandCount)),
-             views::take(frequencies, u8(eqSettings.bandCount))
+             views::take(sliders, u8(settings.bandCount)),
+             views::take(frequencies, u8(settings.bandCount))
          )) {
         container.dbLabel->setText(tr("dB"));
         container.hzLabel->setText(QString::number(frequency) + tr(" Hz"));
@@ -421,10 +415,10 @@ void EqualizerMenu::retranslate() {
 }
 
 void EqualizerMenu::loadSettings() {
-    toggleButton->setChecked(settings->equalizer.enabled);
-    bandSelect->setCurrentIndex(settings->equalizer.bandIndex);
+    toggleButton->setChecked(settings.enabled);
+    bandSelect->setCurrentIndex(settings.bandIndex);
 
     changeBands(bandSelect->currentText());
 
-    presetSelect->setCurrentIndex(settings->equalizer.presetIndex);
+    presetSelect->setCurrentIndex(settings.presetIndex);
 }

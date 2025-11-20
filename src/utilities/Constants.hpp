@@ -48,26 +48,24 @@ constexpr f32 MIN_FREQUENCY = 0;
 // Standard EQ band counts
 
 // Frequency sets per band count
-constexpr array<f32, usize(Bands::Three)> THREE_BAND_FREQUENCIES = { 100,
-                                                                     1000,
-                                                                     10000 };
+constexpr array<f32, THREE_BANDS> THREE_BAND_FREQUENCIES = { 100, 1000, 10000 };
 
-constexpr array<f32, usize(Bands::Five)> FIVE_BAND_FREQUENCIES = { 63,
-                                                                   250,
-                                                                   1000,
-                                                                   4000,
-                                                                   16000 };
+constexpr array<f32, FIVE_BANDS> FIVE_BAND_FREQUENCIES = { 63,
+                                                           250,
+                                                           1000,
+                                                           4000,
+                                                           16000 };
 
-constexpr array<f32, usize(Bands::Ten)> TEN_BAND_FREQUENCIES = {
-    31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000
-};
+constexpr array<f32, TEN_BANDS> TEN_BAND_FREQUENCIES = { 31.5, 63,   125,  250,
+                                                         500,  1000, 2000, 4000,
+                                                         8000, 16000 };
 
-constexpr array<f32, usize(Bands::Eighteen)> EIGHTEEN_BAND_FREQUENCIES = {
+constexpr array<f32, EIGHTEEN_BANDS> EIGHTEEN_BAND_FREQUENCIES = {
     20,   31.5, 50,   80,   125,  200,  315,   500,   800,
     1250, 2000, 3150, 5000, 6300, 8000, 10000, 12500, 16000
 };
 
-constexpr array<f32, usize(Bands::Thirty)> THIRTY_BAND_FREQUENCIES = {
+constexpr array<f32, THIRTY_BANDS> THIRTY_BAND_FREQUENCIES = {
     25,   31.5, 40,   50,   63,   80,   100,   125,   160,   200,
     250,  315,  400,  500,  630,  800,  1000,  1250,  1600,  2000,
     2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000
@@ -277,6 +275,8 @@ struct VisualizerSharedData {
 
     atomic<bool> running = true;
     atomic<bool> hasNewData = false;
+
+    atomic<bool> newTrack = false;
 
     atomic<AudioChannels> channels = AudioChannels::Zero;
 };

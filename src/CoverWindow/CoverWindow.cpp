@@ -53,21 +53,13 @@ void CoverWindow::showContextMenu(const QPoint& pos) {
     const bool isFullscreen = isFullScreen();
     const bool isOnTop = (windowFlags() & Qt::WindowStaysOnTopHint) != 0;
 
-    const QAction* maximizeAction;
+    const QAction* maximizeAction = menu->addAction(
+        tr(isFullscreen ? "Minimize" : "Maximize To Fullscreen")
+    );
 
-    if (isFullscreen) {
-        maximizeAction = menu->addAction(tr("Minimize"));
-    } else {
-        maximizeAction = menu->addAction(tr("Maximize To Fullscreen"));
-    };
-
-    const QAction* alwaysOnTopAction;
-
-    if (isOnTop) {
-        alwaysOnTopAction = menu->addAction(tr("Unset Always On Top"));
-    } else {
-        alwaysOnTopAction = menu->addAction(tr("Set Always On Top"));
-    }
+    const QAction* alwaysOnTopAction = menu->addAction(
+        tr(isOnTop ? "Unset Always On Top" : "Set Always On Top")
+    );
 
     const QAction* const selectedAction = menu->exec(mapToGlobal(pos));
     delete menu;

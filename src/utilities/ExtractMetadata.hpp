@@ -5,14 +5,13 @@
 #include "DurationConversions.hpp"
 #include "Enums.hpp"
 #include "FFMpeg.hpp"
-#include "RapidHasher.hpp"
 #include "TrackTree.hpp"
 
 #include <QDir>
 #include <QFileInfo>
 
 struct CueInfo {
-    HashMap<TrackProperty, QString> metadata;
+    TrackMetadata metadata;
     QList<CUETrack> tracks;
     QString cueFilePath;
 };
@@ -38,7 +37,7 @@ FFmpegError(const cstr file, const i32 line, const cstr func, const i32 err)
 #define FFMPEG_ERROR(err) FFmpegError(__FILE__, __LINE__, __func__, err)
 
 inline auto extractMetadata(const QString& filePath)
-    -> result<HashMap<TrackProperty, QString>, QString> {
+    -> result<TrackMetadata, QString> {
     FormatContext formatContext;
     AVFormatContext* fCtxPtr = formatContext.get();
 
@@ -71,13 +70,13 @@ inline auto extractMetadata(const QString& filePath)
     const i8 audioStreamIndex = i8(errorCode);
     const AVStream* audioStream = formatContext->streams[audioStreamIndex];
 
-    const auto getTag = [&](cstr key) -> QString {
+    const auto getTag = [&formatContext](cstr key) -> QString {
         const AVDictionaryEntry* tag =
             av_dict_get(formatContext->metadata, key, nullptr, 0);
         return tag ? tag->value : QString();
     };
 
-    HashMap<TrackProperty, QString> metadata;
+    TrackMetadata metadata;
     metadata.insert_or_assign(TrackProperty::Path, filePath);
 
     const QString titleTag = getTag("title");
@@ -231,7 +230,7 @@ inline auto parseCUE(QFile& cueFile, const QFileInfo& fileInfo) -> CueInfo {
     optional<CUETrack> track;
     QList<CUETrack> tracks;
 
-    HashMap<TrackProperty, QString> metadata;
+    TrackMetadata metadata;
 
     auto addTrack = [&tracks, &track] -> void {
         if (track) {

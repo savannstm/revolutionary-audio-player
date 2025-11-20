@@ -23,5 +23,5 @@ class HelpWindow : public QDialog {
 
    private:
     auto setupUi() -> Ui::HelpWindow*;
-    Ui::HelpWindow* ui = setupUi();
+    Ui::HelpWindow* const ui = setupUi();
 };

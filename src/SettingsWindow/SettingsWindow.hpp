@@ -34,23 +34,44 @@ class SettingsWindow : public QDialog {
         if (event->type() == QEvent::LanguageChange) {
             ui->retranslateUi(this);
             setTrackPropertiesLabels();
-            outputDeviceSelect->setItemText(
-                outputDeviceSelect->count() - 1,
-                tr("Default Device")
-            );
+            outputDeviceSelect->setItemText(0, tr("Default"));
         }
 
         QDialog::changeEvent(event);
     }
 
    private:
+    void changeTheme(u8 state);
+    void locateSettingsDirectory();
+    void locatePlaylistDirectory();
+    void changeStyle(const QString& itemText);
+
+    void enableAllAudio();
+    void enableAllVideo();
+    void enableAllPlaylists();
+    void enableAllAssociations();
+    void clearAllAssociations();
+    void setAssociations();
+    void setContextMenuEntry(bool checked);
+
+    void changePlaylistNaming(u8 index);
+    void togglePrioritizeExternal(bool checked);
+    void toggleBackgroundImage(bool checked);
+
+    void changeSettingsSection(u16 row);
+
+    void onDeviceAdded(const QString& deviceName);
+    void onDeviceRemoved(const QString& deviceName);
+
+    void onOutputDeviceChanged(u8 index);
+
     auto setupUi() -> Ui::SettingsWindow* {
         auto* const ui_ = new Ui::SettingsWindow();
         ui_->setupUi(this);
         return ui_;
     };
 
-    inline auto fetchDevices() -> ma_result;
+    inline void fetchDevices();
 
     void setTrackPropertiesLabels() {
         columnList->clear();

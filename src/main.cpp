@@ -47,10 +47,14 @@ auto main(i32 argCount, char* args[]) -> i32 {
 #endif
     ));
 
-    QApplication::connect(&app, &QApplication::aboutToQuit, [&] -> void {
+    QApplication::connect(
+        &app,
+        &QApplication::aboutToQuit,
+        [&lockFile, &lockFilePath] -> void {
         lockFile.unlock();
         QFile::remove(lockFilePath);
-    });
+    }
+    );
 
     auto window = MainWindow(paths);
     window.showMaximized();

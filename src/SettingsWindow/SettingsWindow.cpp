@@ -17,20 +17,9 @@ SettingsWindow::SettingsWindow(
     settings(std::move(settings_)) {
     this->adjustSize();
 
-    // Core
     for (const QString& style : QStyleFactory::keys()) {
         styleSelect->addItem(style);
     }
-
-    connect(
-        themeSelect,
-        &QComboBox::currentIndexChanged,
-        this,
-        [&](const u8 state) -> void {
-        settings->core.applicationTheme = Qt::ColorScheme(state);
-        setTheme(Qt::ColorScheme(state));
-    }
-    );
 
     if (!settings->core.applicationStyle.isEmpty()) {
         for (const u8 idx : range(0, styleSelect->count())) {
@@ -40,14 +29,7 @@ SettingsWindow::SettingsWindow(
         }
     }
 
-    const ma_result devicesFetched = fetchDevices();
-
-    if (devicesFetched != MA_SUCCESS) {
-        LOG_ERROR(
-            u"Failed to fetch output devices: "_s +
-            ma_result_description(devicesFetched)
-        );
-    }
+    fetchDevices();
 
     settingsDirectoryInput->setText(settings->core.settingsDir);
 
@@ -57,14 +39,6 @@ SettingsWindow::SettingsWindow(
             QLineEdit::TrailingPosition
         );
 
-    connect(locateSettingsDirAction, &QAction::triggered, this, [&] -> void {
-        const QString dir = QFileDialog::getExistingDirectory(this);
-
-        if (!dir.isEmpty()) {
-            settingsDirectoryInput->setText(dir);
-        }
-    });
-
     playlistDirectoryInput->setText(settings->core.playlistsDir);
 
     const QAction* const locatePlaylistDirAction =
@@ -73,15 +47,6 @@ SettingsWindow::SettingsWindow(
             QLineEdit::TrailingPosition
         );
 
-    connect(locatePlaylistDirAction, &QAction::triggered, this, [&] -> void {
-        const QString dir = QFileDialog::getExistingDirectory(this);
-
-        if (!dir.isEmpty()) {
-            playlistDirectoryInput->setText(dir);
-        }
-    });
-
-    // Shell
     createMenuItemCheckbox->setChecked(settings->shell.contextMenuEntryEnabled);
     for (const auto [idx, ext] :
          views::enumerate(ALLOWED_PLAYABLE_EXTENSIONS)) {
@@ -94,65 +59,6 @@ SettingsWindow::SettingsWindow(
                     : Qt::Unchecked
             );
     }
-
-    connect(enableAllAudioButton, &QPushButton::pressed, this, [&] -> void {
-        for (const u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
-            if (ranges::contains(
-                    ALLOWED_AUDIO_EXTENSIONS,
-                    enabledAssociationsList->item(idx)->text()
-                )) {
-                enabledAssociationsList->item(idx)->setCheckState(Qt::Checked);
-            }
-        }
-    });
-
-    connect(enableAllVideoButton, &QPushButton::pressed, this, [&] -> void {
-        for (const u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
-            if (ranges::contains(
-                    ALLOWED_VIDEO_EXTENSIONS,
-                    enabledAssociationsList->item(idx)->text()
-                )) {
-                enabledAssociationsList->item(idx)->setCheckState(Qt::Checked);
-            }
-        }
-    });
-
-    connect(enableAllPlaylistsButton, &QPushButton::pressed, this, [&] -> void {
-        for (const u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
-            if (ranges::contains(
-                    ALLOWED_PLAYLIST_EXTENSIONS,
-                    enabledAssociationsList->item(idx)->text()
-                )) {
-                enabledAssociationsList->item(idx)->setCheckState(Qt::Checked);
-            }
-        }
-    });
-
-    connect(enableAllButton, &QPushButton::pressed, this, [&] -> void {
-        for (const u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
-            enabledAssociationsList->item(idx)->setCheckState(Qt::Checked);
-        }
-    });
-
-    connect(clearAllButton, &QPushButton::pressed, this, [&] -> void {
-        for (const u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
-            enabledAssociationsList->item(idx)->setCheckState(Qt::Unchecked);
-        }
-    });
-
-    connect(setButton, &QPushButton::pressed, this, [&] -> void {
-        for (const u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
-            if (enabledAssociationsList->item(idx)->checkState() ==
-                Qt::Checked) {
-                settings->shell.enabledAssociations |= Associations(1 << idx);
-            } else {
-                settings->shell.enabledAssociations &=
-                    Associations(~(1 << idx));
-            }
-        }
-
-        updateFileAssociations(settings->shell.enabledAssociations);
-    });
 
     // Playlist
     playlistNamingSelect->setCurrentIndex(
@@ -167,127 +73,129 @@ SettingsWindow::SettingsWindow(
     setTrackPropertiesLabels();
 
     connect(
-        styleSelect,
-        &QComboBox::currentTextChanged,
+        themeSelect,
+        &QComboBox::currentIndexChanged,
         this,
-        [&](const QString& itemText) -> void {
-        settings->core.applicationStyle = itemText;
-
-        if (styleSelect->currentIndex() == 0) {
-            QApplication::setStyle(settings->core.defaultStyle);
-        } else {
-            QApplication::setStyle(itemText);
-        }
-    }
+        &SettingsWindow::changeTheme
     );
 
     connect(
-        playlistNamingSelect,
-        &QComboBox::currentIndexChanged,
+        locateSettingsDirAction,
+        &QAction::triggered,
         this,
-        [&](const u8 index) -> void {
-        settings->playlist.playlistNaming = PlaylistNaming(index);
-    }
+        &SettingsWindow::locateSettingsDirectory
+    );
+
+    connect(
+        locatePlaylistDirAction,
+        &QAction::triggered,
+        this,
+        &SettingsWindow::locatePlaylistDirectory
+    );
+
+    connect(
+        styleSelect,
+        &QComboBox::currentTextChanged,
+        this,
+        &SettingsWindow::changeStyle
+    );
+
+    connect(
+        enableAllAudioButton,
+        &QPushButton::pressed,
+        this,
+        &SettingsWindow::enableAllAudio
+    );
+
+    connect(
+        enableAllVideoButton,
+        &QPushButton::pressed,
+        this,
+        &SettingsWindow::enableAllVideo
+    );
+
+    connect(
+        enableAllPlaylistsButton,
+        &QPushButton::pressed,
+        this,
+        &SettingsWindow::enableAllPlaylists
+    );
+
+    connect(
+        enableAllButton,
+        &QPushButton::pressed,
+        this,
+        &SettingsWindow::enableAllAssociations
+    );
+
+    connect(
+        clearAllButton,
+        &QPushButton::pressed,
+        this,
+        &SettingsWindow::clearAllAssociations
+    );
+
+    connect(
+        setButton,
+        &QPushButton::pressed,
+        this,
+        &SettingsWindow::setAssociations
     );
 
     connect(
         createMenuItemCheckbox,
         &QCheckBox::toggled,
         this,
-        [&](const bool checked) -> void {
-        if (checked) {
-            createContextMenuEntry();
-        } else {
-            removeContextMenuEntry();
-        }
-
-        settings->shell.contextMenuEntryEnabled = checked;
-    }
+        &SettingsWindow::setContextMenuEntry
     );
 
     connect(
         outputDeviceSelect,
         &QComboBox::currentIndexChanged,
         this,
-        [&](const u8 index) -> void {
-        if (index == outputDeviceSelect->count() - 1) {
-            settings->core.outputDevice = QString();
-            settings->core.outputDeviceID = std::nullopt;
-        } else {
-            settings->core.outputDevice = playbackDevices[index].name;
-            settings->core.outputDeviceID = playbackDevices[index].id;
-        }
-
-        emit audioDeviceChanged();
-    }
+        &SettingsWindow::onOutputDeviceChanged
     );
 
     connect(
         prioritizeExternalCheckbox,
         &QCheckBox::toggled,
         this,
-        [&](const bool checked) -> void {
-        settings->playlist.prioritizeExternalCover = checked;
-    }
+        &SettingsWindow::togglePrioritizeExternal
     );
 
     connect(
         backgroundImageCheckbox,
         &QCheckBox::toggled,
         this,
-        [&](const bool checked) -> void {
-        settings->playlist.autoSetBackground = checked;
-    }
+        &SettingsWindow::toggleBackgroundImage
+    );
+
+    connect(
+        playlistNamingSelect,
+        &QComboBox::currentIndexChanged,
+        this,
+        &SettingsWindow::changePlaylistNaming
     );
 
     connect(
         settingsList,
         &QListWidget::currentRowChanged,
         this,
-        [&](const u16 row) -> void { stackedWidget->setCurrentIndex(row); }
-    );
-
-    connect(
-        deviceMonitor,
-        &DeviceMonitor::defaultDeviceChanged,
-        this,
-        [&](const QString& deviceName) -> void {
-        for (const u8 idx : range(1, outputDeviceSelect->count())) {
-            if (outputDeviceSelect->itemText(idx) == deviceName) {
-                outputDeviceSelect->setCurrentIndex(idx);
-                break;
-            }
-        }
-    }
+        &SettingsWindow::changeSettingsSection
     );
 
     connect(
         deviceMonitor,
         &DeviceMonitor::deviceAdded,
         this,
-        [&](const QString& deviceName) -> void {
-        for (const u8 idx : range(1, outputDeviceSelect->count())) {
-            if (outputDeviceSelect->itemText(idx) == deviceName) {
-                return;
-            }
-        }
-
-        outputDeviceSelect->addItem(deviceName);
-    }
+        &SettingsWindow::onDeviceAdded
     );
 
     connect(
         deviceMonitor,
         &DeviceMonitor::deviceRemoved,
         this,
-        [&](const QString& deviceName) -> void {
-        for (const u8 idx : range(1, outputDeviceSelect->count())) {
-            if (outputDeviceSelect->itemText(idx) == deviceName) {
-                outputDeviceSelect->removeItem(idx);
-                break;
-            }
-        }
-    }
+        &SettingsWindow::onDeviceRemoved
     );
 }
 
@@ -319,10 +227,14 @@ SettingsWindow::~SettingsWindow() {
     delete ui;
 }
 
-auto SettingsWindow::fetchDevices() -> ma_result {
+void SettingsWindow::fetchDevices() {
     ma_result result = ma_context_init(nullptr, -1, &config, &context);
     if (result != MA_SUCCESS) {
-        return result;
+        LOG_ERROR(
+            u"Failed to fetch output devices: "_s +
+            ma_result_description(result)
+        );
+        return;
     }
 
     ma_device_info* playbackInfos = nullptr;
@@ -337,7 +249,11 @@ auto SettingsWindow::fetchDevices() -> ma_result {
     );
 
     if (result != MA_SUCCESS) {
-        return result;
+        LOG_ERROR(
+            u"Failed to fetch output devices: "_s +
+            ma_result_description(result)
+        );
+        return;
     }
 
     playbackDevices = span<ma_device_info>(playbackInfos, playbackCount);
@@ -355,10 +271,150 @@ auto SettingsWindow::fetchDevices() -> ma_result {
     if (settings->core.outputDevice.isEmpty()) {
         outputDeviceSelect->setCurrentIndex(0);
     };
-
-    return MA_SUCCESS;
 }
 
 void SettingsWindow::setTheme(const Qt::ColorScheme colorScheme) {
     QApplication::styleHints()->setColorScheme(colorScheme);
+}
+
+void SettingsWindow::changeTheme(const u8 state) {
+    settings->core.applicationTheme = Qt::ColorScheme(state);
+    setTheme(Qt::ColorScheme(state));
+}
+
+void SettingsWindow::locateSettingsDirectory() {
+    const QString dir = QFileDialog::getExistingDirectory(this);
+    if (!dir.isEmpty()) {
+        settingsDirectoryInput->setText(dir);
+    }
+}
+
+void SettingsWindow::locatePlaylistDirectory() {
+    const QString dir = QFileDialog::getExistingDirectory(this);
+    if (!dir.isEmpty()) {
+        playlistDirectoryInput->setText(dir);
+    }
+}
+
+void SettingsWindow::changeStyle(const QString& itemText) {
+    settings->core.applicationStyle = itemText;
+
+    if (styleSelect->currentIndex() == 0) {
+        QApplication::setStyle(settings->core.defaultStyle);
+    } else {
+        QApplication::setStyle(itemText);
+    }
+}
+
+void SettingsWindow::enableAllAudio() {
+    for (u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
+        if (ranges::contains(
+                ALLOWED_AUDIO_EXTENSIONS,
+                enabledAssociationsList->item(idx)->text()
+            )) {
+            enabledAssociationsList->item(idx)->setCheckState(Qt::Checked);
+        }
+    }
+}
+
+void SettingsWindow::enableAllVideo() {
+    for (u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
+        if (ranges::contains(
+                ALLOWED_VIDEO_EXTENSIONS,
+                enabledAssociationsList->item(idx)->text()
+            )) {
+            enabledAssociationsList->item(idx)->setCheckState(Qt::Checked);
+        }
+    }
+}
+
+void SettingsWindow::enableAllPlaylists() {
+    for (u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
+        if (ranges::contains(
+                ALLOWED_PLAYLIST_EXTENSIONS,
+                enabledAssociationsList->item(idx)->text()
+            )) {
+            enabledAssociationsList->item(idx)->setCheckState(Qt::Checked);
+        }
+    }
+}
+
+void SettingsWindow::enableAllAssociations() {
+    for (u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
+        enabledAssociationsList->item(idx)->setCheckState(Qt::Checked);
+    }
+}
+
+void SettingsWindow::clearAllAssociations() {
+    for (u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
+        enabledAssociationsList->item(idx)->setCheckState(Qt::Unchecked);
+    }
+}
+
+void SettingsWindow::setAssociations() {
+    for (u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
+        if (enabledAssociationsList->item(idx)->checkState() == Qt::Checked) {
+            settings->shell.enabledAssociations |= Associations(1 << idx);
+        } else {
+            settings->shell.enabledAssociations &= Associations(~(1 << idx));
+        }
+    }
+
+    updateFileAssociations(settings->shell.enabledAssociations);
+}
+
+void SettingsWindow::setContextMenuEntry(const bool checked) {
+    if (checked) {
+        createContextMenuEntry();
+    } else {
+        removeContextMenuEntry();
+    }
+
+    settings->shell.contextMenuEntryEnabled = checked;
+}
+
+void SettingsWindow::changePlaylistNaming(const u8 index) {
+    settings->playlist.playlistNaming = PlaylistNaming(index);
+}
+
+void SettingsWindow::togglePrioritizeExternal(const bool checked) {
+    settings->playlist.prioritizeExternalCover = checked;
+}
+
+void SettingsWindow::toggleBackgroundImage(const bool checked) {
+    settings->playlist.autoSetBackground = checked;
+}
+
+void SettingsWindow::changeSettingsSection(const u16 row) {
+    stackedWidget->setCurrentIndex(row);
+}
+
+void SettingsWindow::onDeviceAdded(const QString& deviceName) {
+    for (u8 idx : range(1, outputDeviceSelect->count())) {
+        if (outputDeviceSelect->itemText(idx) == deviceName) {
+            return;
+        }
+    }
+    outputDeviceSelect->addItem(deviceName);
+}
+
+void SettingsWindow::onDeviceRemoved(const QString& deviceName) {
+    for (u8 idx : range(1, outputDeviceSelect->count())) {
+        if (outputDeviceSelect->itemText(idx) == deviceName) {
+            outputDeviceSelect->removeItem(idx);
+            break;
+        }
+    }
+}
+
+void SettingsWindow::onOutputDeviceChanged(const u8 index) {
+    if (index == outputDeviceSelect->count() - 1) {
+        settings->core.outputDevice.clear();
+        settings->core.outputDeviceID = std::nullopt;
+    } else {
+        settings->core.outputDevice = playbackDevices[index].name;
+        settings->core.outputDeviceID = playbackDevices[index].id;
+    }
+
+    emit audioDeviceChanged();
 }

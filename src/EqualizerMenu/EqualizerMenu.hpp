@@ -26,12 +26,14 @@ struct SliderContainer {
     QLabel* hzLabel;
 };
 
+// TODO: Import/export presets
+
 class EqualizerMenu : public QDialog {
     Q_OBJECT
 
    public:
     explicit EqualizerMenu(
-        shared_ptr<Settings> settings,
+        const shared_ptr<Settings>& settings_,
         QWidget* parent = nullptr
     );
 
@@ -66,8 +68,11 @@ class EqualizerMenu : public QDialog {
     inline void resetAll();
     inline void createNewPreset();
 
-    void changeBands(const QString& count);
-    void buildBands();
+    inline void changeBands(const QString& count);
+    inline void buildBands();
+
+    inline auto createSliderElement(u8 band, QWidget* parent)
+        -> SliderContainer;
 
     auto setupUi() -> Ui::EqualizerMenu* {
         auto* const ui_ = new Ui::EqualizerMenu();
@@ -75,15 +80,11 @@ class EqualizerMenu : public QDialog {
         return ui_;
     }
 
-    inline auto createSliderElement(u8 band, QWidget* parent)
-        -> SliderContainer;
+    array<SliderContainer, THIRTY_BANDS> sliders;
 
     Ui::EqualizerMenu* const ui = setupUi();
 
-    array<SliderContainer, usize(Bands::Thirty)> sliders;
-
-    shared_ptr<Settings> settings;
-    EqualizerSettings& eqSettings;
+    EqualizerSettings& settings;
 
     QVBoxLayout* const layout = ui->verticalLayout;
 

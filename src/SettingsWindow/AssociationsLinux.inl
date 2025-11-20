@@ -20,6 +20,8 @@ enum class DesktopEnvironment : u8 {
     Unknown,
 };
 
+// TODO: Implement associations for GNOME
+
 inline void updateFileAssociationsOS(
     const QString& appPath,
     const QString& iconPath,
@@ -235,7 +237,6 @@ createContextMenuEntryOS(const QString& appPath, const QString& iconPath) {
             break;
         }
         case DesktopEnvironment::GNOME:
-            // TODO
             break;
         case DesktopEnvironment::Cinnamon: {
             const QString actionsDirPath = dataLocation + u"/nemo/actions"_qssv;
@@ -290,7 +291,6 @@ inline void removeContextMenuEntryOS() {
                    u"/file-manager/actions/open-dir-in-rap.desktop"_qssv;
             break;
         case DesktopEnvironment::GNOME:
-            // TODO
             break;
         case DesktopEnvironment::Cinnamon:
             path = dataLocation +
@@ -326,7 +326,6 @@ inline void removeContextMenuEntryOS() {
                    u"/file-manager/actions/open-dir-in-rap.desktop"_qssv;
             break;
         case DesktopEnvironment::GNOME:
-            // TODO
             break;
         case DesktopEnvironment::Cinnamon:
             path = dataLocation +

@@ -10,14 +10,14 @@
 #include "EqualizerMenu.hpp"
 #include "IconTextButton.hpp"
 #include "IndexSet.hpp"
-#include "MusicHeader.hpp"
 #include "OptionMenu.hpp"
-#include "PeakVisualizer.hpp"
 #include "PlaylistView.hpp"
 #include "RepeatRangeMenu.hpp"
 #include "ScaledLabel.hpp"
 #include "Settings.hpp"
+#include "SpectrumVisualizer.hpp"
 #include "TrackTree.hpp"
+#include "TrackTreeHeader.hpp"
 #include "TrackTreeModel.hpp"
 #include "ui_MainWindow.h"
 
@@ -37,7 +37,6 @@
 #include <QSystemTrayIcon>
 #include <QThreadPool>
 #include <QTranslator>
-#include <random>
 
 QT_BEGIN_NAMESPACE
 
@@ -111,15 +110,21 @@ class MainWindow : public QMainWindow {
     );
     inline void
     adjustPlaylistImage(DockWidgetPosition dockWidgetPosition, u8 currentIndex);
+    inline void handleConnectionIPC();
+    inline void
+    adjustPlayingPlaylist(TabRemoveMode mode, u8 startIndex, u8 count);
+    inline void showVisualizer();
+    inline void showRepeatButtonContextMenu(const QPoint& pos);
+    inline void showControlContainerContextMenu();
 
     inline void exportPlaylist(PlaylistFileType playlistType);
     static inline auto exportXSPF(
         const QString& outputPath,
-        const vector<HashMap<TrackProperty, QString>>& metadataVector
+        const vector<TrackMetadata>& metadataVector
     ) -> result<bool, QString>;
     static inline auto exportM3U8(
         const QString& outputPath,
-        const vector<HashMap<TrackProperty, QString>>& metadataVector
+        const vector<TrackMetadata>& metadataVector
     ) -> result<bool, QString>;
 
     static inline auto constructAudioFileFilter() -> QString;
@@ -152,7 +157,7 @@ class MainWindow : public QMainWindow {
     PlaylistView* const playlistView = ui->playlistView;
     PlaylistTabBar* const playlistTabBar = playlistView->tabBar();
     TrackTree* trackTree = nullptr;
-    MusicHeader* trackTreeHeader = nullptr;
+    TrackTreeHeader* trackTreeHeader = nullptr;
     TrackTreeModel* trackTreeModel = nullptr;
 
     // UI - Buttons
@@ -208,6 +213,8 @@ class MainWindow : public QMainWindow {
     // UI State
     const QString ZERO_DURATION = u"00:00"_s;
     const QString FULL_ZERO_DURATION = u"00:00/00:00"_s;
+    const QString IPCServerName = u"revolutionary-audio-player-server"_s;
+
     QString trackDuration = FULL_ZERO_DURATION;
     QTranslator* translator = new QTranslator(this);
 
@@ -245,9 +252,6 @@ class MainWindow : public QMainWindow {
     // Miscellaneous
     QString currentTrack;
     u16 CUEOffset = UINT16_MAX;
-
-    std::random_device seed;
-    std::mt19937 rng = std::mt19937(seed());
 
     QLocalServer* const server = new QLocalServer(this);
 

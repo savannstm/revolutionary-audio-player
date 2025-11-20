@@ -1,11 +1,12 @@
 #include "MetadataWindow.hpp"
 
+#include "Enums.hpp"
 #include "TrackProperties.hpp"
 
 constexpr QSize METADATA_WINDOW_SIZE = QSize(800, 600);
 
 MetadataWindow::MetadataWindow(
-    const HashMap<TrackProperty, QString>& metadata,
+    const TrackMetadata& metadata,
     QWidget* const parent
 ) :
     QDialog(parent) {

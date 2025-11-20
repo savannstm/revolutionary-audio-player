@@ -4,7 +4,6 @@
 
 #ifdef Q_OS_LINUX
 #include "Aliases.hpp"
-#include "RapidHasher.hpp"
 
 #include <pulse/pulseaudio.h>
 

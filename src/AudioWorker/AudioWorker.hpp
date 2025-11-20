@@ -12,7 +12,7 @@ class AudioWorker : public QObject {
    public:
     explicit AudioWorker(
         shared_ptr<Settings>,
-        f32* peakVisualizerBuffer,
+        f32* spectrumVisualizerBuffer,
         f32* visualizerBufferData,
         QObject* parent = nullptr
     );
@@ -78,8 +78,8 @@ class AudioWorker : public QObject {
 
     void changeGain(const u8 band) { audioStreamer->changeGain(band); }
 
-    void togglePeakVisualizer(const bool enabled) {
-        peakVisualizerEnabled = enabled;
+    void toggleSpectrumVisualizer(const bool enabled) {
+        spectrumVisualizerEnabled = enabled;
     }
 
     void toggleVisualizer(const bool enabled) { visualizerEnabled = enabled; }
@@ -120,7 +120,7 @@ class AudioWorker : public QObject {
     usize buffersIndex = 0;
     usize bufferOffset = 0;
 
-    f32* peakVisualizerBuffer;
+    f32* spectrumVisualizerBuffer;
     f32* visualizerBuffer;
 
     f32 volume_ = 1.0F;
@@ -128,7 +128,7 @@ class AudioWorker : public QObject {
     u16 lastPlaybackSecond = 0;
     u16 seekTargetSecond = 0;
 
-    bool peakVisualizerEnabled = false;
+    bool spectrumVisualizerEnabled = false;
     bool visualizerEnabled = false;
 
     bool deviceInitialized = false;

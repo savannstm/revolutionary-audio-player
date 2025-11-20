@@ -13,15 +13,15 @@
 #include "ExtractMetadata.hpp"
 #include "HelpWindow.hpp"
 #include "IconTextButton.hpp"
+#include "InputPopup.hpp"
 #include "Logger.hpp"
 #include "MetadataWindow.hpp"
-#include "PeakVisualizer.hpp"
 #include "PlaylistView.hpp"
 #include "RandInt.hpp"
-#include "RapidHasher.hpp"
 #include "RepeatRangeMenu.hpp"
 #include "Settings.hpp"
 #include "SettingsWindow.hpp"
+#include "SpectrumVisualizer.hpp"
 #include "TrackProperties.hpp"
 #include "TrackTree.hpp"
 #include "VisualizerDialog.hpp"
@@ -49,17 +49,17 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         &MainWindow::toggleEqualizerMenu
     );
 
-    connect(actionForward, &QAction::triggered, this, [&] -> void {
+    connect(actionForward, &QAction::triggered, this, [this] -> void {
         advancePlaylist(forwardDirection);
     });
 
-    connect(actionBackward, &QAction::triggered, this, [&] -> void {
+    connect(actionBackward, &QAction::triggered, this, [this] -> void {
         advancePlaylist(backwardDirection);
     });
 
     connect(actionRepeat, &QAction::triggered, this, &MainWindow::toggleRepeat);
 
-    connect(actionTogglePlayback, &QAction::triggered, this, [&] -> void {
+    connect(actionTogglePlayback, &QAction::triggered, this, [this] -> void {
         togglePlayback();
     });
 
@@ -67,64 +67,12 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
 
     connect(actionRandom, &QAction::triggered, this, &MainWindow::toggleRandom);
 
-    connect(actionVisualizer, &QAction::triggered, this, [&] -> void {
-#ifdef PROJECTM
-        if (visualizerDialog != nullptr) {
-            return;
-        }
-
-        visualizerDialog = new VisualizerDialog(settings);
-
-        connect(visualizerDialog, &VisualizerDialog::ready, this, [&] -> void {
-            visualizerDialog->setChannels(audioWorker->channels());
-            visualizerDialog->show();
-
-            audioWorker->toggleVisualizer(true);
-
-            connect(
-                audioWorker,
-                &AudioWorker::audioProperties,
-                visualizerDialog,
-                [this](const u32 /* sampleRate */, const AudioChannels channels)
-                    -> void { visualizerDialog->setChannels(channels); }
-            );
-
-            connect(
-                audioWorker,
-                &AudioWorker::processedSamples,
-                visualizerDialog,
-                [&] -> void {
-                visualizerDialog->addSamples(visualizerBuffer.data());
-            }
-            );
-        });
-
-        connect(
-            audioWorker,
-            &AudioWorker::streamEnded,
-            visualizerDialog,
-            &VisualizerDialog::clear
-        );
-
-        connect(
-            visualizerDialog,
-            &VisualizerDialog::rejected,
-            this,
-            [&] -> void {
-            delete visualizerDialog;
-            visualizerDialog = nullptr;
-            audioWorker->toggleVisualizer(false);
-        },
-            Qt::SingleShotConnection
-        );
-#else
-        QMessageBox::information(
-            this,
-            tr("Visualizer disabled"),
-            tr("The program was compiled without projectM visualizer library.")
-        );
-#endif
-    });
+    connect(
+        actionVisualizer,
+        &QAction::triggered,
+        this,
+        &MainWindow::showVisualizer
+    );
 
     connect(
         actionSettings,
@@ -142,19 +90,19 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         &MainWindow::onTrayIconActivated
     );
 
-    connect(actionOpenFolder, &QAction::triggered, this, [&] -> void {
+    connect(actionOpenFolder, &QAction::triggered, this, [this] -> void {
         addEntry(true, true);
     });
 
-    connect(actionOpenFile, &QAction::triggered, this, [&] -> void {
+    connect(actionOpenFile, &QAction::triggered, this, [this] -> void {
         addEntry(true, false);
     });
 
-    connect(actionAddFolder, &QAction::triggered, this, [&] -> void {
+    connect(actionAddFolder, &QAction::triggered, this, [this] -> void {
         addEntry(false, true);
     });
 
-    connect(actionAddFile, &QAction::triggered, this, [&] -> void {
+    connect(actionAddFile, &QAction::triggered, this, [this] -> void {
         addEntry(false, false);
     });
 
@@ -176,7 +124,7 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         progressSlider,
         &CustomSlider::valueChanged,
         this,
-        [&](const u16 value) -> void { updateProgressLabel(value); }
+        [this](const u16 value) -> void { updateProgressLabel(value); }
     );
 
     connect(
@@ -190,7 +138,7 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         progressSliderTray,
         &CustomSlider::valueChanged,
         this,
-        [&](const u16 value) -> void { updateProgressLabel(value); }
+        [this](const u16 value) -> void { updateProgressLabel(value); }
     );
 
     connect(
@@ -256,21 +204,27 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         &MainWindow::showHelpWindow
     );
 
-    connect(actionOpenPlaylist, &QAction::triggered, this, [&] -> void {
+    connect(actionOpenPlaylist, &QAction::triggered, this, [this] -> void {
         importPlaylist(true);
     });
 
-    connect(actionAddPlaylist, &QAction::triggered, this, [&] -> void {
+    connect(actionAddPlaylist, &QAction::triggered, this, [this] -> void {
         importPlaylist(false);
     });
 
-    connect(actionExportM3U8Playlist, &QAction::triggered, this, [&] -> void {
-        exportPlaylist(PlaylistFileType::M3U);
-    });
+    connect(
+        actionExportM3U8Playlist,
+        &QAction::triggered,
+        this,
+        [this] -> void { exportPlaylist(PlaylistFileType::M3U); }
+    );
 
-    connect(actionExportXSPFPlaylist, &QAction::triggered, this, [&] -> void {
-        exportPlaylist(PlaylistFileType::XSPF);
-    });
+    connect(
+        actionExportXSPFPlaylist,
+        &QAction::triggered,
+        this,
+        [this] -> void { exportPlaylist(PlaylistFileType::XSPF); }
+    );
 
     connect(
         playlistView,
@@ -283,32 +237,14 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         playlistView,
         &PlaylistView::tabsRemoved,
         this,
-        [&](const TabRemoveMode mode,
-            const u8 startIndex,
-            const u8 count) -> void {
-        if (playingPlaylist == 0 || playingPlaylist < startIndex) {
-            return;
-        }
-
-        switch (mode) {
-            case TabRemoveMode::Single:
-                playingPlaylist -= 1;
-                break;
-            case TabRemoveMode::ToLeft:
-            case TabRemoveMode::Other:
-                playingPlaylist = i8(playingPlaylist - count);
-                break;
-            default:
-                break;
-        }
-    }
+        &MainWindow::adjustPlayingPlaylist
     );
 
-    connect(actionRussian, &QAction::triggered, this, [&] -> void {
+    connect(actionRussian, &QAction::triggered, this, [this] -> void {
         retranslate(QLocale::Russian);
     });
 
-    connect(actionEnglish, &QAction::triggered, this, [&] -> void {
+    connect(actionEnglish, &QAction::triggered, this, [this] -> void {
         retranslate(QLocale::English);
     });
 
@@ -319,24 +255,12 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         &MainWindow::moveDockWidget
     );
 
-    connect(server, &QLocalServer::newConnection, this, [&] -> void {
-        QLocalSocket* const clientConnection = server->nextPendingConnection();
-
-        connect(
-            clientConnection,
-            &QLocalSocket::readyRead,
-            [this, clientConnection] -> void {
-            const QByteArray data = clientConnection->readAll();
-            const QStringList paths =
-                QString::fromUtf8(data).split('\n', Qt::SkipEmptyParts);
-
-            processArgs(paths);
-            focus();
-
-            clientConnection->disconnectFromServer();
-        }
-        );
-    });
+    connect(
+        server,
+        &QLocalServer::newConnection,
+        this,
+        &MainWindow::handleConnectionIPC
+    );
 
     connect(
         playlistTabBar,
@@ -356,57 +280,24 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
         ui->controlContainer,
         &QWidget::customContextMenuRequested,
         this,
-        [&] -> void {
-        auto* const menu = new QMenu(this);
-
-        const bool visualizerShown = !peakVisualizer->isHidden();
-        QAction* const visualizerAction = menu->addAction(tr("Visualizer"));
-        visualizerAction->setCheckable(true);
-        visualizerAction->setChecked(visualizerShown);
-
-        const QAction* const selectedAction = menu->exec(QCursor::pos());
-        delete menu;
-
-        if (selectedAction == visualizerAction) {
-            peakVisualizer->setHidden(visualizerShown);
-            audioWorker->togglePeakVisualizer(!visualizerShown);
-        }
-
-        if (peakVisualizer->isHidden()) {
-            peakVisualizer->stop();
-        } else if (audioWorker->state() == ma_device_state_started) {
-            peakVisualizer->start();
-        }
-    }
+        &MainWindow::showControlContainerContextMenu
     );
 
     connect(
         repeatButton,
         &IconTextButton::customContextMenuRequested,
         this,
-        [&](const QPoint& pos) -> void {
-        if (repeat != RepeatMode::Track) {
-            return;
-        }
-
-        if (repeatRangeMenu->isHidden()) {
-            repeatRangeMenu->move(
-                repeatButton->mapToGlobal(QPoint{ 0, repeatButton->height() })
-            );
-
-            repeatRangeMenu->show();
-        }
-    }
+        &MainWindow::showRepeatButtonContextMenu
     );
 
 #ifdef Q_OS_LINUX
     // On Linux, server cannot listen to the given name if it's already exists.
     // Since everything is file in Unix systems, server is persistent across
     // runs.
-    QLocalServer::removeServer(u"revolutionary-audio-player-server"_s);
+    QLocalServer::removeServer(IPCServerName);
 #endif
 
-    server->listen(u"revolutionary-audio-player-server"_s);
+    server->listen(IPCServerName);
 
     progressLabelTray->setText(trackDuration);
     progressSliderTray->setRange(0, 0);
@@ -432,12 +323,12 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
     playlistView->setSettings(settings);
     audioWorker = new AudioWorker(
         settings,
-        peakVisualizerBuffer.data(),
+        spectrumVisualizerBuffer.data(),
         visualizerBuffer.data()
     );
     equalizerMenu = new EqualizerMenu(settings, this);
 
-    audioWorker->togglePeakVisualizer(true);
+    audioWorker->toggleSpectrumVisualizer(true);
 
     connect(
         equalizerMenu,
@@ -473,8 +364,8 @@ MainWindow::MainWindow(const QStringList& paths, QWidget* const parent) :
     connect(
         audioWorker,
         &AudioWorker::audioProperties,
-        peakVisualizer,
-        &PeakVisualizer::setAudioProperties
+        spectrumVisualizer,
+        &SpectrumVisualizer::setAudioProperties
     );
 
     processArgs(paths);
@@ -513,7 +404,7 @@ void MainWindow::processArgs(const QStringList& args) {
             tree,
             &TrackTree::fillingFinished,
             this,
-            [&](const bool startPlaying) -> void {
+            [this](const bool startPlaying) -> void {
             if (startPlaying) {
                 togglePlayback();
             }
@@ -742,8 +633,7 @@ auto MainWindow::savePlaylists() -> result<bool, QString> {
         playlistObject.backgroundOpacity = tree->opacity();
 
         for (const u16 row : range(0, rowCount)) {
-            const HashMap<TrackProperty, QString> rowMetadata =
-                tree->rowMetadata(row);
+            const TrackMetadata rowMetadata = tree->rowMetadata(row);
             const auto& item = model->item(row, 0);
 
             playlistObject.tracks.append(
@@ -1096,7 +986,7 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
                 metadataWindow->setAttribute(Qt::WA_DeleteOnClose);
                 metadataWindow->show();
             } else if (selectedAction == coverAction) {
-                const HashMap<TrackProperty, QString> metadata =
+                const TrackMetadata metadata =
                     trackTree->rowMetadata(index.row());
 
                 auto* const coverWindow = new CoverWindow(
@@ -1204,7 +1094,7 @@ void MainWindow::searchTrack() {
 
             const auto iter = ranges::find_if(
                 SEARCH_PROPERTIES,
-                [&](const QStringView property) -> bool {
+                [this, &prefix](const QStringView property) -> bool {
                 return prefix == property;
             }
             );
@@ -1220,8 +1110,7 @@ void MainWindow::searchTrack() {
         }
 
         for (const u16 row : range(0, trackTreeModel->rowCount())) {
-            const HashMap<TrackProperty, QString> metadata =
-                trackTree->rowMetadata(row);
+            const TrackMetadata metadata = trackTree->rowMetadata(row);
             QString fieldValue;
 
             if (hasPrefix) {
@@ -1285,52 +1174,54 @@ void MainWindow::onAudioProgressUpdated(u16 seconds) {
     const bool draggingSlider =
         progressSlider->isSliderDown() || progressSliderTray->isSliderDown();
 
-    if (!draggingSlider) {
-        if (repeat == RepeatMode::Track) {
-            u16 startSecond = repeatRangeMenu->startSecond();
-            u16 endSecond = repeatRangeMenu->endSecond();
-            auto skipSections = repeatRangeMenu->skipSections();
+    if (draggingSlider) {
+        return;
+    }
 
-            if (CUEOffset != UINT16_MAX) {
-                startSecond += CUEOffset;
-                endSecond += CUEOffset;
-
-                for (auto& section : skipSections) {
-                    section.start += CUEOffset;
-                    section.end += CUEOffset;
-                }
-            }
-
-            for (const auto& section : skipSections) {
-                if (seconds >= section.start && seconds <= section.end) {
-                    audioWorker->seekSecond(section.end);
-                }
-            }
-
-            if (seconds < startSecond && seconds < startSecond - 1) {
-                audioWorker->seekSecond(startSecond);
-            }
-
-            if (seconds > endSecond) {
-                audioWorker->seekSecond(startSecond);
-            }
-        }
-
-        const QString& duration =
-            trackDuration.slice(trackDuration.indexOf('/') + 1);
-
-        const u16 secsDuration = timeToSecs(duration);
+    if (repeat == RepeatMode::Track) {
+        u16 startSecond = repeatRangeMenu->startSecond();
+        u16 endSecond = repeatRangeMenu->endSecond();
+        vector<SkipSection> skipSections = repeatRangeMenu->skipSections();
 
         if (CUEOffset != UINT16_MAX) {
-            seconds -= CUEOffset;
+            startSecond += CUEOffset;
+            endSecond += CUEOffset;
 
-            if (seconds == secsDuration) {
-                playNext();
+            for (auto& section : skipSections) {
+                section.start += CUEOffset;
+                section.end += CUEOffset;
             }
         }
 
-        progressSlider->setValue(seconds);
+        for (const auto& section : skipSections) {
+            if (seconds >= section.start && seconds <= section.end) {
+                audioWorker->seekSecond(section.end);
+            }
+        }
+
+        if (seconds < startSecond && seconds < startSecond - 1) {
+            audioWorker->seekSecond(startSecond);
+        }
+
+        if (seconds > endSecond) {
+            audioWorker->seekSecond(startSecond);
+        }
     }
+
+    const QString& duration =
+        trackDuration.slice(trackDuration.indexOf('/') + 1);
+
+    const u16 secsDuration = timeToSecs(duration);
+
+    if (CUEOffset != UINT16_MAX) {
+        seconds -= CUEOffset;
+
+        if (seconds == secsDuration) {
+            playNext();
+        }
+    }
+
+    progressSlider->setValue(seconds);
 }
 
 void MainWindow::playNext() {
@@ -1430,7 +1321,7 @@ void MainWindow::showAboutWindow() {
 inline void
 MainWindow::updateProgressLabel(const u16 second, const QString& duration) {
     QString newTrackDuration;
-    newTrackDuration.reserve(5 + 1 + 5);
+    newTrackDuration.reserve(FULL_ZERO_DURATION.size());
     newTrackDuration += secsToMins(second);
     newTrackDuration += '/';
     newTrackDuration +=
@@ -1647,8 +1538,7 @@ void MainWindow::selectTrack(const i32 oldRow, const u16 newRow) {
 void MainWindow::playTrack(TrackTree* tree, const QModelIndex& index) {
     playButton->setIcon(pauseIcon);
 
-    const HashMap<TrackProperty, QString> metadata =
-        tree->rowMetadata(index.row());
+    const TrackMetadata metadata = tree->rowMetadata(index.row());
 
     const bool playingCUE =
         metadata[TrackProperty::Format].toLower().endsWith(EXT_CUE);
@@ -1762,8 +1652,8 @@ void MainWindow::togglePlayback(const QString& path, const u16 startSecond) {
         playButton->setToolTip(tr("Pause"));
         actionTogglePlayback->setText(tr("Pause"));
 
-        if (!peakVisualizer->isHidden()) {
-            peakVisualizer->start();
+        if (!spectrumVisualizer->isHidden()) {
+            spectrumVisualizer->start();
         }
     } else {
         const ma_device_state state = audioWorker->state();
@@ -1778,7 +1668,7 @@ void MainWindow::togglePlayback(const QString& path, const u16 startSecond) {
                 visualizerDialog->clear();
             }
 
-            peakVisualizer->stop();
+            spectrumVisualizer->stop();
         } else if (state == ma_device_state_stopped) {
             if (trackTree != nullptr && !trackTree->currentIndex().isValid()) {
                 selectTrack(-1, 0);
@@ -1790,15 +1680,15 @@ void MainWindow::togglePlayback(const QString& path, const u16 startSecond) {
             playButton->setToolTip(tr("Pause"));
             actionTogglePlayback->setText(tr("Pause"));
 
-            if (!peakVisualizer->isHidden()) {
-                peakVisualizer->start();
+            if (!spectrumVisualizer->isHidden()) {
+                spectrumVisualizer->start();
             }
         } else if (state == ma_device_state_uninitialized &&
                    trackTree != nullptr &&
                    !trackTree->currentIndex().isValid()) {
             selectTrack(-1, 0);
-            if (!peakVisualizer->isHidden()) {
-                peakVisualizer->start();
+            if (!spectrumVisualizer->isHidden()) {
+                spectrumVisualizer->start();
             }
         }
     }
@@ -1866,7 +1756,7 @@ void MainWindow::advancePlaylist(const Direction direction) {
             }
 
             do {
-                nextRow = randint_range(0, rowCount - 1, rng());
+                nextRow = randint_range(0, rowCount - 1);
             } while (playHistory.contains(nextRow));
             break;
         }
@@ -1899,7 +1789,7 @@ void MainWindow::stopPlayback() {
     }
 
     currentTrack = QString();
-    peakVisualizer->reset();
+    spectrumVisualizer->reset();
     audioWorker->stop();
     trackLabel->clear();
     progressSlider->setRange(0, 0);
@@ -1971,60 +1861,62 @@ void MainWindow::importPlaylist(const bool createNewTab, QString filePath) {
         playlistView->tree(index)
             ->fillTableCUE(metadata, info.tracks, info.cueFilePath);
 
-    } else {
-        QStringList filePaths;
-        filePaths.reserve(MINIMUM_TRACK_COUNT);
+        return;
+    }
 
-        const auto appendIfExists = [&](const QString& relativePath) -> void {
-            const QString localFilePath = dirPath + relativePath;
+    QStringList filePaths;
+    filePaths.reserve(MINIMUM_TRACK_COUNT);
 
-            if (QFile::exists(localFilePath)) {
-                filePaths.append(localFilePath);
-            }
-        };
+    const auto appendIfExists =
+        [this, &dirPath, &filePaths](const QString& relativePath) -> void {
+        const QString localFilePath = dirPath + relativePath;
 
-        if (extension == EXT_XSPF) {
-            QXmlStreamReader xml = QXmlStreamReader(&file);
+        if (QFile::exists(localFilePath)) {
+            filePaths.append(localFilePath);
+        }
+    };
 
-            while (!xml.atEnd()) {
-                if (xml.readNext() == QXmlStreamReader::StartElement &&
-                    xml.name() == u"location"_qsv) {
-                    appendIfExists(xml.readElementText());
-                }
-            }
+    if (extension == EXT_XSPF) {
+        QXmlStreamReader xml = QXmlStreamReader(&file);
 
-            if (xml.hasError()) {
-                QMessageBox::warning(this, tr("Error"), xml.errorString());
-                return;
-            }
-        } else if (extension == EXT_M3U || extension == EXT_M3U8) {
-            auto input = QTextStream(&file);
-
-            while (!input.atEnd()) {
-                const QString line = input.readLine().trimmed();
-
-                if (!line.isEmpty() && !line.startsWith('#')) {
-                    appendIfExists(line);
-                }
+        while (!xml.atEnd()) {
+            if (xml.readNext() == QXmlStreamReader::StartElement &&
+                xml.name() == u"location"_qsv) {
+                appendIfExists(xml.readElementText());
             }
         }
 
-        if (filePaths.isEmpty()) {
-            QMessageBox::information(
-                this,
-                tr("No Files Found"),
-                tr("No valid tracks were found in the playlist.")
-            );
+        if (xml.hasError()) {
+            QMessageBox::warning(this, tr("Error"), xml.errorString());
             return;
         }
+    } else {
+        auto input = QTextStream(&file);
 
-        const i8 currentIndex = playlistView->currentIndex();
-        const u8 index = (createNewTab || currentIndex == -1)
-                             ? playlistView->addTab(fileInfo.fileName())
-                             : currentIndex;
+        while (!input.atEnd()) {
+            const QString line = input.readLine().trimmed();
 
-        playlistView->tree(index)->fillTable(filePaths);
+            if (!line.isEmpty() && !line.startsWith('#')) {
+                appendIfExists(line);
+            }
+        }
     }
+
+    if (filePaths.isEmpty()) {
+        QMessageBox::information(
+            this,
+            tr("No Files Found"),
+            tr("No valid tracks were found in the playlist.")
+        );
+        return;
+    }
+
+    const i8 currentIndex = playlistView->currentIndex();
+    const u8 index = (createNewTab || currentIndex == -1)
+                         ? playlistView->addTab(fileInfo.fileName())
+                         : currentIndex;
+
+    playlistView->tree(index)->fillTable(filePaths);
 }
 
 void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
@@ -2063,7 +1955,7 @@ void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
     }
 
     const u16 rowCount = trackTree->model()->rowCount();
-    vector<HashMap<TrackProperty, QString>> properties;
+    vector<TrackMetadata> properties;
     properties.reserve(rowCount);
 
     for (const u16 row : range(0, rowCount)) {
@@ -2136,7 +2028,7 @@ static constexpr auto getXSPFTag(const TrackProperty property) -> QStringView {
 
 auto MainWindow::exportXSPF(
     const QString& outputPath,
-    const vector<HashMap<TrackProperty, QString>>& metadataVector
+    const vector<TrackMetadata>& metadataVector
 ) -> result<bool, QString> {
     auto file = QFile(outputPath);
 
@@ -2188,7 +2080,7 @@ auto MainWindow::exportXSPF(
 
 auto MainWindow::exportM3U8(
     const QString& outputPath,
-    const vector<HashMap<TrackProperty, QString>>& metadataVector
+    const vector<TrackMetadata>& metadataVector
 ) -> result<bool, QString> {
     auto outputFile = QFile(outputPath);
 
@@ -2358,3 +2250,140 @@ auto MainWindow::constructAudioFileFilter() -> QString {
     filter += ')';
     return filter;
 }
+
+void MainWindow::handleConnectionIPC() {
+    QLocalSocket* const clientConnection = server->nextPendingConnection();
+
+    connect(
+        clientConnection,
+        &QLocalSocket::readyRead,
+        [this, clientConnection] -> void {
+        const QByteArray data = clientConnection->readAll();
+        const QStringList paths =
+            QString::fromUtf8(data).split('\n', Qt::SkipEmptyParts);
+
+        processArgs(paths);
+        focus();
+
+        clientConnection->disconnectFromServer();
+    }
+    );
+}
+
+void MainWindow::adjustPlayingPlaylist(
+    const TabRemoveMode mode,
+    const u8 startIndex,  // NOLINT
+    const u8 count
+) {
+    if (playingPlaylist == 0 || playingPlaylist < startIndex) {
+        return;
+    }
+
+    switch (mode) {
+        case TabRemoveMode::Single:
+            playingPlaylist -= 1;
+            break;
+        case TabRemoveMode::ToLeft:
+        case TabRemoveMode::Other:
+            playingPlaylist = i8(playingPlaylist - count);
+            break;
+        default:
+            break;
+    }
+}
+
+void MainWindow::showVisualizer() {
+#ifdef PROJECTM
+    if (visualizerDialog != nullptr) {
+        return;
+    }
+
+    visualizerDialog = new VisualizerDialog(settings);
+
+    connect(visualizerDialog, &VisualizerDialog::ready, this, [this] -> void {
+        visualizerDialog->setChannels(audioWorker->channels());
+        visualizerDialog->show();
+
+        audioWorker->toggleVisualizer(true);
+
+        connect(
+            audioWorker,
+            &AudioWorker::audioProperties,
+            visualizerDialog,
+            [this](const u32 /* sampleRate */, const AudioChannels channels)
+                -> void { visualizerDialog->setChannels(channels); }
+        );
+
+        connect(
+            audioWorker,
+            &AudioWorker::processedSamples,
+            visualizerDialog,
+            [this] -> void {
+            visualizerDialog->addSamples(visualizerBuffer.data());
+        }
+        );
+    });
+
+    connect(
+        audioWorker,
+        &AudioWorker::streamEnded,
+        visualizerDialog,
+        &VisualizerDialog::clear
+    );
+
+    connect(
+        visualizerDialog,
+        &VisualizerDialog::rejected,
+        this,
+        [this] -> void {
+        delete visualizerDialog;
+        visualizerDialog = nullptr;
+        audioWorker->toggleVisualizer(false);
+    },
+        Qt::SingleShotConnection
+    );
+#else
+    QMessageBox::information(
+        this,
+        tr("Visualizer disabled"),
+        tr("The program was compiled without projectM visualizer library.")
+    );
+#endif
+}
+
+inline void MainWindow::showRepeatButtonContextMenu(const QPoint& pos) {
+    if (repeat != RepeatMode::Track) {
+        return;
+    }
+
+    if (repeatRangeMenu->isHidden()) {
+        repeatRangeMenu->move(
+            repeatButton->mapToGlobal(QPoint{ 0, repeatButton->height() })
+        );
+
+        repeatRangeMenu->show();
+    }
+};
+
+inline void MainWindow::showControlContainerContextMenu() {
+    auto* const menu = new QMenu(this);
+
+    const bool visualizerShown = !spectrumVisualizer->isHidden();
+    QAction* const visualizerAction = menu->addAction(tr("Visualizer"));
+    visualizerAction->setCheckable(true);
+    visualizerAction->setChecked(visualizerShown);
+
+    const QAction* const selectedAction = menu->exec(QCursor::pos());
+    delete menu;
+
+    if (selectedAction == visualizerAction) {
+        spectrumVisualizer->setHidden(visualizerShown);
+        audioWorker->toggleSpectrumVisualizer(!visualizerShown);
+    }
+
+    if (spectrumVisualizer->isHidden()) {
+        spectrumVisualizer->stop();
+    } else if (audioWorker->state() == ma_device_state_started) {
+        spectrumVisualizer->start();
+    }
+};

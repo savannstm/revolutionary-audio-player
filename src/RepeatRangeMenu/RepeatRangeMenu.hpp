@@ -46,6 +46,10 @@ class RepeatRangeMenu : public QDialog {
     }
 
    private:
+    inline void updateSkipSection(QTreeWidgetItem* item, i32 column);
+    inline void addSkipSection();
+    inline void removeSkipSection();
+
     vector<SkipSection> skipSections_;
 
     QHBoxLayout* const mainLayout = new QHBoxLayout(this);

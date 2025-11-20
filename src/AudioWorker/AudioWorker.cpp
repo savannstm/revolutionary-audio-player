@@ -6,12 +6,12 @@
 
 AudioWorker::AudioWorker(
     shared_ptr<Settings> settings_,
-    f32* const peakVisualizerBuffer,
+    f32* const spectrumVisualizerBuffer,
     f32* const visualizerBuffer,
     QObject* const parent
 ) :
     QObject(parent),
-    peakVisualizerBuffer(peakVisualizerBuffer),
+    spectrumVisualizerBuffer(spectrumVisualizerBuffer),
     visualizerBuffer(visualizerBuffer),
     settings(std::move(settings_)),
     audioStreamer(new AudioStreamer(settings, this)) {}
@@ -104,8 +104,8 @@ void AudioWorker::dataCallback(
     const u8* src = ptr + self->bufferOffset;
 
     // First we copy full-volume samples into the visualizers
-    if (self->peakVisualizerEnabled) {
-        memcpy(self->peakVisualizerBuffer, src, bytesToCopy);
+    if (self->spectrumVisualizerEnabled) {
+        memcpy(self->spectrumVisualizerBuffer, src, bytesToCopy);
     }
 
     if (self->visualizerEnabled) {
@@ -117,9 +117,9 @@ void AudioWorker::dataCallback(
 
     // Clean up dirt
     if (self->audioStreamer->minBufferSize > bytesToCopy) {
-        if (self->peakVisualizerEnabled) {
+        if (self->spectrumVisualizerEnabled) {
             memset(
-                ras<u8*>(self->peakVisualizerBuffer) + bytesToCopy,
+                ras<u8*>(self->spectrumVisualizerBuffer) + bytesToCopy,
                 0,
                 streamer->minBufferSize - bytesToCopy
             );

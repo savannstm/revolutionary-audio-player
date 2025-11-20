@@ -114,7 +114,7 @@ inline void updateFileAssociationsOS(
         const wstring_view wextension = { ras<wcstr>(ext.utf16()),
                                           usize(ext.size()) };
 
-        if (u32(associations & Associations(1 << idx)) != 0) {
+        if ((associations & Associations(1 << idx)) != Associations::None) {
             const wstring progID = std::format(PROG_ID_TEMPLATE, wextension);
             const wstring extensionEntry =
                 std::format(EXTENSION_ENTRY_TEMPLATE, wextension);
