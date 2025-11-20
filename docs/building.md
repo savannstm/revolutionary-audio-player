@@ -1,3 +1,5 @@
+# Building
+
 You need a C++23 compatible compiler: `clang`, `gcc`, `msvc`. The project uses CMake as build system.
 
 Libraries you'll need:
@@ -25,6 +27,7 @@ Libraries you'll need:
 -   libprojectM (optional, >= 4.1.4)
     -   GLEW (Windows dependency)
     -   GLFW (>= 3.4, because Qt OpenGL sucks)
+-   magic_enum (>= 0.9.4, dev-dependency)
 
 Clone the repository: `git clone https://github.com/savannstm/revolutionary-audio-player`.
 

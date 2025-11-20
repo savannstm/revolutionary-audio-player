@@ -1,0 +1,16 @@
+site_name: RAP Documentation
+repo_url: https://github.com/savannstm/revolutionary-audio-player
+site_description: Revolutionary Audio Player documentation
+site_author: savannstm
+copyright: Licensed under WTFPL.
+nav:
+    - Main: index.md
+    - Playlist: playlist.md
+    - Settings: settings.md
+    - Equalizer: equalizer.md
+    - Visualizer: visualizer.md
+    - Spectrum Visualizer: spectrum-visualizer.md
+
+theme:
+    name: material
+    locale: en
