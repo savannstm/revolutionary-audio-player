@@ -2,6 +2,14 @@
 
 #include "Aliases.hpp"
 
+#include <magic_enum/magic_enum.hpp>
+
+using namespace magic_enum::bitwise_operators;
+
+#define ENUM_CONSTANT(EnumType, Member, NAME, SUFFIX) \
+    constexpr auto NAME##_##SUFFIX = \
+        static_cast<std::underlying_type_t<EnumType>>(EnumType::Member)
+
 enum class TrackProperty : u8 {
     Play,
     Title,
@@ -23,11 +31,10 @@ enum class TrackProperty : u8 {
     Channels,
     Format,
     Path,
-    Order,
-    COUNT
+    Order
 };
 
-constexpr u8 TRACK_PROPERTY_COUNT = u8(TrackProperty::COUNT);
+constexpr u8 TRACK_PROPERTY_COUNT = magic_enum::enum_count<TrackProperty>();
 
 enum class Direction : u8 {
     Forward,
@@ -46,17 +53,6 @@ enum class PlaylistNaming : u8 {
     DirectoryName,
     TrackMetadata,
     Numbered
-};
-
-enum class Style : u8 {
-    Windows11,
-    WindowsVista,
-    Windows,
-    Fusion,
-    Macintosh,
-    Breeze,
-    GTK,
-    Adwaita
 };
 
 enum class PlaylistFileType : u8 {
@@ -79,9 +75,11 @@ enum class DockWidgetPosition : u8 {
     Right
 };
 
-enum class PeakVisualizerMode : u8 {
+enum class SpectrumVisualizerMode : u8 {
     Relative,
-    DBFS
+    DBFS,
+    Equal,
+    Waveform
 };
 
 enum class Bands : u8 {
@@ -91,6 +89,12 @@ enum class Bands : u8 {
     Eighteen = 18,
     Thirty = 30,
 };
+
+ENUM_CONSTANT(Bands, Three, THREE, BANDS);
+ENUM_CONSTANT(Bands, Five, FIVE, BANDS);
+ENUM_CONSTANT(Bands, Ten, TEN, BANDS);
+ENUM_CONSTANT(Bands, Eighteen, EIGHTEEN, BANDS);
+ENUM_CONSTANT(Bands, Thirty, THIRTY, BANDS);
 
 enum class SampleSize : u8 {
     U8 = 1,
@@ -132,23 +136,3 @@ enum class Associations : u32 {
     M3U8 = 1 << 15,
     XSPF = 1 << 16,
 };
-
-constexpr auto operator|(Associations lhs, Associations rhs) -> Associations {
-    return Associations(u32(lhs) | u32(rhs));
-}
-
-constexpr auto operator&(Associations lhs, Associations rhs) -> bool {
-    return bool(u32(lhs) & u32(rhs));
-}
-
-constexpr auto operator|=(Associations& lhs, Associations rhs)
-    -> Associations& {
-    lhs = lhs | rhs;
-    return lhs;
-}
-
-constexpr auto operator&=(Associations& lhs, Associations rhs)
-    -> Associations& {
-    lhs = Associations(u32(lhs) & u32(rhs));
-    return lhs;
-}
