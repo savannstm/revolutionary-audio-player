@@ -1887,7 +1887,11 @@ void MainWindow::importPlaylist(const bool createNewTab, QString filePath) {
         }
 
         if (xml.hasError()) {
-            QMessageBox::warning(this, tr("Error"), xml.errorString());
+            QMessageBox::warning(
+                this,
+                tr("Error occured when parsing XSPF"),
+                xml.errorString()
+            );
             return;
         }
     } else {
