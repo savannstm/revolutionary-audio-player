@@ -1,5 +1,44 @@
 # Changelog
 
+## v0.11.0
+
+### Changes
+
+#### Spectrum Visualizer
+
+-   Spectrum visualizer now can be detached from the main window, and will behave as a separate top-level window.
+-   Removed missing preset number from the preset list.
+-   Implemented waveform mode for spectrum visualizer.
+-   Implemented "Equal" mode for spectrum visualizer, which calculates dBFS peaks like in dBFS mode, but boosts peaks if they're too weak.
+-   Implemented setting custom padding between peaks.
+-   Implemented setting custom gain factor, which boosts the peaks for the given number of decibels.
+
+#### Playlist Appearance
+
+-   When setting playlist tab color, text color in the tab now will be changed accordingly.
+-   Implemented changing playlist background opacity.
+-   Fixed setting wrong color to the playlist background when opacity is changed.
+
+#### Other
+
+-   Fixed not showing visualizer dialog window on Windows.
+-   Fixed replacing any non-ASCII text to question marks in visualizer window on Windows.
+-   Implemented preset import/export for equalizer.
+
+### Broken
+
+-   Devices hot-reload in settings window on Windows.
+-   Sliders in tray icon menu don't display on KDE (possibly other DEs).
+-   Shell context menu entries in different Linux DEs (WIP).
+
+### Coming in v0.12.0
+
+-   Possible integration with last.fm API for music data scraping.
+-   Linux desktop environments shell integration polishing.
+-   MkDocs-based documentation.
+-   Auto-updater.
+-   Devices hot-reload fixes on Windows.
+
 ## v0.10.0 - Polishing, Linux improvements, Wayland fixes
 
 ### Changes
