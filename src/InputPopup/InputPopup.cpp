@@ -14,7 +14,6 @@ InputPopup::InputPopup(QWidget* const parent) :
     layout->addWidget(lineEdit);
 
     connect(lineEdit, &QLineEdit::editingFinished, this, &InputPopup::close);
-    connect(lineEdit, &QLineEdit::inputRejected, this, &InputPopup::close);
 }
 
 InputPopup::InputPopup(const QPoint& pos, QWidget* const parent) :
