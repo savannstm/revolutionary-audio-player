@@ -2,6 +2,7 @@
 #include <atomic>
 #include <iostream>
 #include <thread>
+#include <vector>
 
 #ifdef _WIN32
 #include <GL/glew.h>
@@ -498,7 +499,7 @@ void resizeCallback(
 void mouseClickCallback(
     GLFWwindow* const window,
     const i32 button,
-    const i32 action,
+    const i32 action,  // NOLINT
     const i32 mods
 ) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
@@ -664,7 +665,54 @@ auto main(i32 argc, char* argv[]) -> i32 {
 #ifdef _WIN32
 // NOLINTBEGIN
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
-    return main(__argc, __argv);
+    int argcW = 0;
+
+    LPWSTR* argvW = CommandLineToArgvW(GetCommandLineW(), &argcW);
+    if (!argvW) {
+        return -1;
+    }
+
+    std::vector<std::string> utf8Args;
+    utf8Args.reserve(argcW);
+
+    std::vector<char*> argv;
+
+    for (int i = 0; i < argcW; i++) {
+        const int needed = WideCharToMultiByte(
+            CP_UTF8,
+            0,
+            argvW[i],
+            -1,
+            nullptr,
+            0,
+            nullptr,
+            nullptr
+        );
+
+        std::string utf8 = std::string(needed - 1, '\0');
+        WideCharToMultiByte(
+            CP_UTF8,
+            0,
+            argvW[i],
+            -1,
+            utf8.data(),
+            needed,
+            nullptr,
+            nullptr
+        );
+
+        utf8Args.push_back(std::move(utf8));
+    }
+
+    LocalFree(argvW);
+
+    argv.reserve(argcW);
+
+    for (auto& s : utf8Args) {
+        argv.push_back(s.data());
+    }
+
+    return main(argcW, argv.data());
 }
 
 // NOLINTEND

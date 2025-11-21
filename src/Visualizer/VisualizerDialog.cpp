@@ -51,7 +51,7 @@ VisualizerDialog::VisualizerDialog(
     presetButton = new QPushButton(tr("Load Preset"), this);
     applyButton = new QPushButton(tr("Apply Settings"), this);
 
-    layout->addRow("FPS:", fpsSpin);
+    layout->addRow(u"FPS:"_s, fpsSpin);
     layout->addRow(tr("Mesh Width:"), meshWidthSpin);
     layout->addRow(tr("Mesh Height:"), meshHeightSpin);
     layout->addRow(useRandomPresetsCheckbox);
@@ -96,9 +96,9 @@ VisualizerDialog::VisualizerDialog(
 
     const QString visualizerPath = QApplication::applicationDirPath() +
 #ifdef Q_OS_WINDOWS
-                                   "/rap-visualizer.exe";
+                                   u"/rap-visualizer.exe"_qssv;
 #else
-                                   "/rap-visualizer";
+                                   u"/rap-visualizer"_qssv;
 #endif
 
     process = new QProcess(this);
@@ -137,7 +137,7 @@ VisualizerDialog::VisualizerDialog(
     process->start(
         visualizerPath,
         { tr("Visualizer"),
-          QApplication::applicationDirPath() + "/visualizer/textures" },
+          QApplication::applicationDirPath() + u"/visualizer/textures"_qssv },
         QProcess::ReadOnly
     );
 
