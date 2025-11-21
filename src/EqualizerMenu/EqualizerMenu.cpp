@@ -468,7 +468,7 @@ void EqualizerMenu::exportPreset() {
     }
 
     const QByteArray presetData = serializePreset(preset);
-    QFileDialog::saveFileContent(presetData, u"preset.rap"_s);
+    QFileDialog::saveFileContent(presetData, presetName + u".rap"_s);
 }
 
 void EqualizerMenu::savePreset(
