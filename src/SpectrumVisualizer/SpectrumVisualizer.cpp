@@ -454,13 +454,13 @@ void SpectrumVisualizer::showCustomContextMenu() {
         const bool isOnTop = (windowFlags() & Qt::WindowStaysOnTopHint) != 0;
 
         const QAction* maximizeAction = menu->addAction(
-            tr(isFullscreen ? "Minimize" : "Maximize To Fullscreen"),
+            isFullscreen ? tr("Minimize") : tr("Maximize To Fullscreen"),
             this,
             [this, isFullscreen] -> void { toggleFullscreen(isFullscreen); }
         );
 
         const QAction* alwaysOnTopAction = menu->addAction(
-            tr(isOnTop ? "Unset Always On Top" : "Set Always On Top"),
+            isOnTop ? tr("Unset Always On Top") : tr("Set Always On Top"),
             this,
             [this, isOnTop] -> void {
             setWindowFlag(Qt::WindowStaysOnTopHint, !isOnTop);
