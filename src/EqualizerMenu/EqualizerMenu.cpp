@@ -6,9 +6,12 @@
 #include "EqualizerPresets.hpp"
 #include "IntValidator.hpp"
 #include "Invalidator.hpp"
+#include "PresetParser.hpp"
 #include "Settings.hpp"
 
+#include <QFileDialog>
 #include <QKeyEvent>
+#include <QMessageBox>
 #include <QSlider>
 
 EqualizerMenu::EqualizerMenu(
@@ -17,6 +20,9 @@ EqualizerMenu::EqualizerMenu(
 ) :
     QDialog(parent, Qt::FramelessWindowHint | Qt::Popup),
     settings(settings_->equalizer) {
+    // Prevent inserting new entry on editingFinished
+    presetSelect->setValidator(new Invalidator(presetSelect));
+
     connect(
         bandSelect,
         &QComboBox::currentTextChanged,
@@ -52,14 +58,24 @@ EqualizerMenu::EqualizerMenu(
         &EqualizerMenu::createNewPreset
     );
 
+    connect(
+        importPresetButton,
+        &QPushButton::pressed,
+        this,
+        &EqualizerMenu::importPreset
+    );
+    connect(
+        exportPresetButton,
+        &QPushButton::pressed,
+        this,
+        &EqualizerMenu::exportPreset
+    );
+
     connect(deletePresetButton, &QPushButton::pressed, this, [this] -> void {
         const u16 index = presetSelect->currentIndex();
         presetSelect->setCurrentIndex(0);
         presetSelect->removeItem(index);
     });
-
-    // Prevent inserting new entry on editingFinished
-    presetSelect->setValidator(new Invalidator(presetSelect));
 
     // TODO: Inefficient, connect to line edit directly.
     // Although who cares
@@ -167,13 +183,13 @@ auto EqualizerMenu::createSliderElement(const u8 band, QWidget* const parent)
 void EqualizerMenu::buildBands() {
     const QObjectList firstSliderRowChildren = firstSliderRow->children();
     for (QObject* const child : firstSliderRowChildren) {
-        const auto* childWidget = qobject_cast<QWidget*>(child);
+        const auto* const childWidget = qobject_cast<QWidget*>(child);
         delete childWidget;
     }
 
     const QObjectList secondSliderRowChildren = secondSliderRow->children();
     for (QObject* const child : secondSliderRowChildren) {
-        const auto* childWidget = qobject_cast<QWidget*>(child);
+        const auto* const childWidget = qobject_cast<QWidget*>(child);
         delete childWidget;
     }
 
@@ -213,16 +229,7 @@ void EqualizerMenu::saveSettings() {
     settings.presetIndex = presetIndex;
 
     if (presetIndex > DEFAULT_PRESET_COUNT) {
-        const QString presetName = presetSelect->itemText(presetIndex);
-
-        settings.presets[settings.bandCount][presetName] =
-            QVector<i8>(isize(settings.bandCount));
-
-        for (const auto& [idx, container] :
-             views::enumerate(views::take(sliders, u8(settings.bandCount)))) {
-            settings.presets[settings.bandCount][presetName][idx] =
-                i8(container.dbInput->text().toInt());
-        }
+        savePreset(presetSelect->itemText(presetIndex));
     }
 }
 
@@ -295,85 +302,63 @@ void EqualizerMenu::changeBands(const QString& count) {
 
     presetSelect->setCurrentIndex(0);
 
-    switch (settings.bandCount) {
-        case Bands::Three:
-        case Bands::Five:
-            presetSelect->setEnabled(false);
-            newPresetButton->setEnabled(false);
-            deletePresetButton->setEnabled(false);
-            break;
-        default:
-            presetSelect->setEnabled(true);
-            newPresetButton->setEnabled(true);
+    const bool tenOrMoreBands = u8(settings.bandCount) > 5;
+    presetSelect->setEnabled(tenOrMoreBands);
+    newPresetButton->setEnabled(tenOrMoreBands);
+    importPresetButton->setEnabled(tenOrMoreBands);
 
-            while (presetSelect->count() > DEFAULT_PRESET_COUNT) {
-                presetSelect->removeItem(presetSelect->count() - 1);
-            }
-            break;
+    if (tenOrMoreBands) {
+        while (presetSelect->count() > DEFAULT_PRESET_COUNT) {
+            presetSelect->removeItem(presetSelect->count() - 1);
+        }
     }
 
     presetSelect->addItems(settings.presets[settings.bandCount].keys());
 }
 
-void EqualizerMenu::selectPreset(const i32 index) {
-    if (previousPresetIndex > DEFAULT_PRESET_COUNT) {
-        const QString presetName = presetSelect->itemText(previousPresetIndex);
+void EqualizerMenu::selectPreset(const i32 presetIndex) {
+    const bool usingCustomPreset = presetIndex >= DEFAULT_PRESET_COUNT;
 
-        settings.presets[settings.bandCount][presetName] =
-            QVector<i8>(isize(settings.bandCount));
-
-        for (const auto& [idx, container] :
-             views::enumerate(views::take(sliders, u8(settings.bandCount)))) {
-            settings.presets[settings.bandCount][presetName][idx] =
-                i8(container.dbInput->text().toInt());
-        }
+    if (usingCustomPreset) {
+        savePreset(presetSelect->itemText(previousPresetIndex));
     }
 
-    QString presetName;
+    const QString presetName = presetSelect->itemText(presetIndex);
+    presetSelect->setEditable(usingCustomPreset);
+    deletePresetButton->setEnabled(usingCustomPreset);
+    exportPresetButton->setEnabled(usingCustomPreset);
 
-    if (index < DEFAULT_PRESET_COUNT) {
-        presetSelect->setEditable(false);
-        deletePresetButton->setEnabled(false);
-    } else {
-        presetSelect->setEditable(true);
-        presetName = presetSelect->itemText(index);
-        deletePresetButton->setEnabled(true);
-
-        if (!settings.presets[settings.bandCount].contains(presetName)) {
-            settings.presets[settings.bandCount].insert(
-                presetName,
-                QVector<i8>(isize(settings.bandCount))
-            );
-        }
+    auto& presetMap = settings.presets[settings.bandCount];
+    if (usingCustomPreset && !presetMap.contains(presetName)) {
+        presetMap.insert(presetName, QVector<i8>(isize(settings.bandCount)));
     }
 
     for (const auto& [idx, elements] :
-         views::enumerate(views::take(sliders, u8(settings.bandCount)))) {
+         views::enumerate(span(sliders.data(), u8(settings.bandCount)))) {
         i8 gain = 0;
 
-        if (index < DEFAULT_PRESET_COUNT) {
+        if (usingCustomPreset) {
+            gain = presetMap[presetName][idx];
+        } else {
             switch (settings.bandCount) {
                 case Bands::Ten:
-                    gain = PRESETS_10[index][idx];
+                    gain = PRESETS_10[presetIndex][idx];
                     break;
                 case Bands::Eighteen:
-                    gain = PRESETS_18[index][idx];
+                    gain = PRESETS_18[presetIndex][idx];
                     break;
                 case Bands::Thirty:
-                    gain = PRESETS_30[index][idx];
+                    gain = PRESETS_30[presetIndex][idx];
                     break;
                 default:
                     return;
             }
-        } else {
-            const u16 newIndex = index - DEFAULT_PRESET_COUNT;
-            gain = settings.presets[settings.bandCount][presetName][idx];
         }
 
         elements.slider->setValue(gain);
     }
 
-    previousPresetIndex = index;
+    previousPresetIndex = presetIndex;
 }
 
 void EqualizerMenu::toggleEqualizer(const bool checked) {
@@ -382,7 +367,7 @@ void EqualizerMenu::toggleEqualizer(const bool checked) {
 }
 
 void EqualizerMenu::resetGains() {
-    for (const auto& container : views::take(sliders, u8(settings.bandCount))) {
+    for (const auto& container : span(sliders.data(), u8(settings.bandCount))) {
         container.slider->setValue(0);
         container.dbInput->setText(u"0"_s);
     }
@@ -406,8 +391,8 @@ void EqualizerMenu::retranslate() {
     );
 
     for (const auto& [container, frequency] : views::zip(
-             views::take(sliders, u8(settings.bandCount)),
-             views::take(frequencies, u8(settings.bandCount))
+             span(sliders.data(), u8(settings.bandCount)),
+             span(frequencies.data(), u8(settings.bandCount))
          )) {
         container.dbLabel->setText(tr("dB"));
         container.hzLabel->setText(QString::number(frequency) + tr(" Hz"));
@@ -421,4 +406,85 @@ void EqualizerMenu::loadSettings() {
     changeBands(bandSelect->currentText());
 
     presetSelect->setCurrentIndex(settings.presetIndex);
+}
+
+void EqualizerMenu::importPreset() {
+    const QString presetPath = QFileDialog::getOpenFileName(
+        nullptr,
+        tr("Select Preset File"),
+        QString(),
+        tr("RAP Preset (*.rap)")
+    );
+
+    if (presetPath.isEmpty()) {
+        return;
+    }
+
+    QFile presetFile = QFile(presetPath);
+
+    if (!presetFile.open(QFile::ReadOnly | QFile::Text)) {
+        QMessageBox::critical(
+            this,
+            tr("Couldn't open preset file"),
+            tr("Opening preset file failed with: ") + presetFile.errorString()
+        );
+        return;
+    };
+
+    const QByteArray presetData = presetFile.readAll();
+    const auto presetResult = parsePreset(presetData);
+
+    if (!presetResult) {
+        QMessageBox::critical(
+            this,
+            tr("Failed to parse preset"),
+            tr("Preset parsing failed with error:") + presetResult.error()
+        );
+        return;
+    }
+
+    const EqualizerPreset& preset = presetResult.value();
+    savePreset(preset.name, preset.bandCount);
+
+    if (preset.bandCount == settings.bandCount) {
+        presetSelect->addItem(preset.name);
+    }
+}
+
+void EqualizerMenu::exportPreset() {
+    EqualizerPreset preset{};
+
+    const i32 index = presetSelect->currentIndex();
+    const QString presetName = presetSelect->itemText(index);
+
+    preset.bandCount = Bands(bandSelect->currentText().toUInt());
+    preset.name = presetName;
+
+    savePreset(presetName);
+
+    for (const auto [idx, band] :
+         views::enumerate(settings.presets[settings.bandCount][presetName])) {
+        preset.bands[idx] = band;
+    }
+
+    const QByteArray presetData = serializePreset(preset);
+    QFileDialog::saveFileContent(presetData, u"preset.rap"_s);
+}
+
+void EqualizerMenu::savePreset(
+    const QString& presetName,
+    const optional<Bands> bandCountOpt,
+    const optional<array<i8, THIRTY_BANDS>> bands
+) {
+    const Bands bandCount =
+        bandCountOpt ? bandCountOpt.value() : settings.bandCount;
+    settings.presets[bandCount][presetName] = QVector<i8>(isize(bandCount));
+
+    for (const u8 idx : range(0, u8(bandCount))) {
+        const i8 gain =
+            i8(bands ? bands.value()[idx]
+                     : sliders[idx].dbInput->text().toInt());
+
+        settings.presets[bandCount][presetName][idx] = gain;
+    }
 }

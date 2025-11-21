@@ -8,7 +8,6 @@
 #include <QDialog>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QPushButton>
 
 QT_BEGIN_NAMESPACE
 
@@ -25,8 +24,6 @@ struct SliderContainer {
     CustomInput* dbInput;
     QLabel* hzLabel;
 };
-
-// TODO: Import/export presets
 
 class EqualizerMenu : public QDialog {
     Q_OBJECT
@@ -74,6 +71,15 @@ class EqualizerMenu : public QDialog {
     inline auto createSliderElement(u8 band, QWidget* parent)
         -> SliderContainer;
 
+    inline void importPreset();
+    inline void exportPreset();
+
+    inline void savePreset(
+        const QString& presetName,
+        optional<Bands> bandCount = nullopt,
+        optional<array<i8, THIRTY_BANDS>> bands = nullopt
+    );
+
     auto setupUi() -> Ui::EqualizerMenu* {
         auto* const ui_ = new Ui::EqualizerMenu();
         ui_->setupUi(this);
@@ -103,6 +109,9 @@ class EqualizerMenu : public QDialog {
     QPushButton* const resetGainsButton = ui->resetGainsButton;
     QPushButton* const newPresetButton = ui->newPresetButton;
     QPushButton* const deletePresetButton = ui->deletePresetButton;
+
+    QPushButton* const importPresetButton = ui->importPresetButton;
+    QPushButton* const exportPresetButton = ui->exportPresetButton;
 
     QPushButton* const toggleButton = ui->toggleButton;
 
