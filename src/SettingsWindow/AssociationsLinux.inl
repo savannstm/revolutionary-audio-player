@@ -65,7 +65,7 @@ inline void updateFileAssociationsOS(
          views::enumerate(ALLOWED_PLAYABLE_EXTENSIONS)) {
         const auto association = Associations(1 << idx);
 
-        if (associations & association) {
+        if ((associations & association) != Associations::None) {
             if (idx < ALLOWED_AUDIO_EXTENSIONS_COUNT +
                           ALLOWED_VIDEO_EXTENSIONS_COUNT) {
                 mimeTypes << u"audio/x-"_s + ext
@@ -89,9 +89,9 @@ inline void updateFileAssociationsOS(
 #endif
                     ;
 
-                if ((association & Associations::MP3 ||
-                     association & Associations::M4A ||
-                     association & Associations::MP4) &&
+                if (((association & Associations::MP3) != Associations::None ||
+                     (association & Associations::M4A) != Associations::None ||
+                     (association & Associations::MP4) != Associations::None) &&
                     !mpegAdded) {
                     mimeTypes << u"audio/mpeg"_s;
                     mimeTypes << u"video/mpeg"_s;
@@ -101,14 +101,16 @@ inline void updateFileAssociationsOS(
             } else if (idx < ALLOWED_AUDIO_EXTENSIONS_COUNT +
                                  ALLOWED_VIDEO_EXTENSIONS_COUNT +
                                  ALLOWED_PLAYLIST_EXTENSIONS_COUNT) {
-                if (association & Associations::M3U ||
-                    association & Associations::M3U8) {
+                if ((association & Associations::M3U) != Associations::None ||
+                    (association & Associations::M3U8) != Associations::None) {
                     mimeTypes << u"audio/x-mpegurl"_s;
                     mimeTypes << u"application/vnd.apple.mpegurl"_s;
                     mimeTypes << u"video/vnd.mpegurl"_s;
-                } else if (association & Associations::XSPF) {
+                } else if ((association & Associations::XSPF) !=
+                           Associations::None) {
                     mimeTypes << u"application/xspf+xml"_s;
-                } else if (association & Associations::CUE) {
+                } else if ((association & Associations::CUE) !=
+                           Associations::None) {
                     mimeTypes << u"application/x-cue"_s;
                     mimeTypes << u"text/x-cue"_s;
                 }
