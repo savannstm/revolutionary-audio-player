@@ -1,0 +1,47 @@
+site_name: RAP Documentation
+site_description: Documentation for Revolutionary Audio Player
+site_author: savannstm
+
+repo_url: https://github.com/savannstm/revolutionary-audio-player
+edit_uri: blob/main/docs/mkdocs
+repo_name: savannstm/revolutionary-audio-player
+
+copyright: Licensed under WTFPL.
+
+theme:
+    name: material
+
+    features:
+        - content.action.edit
+        - content.action.view
+        - navigation.tabs
+        - navigation.tabs.sticky
+        - navigation.expand
+        - navigation.path
+        - navigation.top
+
+    locale: en
+    language: en
+
+    logo: assets/icon.png
+    favicon: assets/icon.png
+
+    font:
+        text: Open Sans
+
+    palette:
+        scheme: slate
+        primary: deep purple
+        accent: indigo
+
+plugins:
+    - i18n:
+          docs_structure: folder
+          languages:
+              - locale: en
+                default: true
+                name: English
+                build: true
+              - locale: ru
+                name: Русский
+                build: true

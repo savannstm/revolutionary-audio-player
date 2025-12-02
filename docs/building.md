@@ -2,7 +2,7 @@
 
 You need a C++23 compatible compiler: `clang`, `gcc`, `msvc`. The project uses CMake as build system.
 
-Libraries you'll need:
+## Required libraries
 
 -   Qt6 (>= 6.8.2)
     -   Core
@@ -28,6 +28,57 @@ Libraries you'll need:
     -   GLEW (Windows dependency)
     -   GLFW (>= 3.4, because Qt OpenGL sucks)
 -   magic_enum (>= 0.9.4, dev-dependency)
+
+### Getting development headers on Linux
+
+Note that `miniaudio`, `rapidhash` and `magic_enum` are **HEADER ONLY** libraries - rather than installing them from your package manager, you should manually acquire a header.
+
+Since `libprojectM` is outdated in every possible package manager, you'll have to build it from source.
+
+#### Debian
+
+```bash
+sudo apt update
+sudo apt install \
+  qt6-base-dev qt6-tools-dev qt6-svg-dev qt6-imageformats-plugins \
+  libavformat-dev libavcodec-dev libavfilter-dev libswresample-dev \
+  glfw3-dev
+```
+
+#### OpenSUSE
+
+```bash
+sudo zypper install \
+    libqt6-qtbase-devel \
+    libqt6-qttools-devel \
+    libqt6-qtsvg-devel \
+    libqt6-qtimageformats \
+    libavformat-devel libavcodec-devel libavfilter-devel libswresample-devel \
+    glfw-devel
+```
+
+#### Arch
+
+```bash
+sudo pacman -S --needed \
+    qt6-base qt6-tools qt6-svg qt6-imageformats \
+    ffmpeg \
+    glfw
+```
+
+#### Alpine
+
+```bash
+sudo apk add \
+    qt6-qtbase-dev \
+    qt6-qttools-dev \
+    qt6-qtsvg-dev \
+    qt6-qtimageformats-dev \
+    ffmpeg-dev \
+    glfw-dev
+```
+
+## Building Process
 
 Clone the repository: `git clone https://github.com/savannstm/revolutionary-audio-player`.
 
