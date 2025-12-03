@@ -3,7 +3,8 @@ site_description: Documentation for Revolutionary Audio Player
 site_author: savannstm
 
 repo_url: https://github.com/savannstm/revolutionary-audio-player
-edit_uri: blob/main/docs/mkdocs
+site_url: https://savannstm.github.io/revolutionary-audio-player/
+edit_uri: blob/main/docs/mkdocs/docs
 repo_name: savannstm/revolutionary-audio-player
 
 copyright: Licensed under WTFPL.
