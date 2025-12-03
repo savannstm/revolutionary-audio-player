@@ -9,3 +9,4 @@
 # because they're not the part of the program. Each person, who
 # builds the program must include their own presets and textures.
 /visualizer
+/docs/mkdocs/site
