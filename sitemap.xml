@@ -1,101 +1,101 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
     <url>
-        <loc>None./</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="None"/>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/"/>
     </url>
     <url>
-        <loc>Noneequalizer/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/equalizer/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneequalizer/"/>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/equalizer/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/equalizer/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/equalizer/"/>
     </url>
     <url>
-        <loc>Noneplayback/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/playback/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneplayback/"/>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/playback/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/playback/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/playback/"/>
     </url>
     <url>
-        <loc>Noneplaylist/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/playlist/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneplaylist/"/>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/playlist/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/playlist/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/playlist/"/>
     </url>
     <url>
-        <loc>Nonesettings/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/settings/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Nonesettings/"/>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/settings/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/settings/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/settings/"/>
     </url>
     <url>
-        <loc>Nonespectrum-visualizer/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/spectrum-visualizer/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Nonespectrum-visualizer/"/>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/spectrum-visualizer/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/spectrum-visualizer/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/spectrum-visualizer/"/>
     </url>
     <url>
-        <loc>Nonevisualizer/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/visualizer/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="en" href="Nonevisualizer/"/>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/visualizer/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/visualizer/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/visualizer/"/>
     </url>
     <url>
-        <loc>Noneru/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/ru/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="None"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/"/>
     </url>
     <url>
-        <loc>Noneru/equalizer/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/ru/equalizer/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/equalizer/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneequalizer/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/equalizer/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/equalizer/"/>
     </url>
     <url>
-        <loc>Noneru/playback/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/ru/playback/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/playback/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneplayback/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/playback/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/playback/"/>
     </url>
     <url>
-        <loc>Noneru/playlist/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/ru/playlist/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/playlist/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Noneplaylist/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/playlist/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/playlist/"/>
     </url>
     <url>
-        <loc>Noneru/settings/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/ru/settings/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/settings/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Nonesettings/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/settings/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/settings/"/>
     </url>
     <url>
-        <loc>Noneru/spectrum-visualizer/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/ru/spectrum-visualizer/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/spectrum-visualizer/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Nonespectrum-visualizer/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/spectrum-visualizer/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/spectrum-visualizer/"/>
     </url>
     <url>
-        <loc>Noneru/visualizer/</loc>
+        <loc>https://savannstm.github.com/revolutionary-audio-player/ru/visualizer/</loc>
         <lastmod>2025-12-03</lastmod>
         <changefreq>daily</changefreq>
-        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/visualizer/"/>
-        <xhtml:link rel="alternate" hreflang="en" href="Nonevisualizer/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="https://savannstm.github.com/revolutionary-audio-player/ru/visualizer/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://savannstm.github.com/revolutionary-audio-player/visualizer/"/>
     </url>
 </urlset>
