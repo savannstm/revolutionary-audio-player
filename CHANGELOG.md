@@ -1,5 +1,41 @@
 # Changelog
 
+## v0.11.1
+
+### Changes
+
+-   Fixed not saving the state of the spectrum visualizer if it has been hidden.
+-   Re-added the close button to the spectrum visualizer, if it's detached, and fixed it disappearing until the next restart if it was closed.
+-   Fixed setting incorrect FPS in visualizer if it wasn't set explicitly earlier.
+-   Added some separators to menus for better readability.
+-   Added support for `oga`, `ogv` and `ogx` formats that are containers for Vorbis audio.
+-   Fixed incorrect playlist track index after moving tracks or sorting the view by column.
+-   Repeat range menu was renamed to Track repeat menu.
+-   When using track repeat mode, fixed tracks looping over too soon or skipping some end/start seconds.
+-   Changed equalizer preset format to text-based instead of binary-based.
+-   Fixed track search input not repositioning itself if dock widget was resized.
+-   Added possibility to copy text from metadata tree in dock widget.
+-   Fixed resizing play indicator column in playlist trees when retranslating.
+-   Fixed not retranslating columns except title, artist and track number in playlist trees when retranslating.
+-   Windows: Updated to Qt 6.10.1.
+-   Updated to FFmpeg 8.0.1.
+-   Published the first version of [the documentation](https://savannstm.github.io/revolutionary-audio-player).
+
+### Broken
+
+-   Devices hot-reload in settings window on Windows.
+-   Sliders in tray icon menu don't display on KDE (possibly other DEs).
+-   Shell context menu entries in different Linux DEs (WIP).
+-   Multiple tree items reordering.
+
+### Coming in v0.12.0
+
+-   Possible integration with last.fm API for music data scraping.
+-   Linux desktop environments shell integration polishing.
+-   Auto-updater.
+-   Devices hot-reload fixes on Windows.
+-   Multiple tree items reordering.
+
 ## v0.11.0
 
 ### Changes
