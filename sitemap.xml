@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+    <url>
+        <loc>None./</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="None"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/"/>
+    </url>
+    <url>
+        <loc>Noneequalizer/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="Noneequalizer/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/equalizer/"/>
+    </url>
+    <url>
+        <loc>Noneplayback/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="Noneplayback/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/playback/"/>
+    </url>
+    <url>
+        <loc>Noneplaylist/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="Noneplaylist/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/playlist/"/>
+    </url>
+    <url>
+        <loc>Nonesettings/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="Nonesettings/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/settings/"/>
+    </url>
+    <url>
+        <loc>Nonespectrum-visualizer/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="Nonespectrum-visualizer/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/spectrum-visualizer/"/>
+    </url>
+    <url>
+        <loc>Nonevisualizer/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="Nonevisualizer/"/>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/visualizer/"/>
+    </url>
+    <url>
+        <loc>Noneru/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="None"/>
+    </url>
+    <url>
+        <loc>Noneru/equalizer/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/equalizer/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="Noneequalizer/"/>
+    </url>
+    <url>
+        <loc>Noneru/playback/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/playback/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="Noneplayback/"/>
+    </url>
+    <url>
+        <loc>Noneru/playlist/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/playlist/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="Noneplaylist/"/>
+    </url>
+    <url>
+        <loc>Noneru/settings/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/settings/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="Nonesettings/"/>
+    </url>
+    <url>
+        <loc>Noneru/spectrum-visualizer/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/spectrum-visualizer/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="Nonespectrum-visualizer/"/>
+    </url>
+    <url>
+        <loc>Noneru/visualizer/</loc>
+        <lastmod>2025-12-03</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="ru" href="Noneru/visualizer/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="Nonevisualizer/"/>
+    </url>
+</urlset>
