@@ -12,7 +12,7 @@ The Revolutionary Audio Player, abbreviated RAP (which initially was named Rusty
 
 ## Features
 
--   [x] `mp3`, `flac`, `wav`, `ogg`, `opus`, `m4a`, `mp4`, `mkv`, `aac`, `alac`, `mov`, `mka`, `ac3` audio default support.
+-   [x] `mp3`, `flac`, `wav`, `ogg`, `oga`, `ogv`, `ogx`, `opus`, `m4a`, `mp4`, `mkv`, `aac`, `alac`, `mov`, `mka`, `ac3`, `eac3` audio default support.
 -   [x] `png`, `jpeg`, `bmp`, `webp`, `tiff` cover image support.
 -   [x] Optimized audio processing of any sample rate, up to 8 channels.
 -   [x] Native look and the same capabilities on **any** platform.
@@ -56,10 +56,10 @@ Here's where you can get the presets, from [projectM repository](https://github.
     collection shipped with Milkdrop and Winamp.
 -   [En D Presets](https://github.com/projectM-visualizer/presets-en-d) - About 50 presets created by "En D".
 
-Included with projectM are the bltc201, Milkdrop 1 and 2, projectM, tryptonaut and yin collections. You can grab these
-presets [here](http://spiegelmc.com/pub/projectm_presets.zip).
+Included with projectM are the bltc201, Milkdrop 1 and 2, projectM, tryptonaut and yin collections. [You can grab these
+presets here](http://spiegelmc.com/pub/projectm_presets.zip).
 
-You can also download an enormous 130k+ presets from the MegaPack [here](https://drive.google.com/file/d/1DlszoqMG-pc5v1Bo9x4NhemGPiwT-0pv/view) (4.08GB zipped, incl. textures).
+You can also download an enormous 130k+ presets [from the MegaPack here](https://drive.google.com/file/d/1DlszoqMG-pc5v1Bo9x4NhemGPiwT-0pv/view) (4.08GB zipped, incl. textures).
 
 ### Linux
 
@@ -80,3 +80,7 @@ Minimum supported Windows version is Windows 10.
 ## Build
 
 See [BUILDING.MD](./docs/building.md).
+
+## License
+
+Project is licensed under WTFPL.
