@@ -3,10 +3,9 @@
 #include "Aliases.hpp"
 #include "Constants.hpp"
 #include "FFMpeg.hpp"
-#include "Settings.hpp"
+#include "FWD.hpp"
 
 #include <QFrame>
-#include <QScreen>
 #include <QTimer>
 
 // TODO: Allow creating custom presets
@@ -21,9 +20,7 @@ class SpectrumVisualizer : public QFrame {
         QWidget* parent = nullptr
     );
 
-    constexpr void setMode(const SpectrumVisualizerMode mode_) {
-        settings.mode = mode_;
-    }
+    constexpr void setMode(SpectrumVisualizerMode mode_);
 
     constexpr void setGradient(const QGradient& gradient_) {
         gradient = gradient_;
@@ -40,25 +37,21 @@ class SpectrumVisualizer : public QFrame {
         }
     }
 
-    constexpr void setBandCount(const Bands bands) {
-        settings.bands = bands;
-        frequencies = span<const f32>(
-            getFrequenciesForBands(bands),
-            usize(settings.bands)
-        );
-    }
+    constexpr void setBandCount(Bands bands);
 
     void reset();
-
-    void start() { timer.start(SECOND_MS / u16(screen()->refreshRate())); }
-
-    void stop() { timer.stop(); }
+    void start();
+    void stop();
 
     const f32* buffer;
+
+   signals:
+    void closed();
 
    protected:
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
 
    private:
     inline void buildPeaks();

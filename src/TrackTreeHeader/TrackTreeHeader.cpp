@@ -3,6 +3,7 @@
 #include "Constants.hpp"
 
 #include <QApplication>
+#include <QMouseEvent>
 
 void TrackTreeHeader::mousePressEvent(QMouseEvent* const event) {
     pressedIndex = i8(logicalIndexAt(event->pos()));

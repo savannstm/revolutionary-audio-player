@@ -3,7 +3,6 @@
 #include "Aliases.hpp"
 
 #include <QHeaderView>
-#include <QMouseEvent>
 
 class TrackTreeHeader : public QHeaderView {
     Q_OBJECT

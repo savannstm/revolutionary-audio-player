@@ -1,8 +1,8 @@
 #include "PlaylistTabLabel.hpp"
 
-#include "Constants.hpp"
-
 #include <QMouseEvent>
+
+using namespace Qt::Literals::StringLiterals;
 
 PlaylistTabLabel::PlaylistTabLabel(const QString& text, QWidget* const parent) :
     QLineEdit(text, parent) {

@@ -1,11 +1,8 @@
 #include "Settings.hpp"
 
-#include "Enums.hpp"
 #include "Logger.hpp"
 
-#include <QApplication>
 #include <QJsonDocument>
-#include <QJsonObject>
 #include <QStyle>
 
 template <typename T>

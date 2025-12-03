@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QAction>
 #include <QPushButton>
 
 class ActionButton : public QPushButton {

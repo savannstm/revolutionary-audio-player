@@ -1,14 +1,19 @@
 #include "VisualizerDialog.hpp"
 
-#include "Constants.hpp"
-#include "Enums.hpp"
 #include "Logger.hpp"
-#include "RandInt.hpp"
+#include "Settings.hpp"
+#include "Utils.hpp"
 
+#include <QCheckBox>
+#include <QDialog>
 #include <QFileDialog>
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QProcess>
+#include <QPushButton>
+#include <QScreen>
+#include <QSpinBox>
 
 constexpr QSize VISUALIZER_DIALOG_SIZE = QSize(400, 240);
 
@@ -30,7 +35,9 @@ VisualizerDialog::VisualizerDialog(
 
     fpsSpin = new QSpinBox(this);
     fpsSpin->setRange(MIN_FPS, MAX_FPS);
-    fpsSpin->setValue(settings.fps);
+    fpsSpin->setValue(
+        settings.fps == 0 ? u16(screen()->refreshRate()) : settings.fps
+    );
 
     meshWidthSpin = new QSpinBox(this);
     meshHeightSpin = new QSpinBox(this);
@@ -134,6 +141,8 @@ VisualizerDialog::VisualizerDialog(
     }
     );
 
+    applySettings();
+
     process->start(
         visualizerPath,
         { tr("Visualizer"),
@@ -146,9 +155,7 @@ VisualizerDialog::VisualizerDialog(
         return;
     }
 
-    applySettings();
     openPreset(settings.presetPath);
-
     sharedData->running.store(true);
 }
 

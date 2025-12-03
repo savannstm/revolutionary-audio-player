@@ -6,10 +6,8 @@
 #include "Logger.hpp"
 
 #include <QDir>
-#include <QFile>
 #include <QProcess>
 #include <QStandardPaths>
-#include <QString>
 #include <QTextStream>
 
 enum class DesktopEnvironment : u8 {
@@ -57,17 +55,17 @@ inline void updateFileAssociationsOS(
     stream << "MimeType=";
 
     QStringList mimeTypes;
-    mimeTypes.reserve(u16(ALLOWED_EXTENSIONS_COUNT * 4));
+    mimeTypes.reserve(u16(SUPPORTED_EXTENSIONS_COUNT * 4));
 
     bool mpegAdded = false;
 
     for (const auto [idx, ext] :
-         views::enumerate(ALLOWED_PLAYABLE_EXTENSIONS)) {
+         views::enumerate(SUPPORTED_PLAYABLE_EXTENSIONS)) {
         const auto association = Associations(1 << idx);
 
         if ((associations & association) != Associations::None) {
-            if (idx < ALLOWED_AUDIO_EXTENSIONS_COUNT +
-                          ALLOWED_VIDEO_EXTENSIONS_COUNT) {
+            if (idx < SUPPORTED_AUDIO_EXTENSIONS_COUNT +
+                          SUPPORTED_VIDEO_EXTENSIONS_COUNT) {
                 mimeTypes << u"audio/x-"_s + ext
 #if QT_VERSION_MINOR < 9
                                                  .toString()
@@ -98,9 +96,9 @@ inline void updateFileAssociationsOS(
                     mimeTypes << u"audio/x-mpeg"_s;
                     mimeTypes << u"video/x-mpeg"_s;
                 }
-            } else if (idx < ALLOWED_AUDIO_EXTENSIONS_COUNT +
-                                 ALLOWED_VIDEO_EXTENSIONS_COUNT +
-                                 ALLOWED_PLAYLIST_EXTENSIONS_COUNT) {
+            } else if (idx < SUPPORTED_AUDIO_EXTENSIONS_COUNT +
+                                 SUPPORTED_VIDEO_EXTENSIONS_COUNT +
+                                 SUPPORTED_PLAYLIST_EXTENSIONS_COUNT) {
                 if ((association & Associations::M3U) != Associations::None ||
                     (association & Associations::M3U8) != Associations::None) {
                     mimeTypes << u"audio/x-mpegurl"_s;
@@ -365,7 +363,7 @@ inline void removeContextMenuEntryOS() {
                 const QString& extensions = line.slice(start, end - start);
 
                 for (const auto [idx, ext] :
-                     views::enumerate(ALLOWED_PLAYABLE_EXTENSIONS)) {
+                     views::enumerate(SUPPORTED_PLAYABLE_EXTENSIONS)) {
                     if ((ext == EXT_CUE &&
                          extensions.contains(u"text/x-cue"_qsv)) ||
                         (ext == EXT_XSPF &&

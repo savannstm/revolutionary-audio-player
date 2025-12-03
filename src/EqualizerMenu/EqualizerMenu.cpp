@@ -6,11 +6,15 @@
 #include "EqualizerPresets.hpp"
 #include "IntValidator.hpp"
 #include "Invalidator.hpp"
-#include "PresetParser.hpp"
 #include "Settings.hpp"
+#include "Utils.hpp"
+#include "ui_EqualizerMenu.h"
 
+#include <QComboBox>
 #include <QFileDialog>
+#include <QHBoxLayout>
 #include <QKeyEvent>
+#include <QLabel>
 #include <QMessageBox>
 #include <QSlider>
 
@@ -19,7 +23,30 @@ EqualizerMenu::EqualizerMenu(
     QWidget* const parent
 ) :
     QDialog(parent, Qt::FramelessWindowHint | Qt::Popup),
-    settings(settings_->equalizer) {
+    settings(settings_->equalizer),
+    ui(setupUi()),
+    layout(ui->verticalLayout),
+
+    firstSliderRow(ui->firstSliderRow),
+    firstSliderLayout(ui->firstSliderLayout),
+
+    secondSliderRow(ui->secondSliderRow),
+    secondSliderLayout(ui->secondSliderLayout),
+
+    bandSelectLabel(ui->bandSelectLabel),
+    bandSelect(ui->bandSelect),
+
+    presetSelectLabel(ui->presetSelectLabel),
+    presetSelect(ui->presetSelect),
+
+    resetGainsButton(ui->resetGainsButton),
+    newPresetButton(ui->newPresetButton),
+    deletePresetButton(ui->deletePresetButton),
+
+    importPresetButton(ui->importPresetButton),
+    exportPresetButton(ui->exportPresetButton),
+
+    toggleButton(ui->toggleButton) {
     // Prevent inserting new entry on editingFinished
     presetSelect->setValidator(new Invalidator(presetSelect));
 
@@ -487,4 +514,14 @@ void EqualizerMenu::savePreset(
 
         settings.presets[bandCount][presetName][idx] = gain;
     }
+}
+
+EqualizerMenu::~EqualizerMenu() {
+    delete ui;
+}
+
+auto EqualizerMenu::setupUi() -> Ui::EqualizerMenu* {
+    auto* const ui_ = new Ui::EqualizerMenu();
+    ui_->setupUi(this);
+    return ui_;
 }

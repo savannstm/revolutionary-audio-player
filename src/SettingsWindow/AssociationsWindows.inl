@@ -110,7 +110,7 @@ inline void updateFileAssociationsOS(
                                     usize(iconPath_.size()) };
 
     for (const auto [idx, ext] :
-         views::enumerate(ALLOWED_PLAYABLE_EXTENSIONS)) {
+         views::enumerate(SUPPORTED_PLAYABLE_EXTENSIONS)) {
         const wstring_view wextension = { ras<wcstr>(ext.utf16()),
                                           usize(ext.size()) };
 
@@ -298,7 +298,7 @@ inline void removeContextMenuEntryOS() {
     Associations associations = Associations::None;
 
     for (const auto [idx, ext] :
-         views::enumerate(ALLOWED_PLAYABLE_EXTENSIONS)) {
+         views::enumerate(SUPPORTED_PLAYABLE_EXTENSIONS)) {
         const u32 result = RegOpenKeyExW(
             HKEY_CURRENT_USER,
             std::format(

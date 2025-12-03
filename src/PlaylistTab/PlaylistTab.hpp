@@ -2,12 +2,9 @@
 
 #include "Aliases.hpp"
 #include "Enums.hpp"
-#include "PlaylistTabLabel.hpp"
+#include "FWD.hpp"
 
-#include <QHBoxLayout>
-#include <QMouseEvent>
 #include <QPushButton>
-#include <QToolButton>
 
 class PlaylistTab : public QPushButton {
     Q_OBJECT
@@ -19,9 +16,9 @@ class PlaylistTab : public QPushButton {
         QWidget* parent = nullptr
     );
 
-    [[nodiscard]] auto labelText() const -> QString { return label_->text(); }
+    [[nodiscard]] auto labelText() const -> QString;
 
-    void setLabelText(const QString& label) { label_->setText(label); };
+    void setLabelText(const QString& label);
 
     [[nodiscard]] constexpr auto label() const -> PlaylistTabLabel* {
         return label_;
@@ -53,8 +50,8 @@ class PlaylistTab : public QPushButton {
 
     PlaylistTabLabel* const label_ = nullptr;
 
-    QToolButton* const tabButton = new QToolButton(this);
-    QHBoxLayout* const layout_ = new QHBoxLayout(this);
+    QToolButton* const tabButton;
+    QHBoxLayout* const layout_;
 
     QPoint dragStartPos;
     QString color_;

@@ -1,9 +1,8 @@
-#define MINIAUDIO_IMPLEMENTATION
-
 #include "Constants.hpp"
 #include "MainWindow.hpp"
 
 #include <QApplication>
+#include <QDir>
 #include <QLocalSocket>
 #include <QLockFile>
 

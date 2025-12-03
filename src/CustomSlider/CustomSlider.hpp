@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QMouseEvent>
 #include <QSlider>
 
 class CustomSlider : public QSlider {

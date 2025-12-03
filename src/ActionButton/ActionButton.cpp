@@ -1,5 +1,7 @@
 #include "ActionButton.hpp"
 
+#include <QAction>
+
 ActionButton::ActionButton(QWidget* parent) : QPushButton(parent) {}
 
 void ActionButton::setAction(QAction* action) {

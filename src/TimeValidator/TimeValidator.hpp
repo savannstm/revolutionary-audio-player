@@ -9,7 +9,8 @@ class TimeValidator : public QValidator {
     Q_OBJECT
 
    public:
-    explicit TimeValidator(QObject* parent = nullptr) : QValidator(parent) {}
+    explicit TimeValidator(QObject* const parent = nullptr) :
+        QValidator(parent) {}
 
     auto validate(QString& input, i32& /* pos */) const -> State override {
         if (input.isEmpty()) {
@@ -21,7 +22,7 @@ class TimeValidator : public QValidator {
         }
 
         for (i32 i = 0; i < input.size(); ++i) {
-            QChar chr = input.at(i);
+            const QChar chr = input.at(i);
 
             if (i == 2) {
                 if (chr != QChar(':')) {
@@ -40,12 +41,12 @@ class TimeValidator : public QValidator {
 
         bool valid = false;
 
-        i32 minutes = input.mid(0, 2).toInt(&valid);
+        const i32 minutes = input.mid(0, 2).toInt(&valid);
         if (!valid) {
             return Invalid;
         }
 
-        i32 seconds = input.mid(3, 2).toInt(&valid);
+        const i32 seconds = input.mid(3, 2).toInt(&valid);
         if (!valid) {
             return Invalid;
         }
@@ -53,6 +54,7 @@ class TimeValidator : public QValidator {
         if (seconds < 0 || seconds > 59) {
             return Invalid;
         }
+
         if (minutes < 0 || minutes > 99) {
             return Invalid;
         }

@@ -148,7 +148,7 @@ constexpr array<TrackProperty, TRACK_PROPERTY_COUNT>
                                   TrackProperty::Artist,
                                   TrackProperty::TrackNumber };
 
-// Allowed file extensions for tracks
+// Supported file extensions
 
 // Music extensions
 // Although ALAC uses MPEG containers, let it be here
@@ -160,41 +160,44 @@ constexpr QStringView EXT_M4A = u"m4a";
 constexpr QStringView EXT_MKA = u"mka";
 constexpr QStringView EXT_MP3 = u"mp3";
 constexpr QStringView EXT_OGG = u"ogg";
+constexpr QStringView EXT_OGA = u"oga";
+constexpr QStringView EXT_OGV = u"ogv";
+constexpr QStringView EXT_OGX = u"ogx";
 constexpr QStringView EXT_OPUS = u"opus";
 constexpr QStringView EXT_WAV = u"wav";
 
-constexpr u8 ALLOWED_AUDIO_EXTENSIONS_COUNT = 10;
-constexpr array<QStringView, ALLOWED_AUDIO_EXTENSIONS_COUNT>
-    ALLOWED_AUDIO_EXTENSIONS = {
-        EXT_AAC, EXT_AC3, EXT_ALAC, EXT_FLAC, EXT_M4A,
-        EXT_MKA, EXT_MP3, EXT_OGG,  EXT_OPUS, EXT_WAV
-    };
+constexpr u8 SUPPORTED_AUDIO_EXTENSIONS_COUNT = 13;
+constexpr array<QStringView, SUPPORTED_AUDIO_EXTENSIONS_COUNT>
+    SUPPORTED_AUDIO_EXTENSIONS = { EXT_AAC, EXT_AC3, EXT_ALAC, EXT_FLAC,
+                                   EXT_M4A, EXT_MKA, EXT_MP3,  EXT_OGG,
+                                   EXT_OGA, EXT_OGV, EXT_OGX,  EXT_OPUS,
+                                   EXT_WAV };
 
 // Video extensions
 constexpr QStringView EXT_MKV = u"mkv";
 constexpr QStringView EXT_MOV = u"mov";
 constexpr QStringView EXT_MP4 = u"mp4";
 
-constexpr u8 ALLOWED_VIDEO_EXTENSIONS_COUNT = 3;
-constexpr array<QStringView, ALLOWED_VIDEO_EXTENSIONS_COUNT>
-    ALLOWED_VIDEO_EXTENSIONS = { EXT_MKV, EXT_MOV, EXT_MP4 };
+constexpr u8 SUPPORTED_VIDEO_EXTENSIONS_COUNT = 3;
+constexpr array<QStringView, SUPPORTED_VIDEO_EXTENSIONS_COUNT>
+    SUPPORTED_VIDEO_EXTENSIONS = { EXT_MKV, EXT_MOV, EXT_MP4 };
 
-// Allowed playlists
+// Supported playlists
 constexpr QStringView EXT_CUE = u"cue";
 constexpr QStringView EXT_M3U = u"m3u";
 constexpr QStringView EXT_M3U8 = u"m3u8";
 constexpr QStringView EXT_XSPF = u"xspf";
 
-constexpr u8 ALLOWED_PLAYLIST_EXTENSIONS_COUNT = 4;
-constexpr array<QStringView, ALLOWED_PLAYLIST_EXTENSIONS_COUNT>
-    ALLOWED_PLAYLIST_EXTENSIONS = { EXT_CUE, EXT_M3U, EXT_M3U8, EXT_XSPF };
+constexpr u8 SUPPORTED_PLAYLIST_EXTENSIONS_COUNT = 4;
+constexpr array<QStringView, SUPPORTED_PLAYLIST_EXTENSIONS_COUNT>
+    SUPPORTED_PLAYLIST_EXTENSIONS = { EXT_CUE, EXT_M3U, EXT_M3U8, EXT_XSPF };
 
-// All allowed playable file extensions
-constexpr u8 ALLOWED_EXTENSIONS_COUNT = ALLOWED_AUDIO_EXTENSIONS_COUNT +
-                                        ALLOWED_VIDEO_EXTENSIONS_COUNT +
-                                        ALLOWED_PLAYLIST_EXTENSIONS_COUNT;
-constexpr array<QStringView, ALLOWED_EXTENSIONS_COUNT>
-    ALLOWED_PLAYABLE_EXTENSIONS = {
+// All supported playable file extensions
+constexpr u8 SUPPORTED_EXTENSIONS_COUNT = SUPPORTED_AUDIO_EXTENSIONS_COUNT +
+                                          SUPPORTED_VIDEO_EXTENSIONS_COUNT +
+                                          SUPPORTED_PLAYLIST_EXTENSIONS_COUNT;
+constexpr array<QStringView, SUPPORTED_EXTENSIONS_COUNT>
+    SUPPORTED_PLAYABLE_EXTENSIONS = {
         // Audio
         EXT_AAC,
         EXT_AC3,
@@ -204,6 +207,9 @@ constexpr array<QStringView, ALLOWED_EXTENSIONS_COUNT>
         EXT_MKA,
         EXT_MP3,
         EXT_OGG,
+        EXT_OGA,
+        EXT_OGV,
+        EXT_OGX,
         EXT_OPUS,
         EXT_WAV,
 
@@ -220,9 +226,9 @@ constexpr array<QStringView, ALLOWED_EXTENSIONS_COUNT>
     };
 
 // Image extensions
-constexpr array<QStringView, 6> ALLOWED_IMAGE_EXTENSIONS = { u"bmp",  u"jpeg",
-                                                             u"jpg",  u"png",
-                                                             u"tiff", u"webp" };
+constexpr array<QStringView, 6> SUPPORTED_IMAGE_EXTENSIONS = {
+    u"bmp", u"jpeg", u"jpg", u"png", u"tiff", u"webp"
+};
 
 // Searchable track property names
 constexpr array<QStringView, TRACK_PROPERTY_COUNT> SEARCH_PROPERTIES = {

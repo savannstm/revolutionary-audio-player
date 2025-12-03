@@ -1,7 +1,8 @@
 #pragma once
 
+#include "FWD.hpp"
+
 #include <QFrame>
-#include <QLineEdit>
 
 class InputPopup : public QFrame {
     Q_OBJECT
@@ -17,9 +18,7 @@ class InputPopup : public QFrame {
 
     [[nodiscard]] auto inputWidget() const -> QLineEdit* { return lineEdit; }
 
-    void setValidator(const QValidator* const validator) {
-        lineEdit->setValidator(validator);
-    }
+    void setValidator(const QValidator* validator);
 
    signals:
     void finished(const QString& text);

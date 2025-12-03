@@ -2,10 +2,8 @@
 
 #include "Aliases.hpp"
 #include "Enums.hpp"
-#include "PlaylistTab.hpp"
+#include "FWD.hpp"
 
-#include <QHBoxLayout>
-#include <QScrollArea>
 #include <QWidget>
 
 class PlaylistTabBar : public QWidget {
@@ -15,15 +13,11 @@ class PlaylistTabBar : public QWidget {
     explicit PlaylistTabBar(QWidget* parent = nullptr);
     ~PlaylistTabBar() override;
 
-    void addTab(const QString& label) { insertTab(tabCount(), label, true); };
+    void addTab(const QString& label);
 
     void insertTab(u8 index, QString label, bool closable);
 
-    void removeTab(const u8 index) {
-        PlaylistTab* const tab = tabs.takeAt(index);
-        tabContainerLayout->removeWidget(tab);
-        delete tab;
-    };
+    void removeTab(u8 index);
 
     void setCurrentIndex(i8 index);
 
@@ -32,31 +26,33 @@ class PlaylistTabBar : public QWidget {
     }
 
     [[nodiscard]] auto tabCount() const -> u8 {
-        return u8(tabs.size() - 1);  // ignore the add tab
+        return u8(tabs_.size() - 1);  // ignore the add tab
     };
 
-    [[nodiscard]] auto tabLabel(const u8 index) const -> QString {
-        return tabs[index]->labelText();
-    };
+    [[nodiscard]] auto tabLabel(u8 index) const -> QString;
 
-    void setTabLabel(const u8 index, const QString& label) {
-        tabs[index]->setLabelText(label);
-    };
+    void setTabLabel(u8 index, const QString& label);
 
     [[nodiscard]] constexpr auto minimumSizeHint() const -> QSize override {
         return { 0, 0 };
     }
 
-    void setScrollAreaWidth(const u16 width) {
-        scrollArea->setMinimumWidth(width);
-    }
+    void setScrollAreaWidth(u16 width);
 
-    [[nodiscard]] auto tabColor(const u8 index) const -> const QString& {
-        return tabs[index]->color();
-    }
+    [[nodiscard]] auto tabColor(u8 index) const -> const QString&;
 
-    void setTabColor(const u8 index, const QString& color) {
-        tabs[index]->setColor(color);
+    void setTabColor(u8 index, const QString& color);
+
+    [[nodiscard]] auto tabAt(const u8 index) const -> PlaylistTab* {
+        return tabs_[index];
+    };
+
+    [[nodiscard]] auto tabIndex(const PlaylistTab* tab) const -> i8 {
+        return i8(tabs_.indexOf(tab));
+    };
+
+    [[nodiscard]] auto tabs() const -> const QVector<PlaylistTab*>& {
+        return tabs_;
     }
 
    signals:
@@ -67,31 +63,20 @@ class PlaylistTabBar : public QWidget {
     void filesDropped(QDropEvent* event);
 
    protected:
-    void dragEnterEvent(QDragEnterEvent* event) override {
-        event->acceptProposedAction();
-    }
-
+    void dragEnterEvent(QDragEnterEvent* event) override;
     void dragMoveEvent(QDragMoveEvent* event) override;
     void dropEvent(QDropEvent* event) override;
 
    private:
-    void removeTabs(TabRemoveMode mode, u8 index);
+    inline void removeTabs(TabRemoveMode mode, u8 index);
 
-    [[nodiscard]] auto tabAt(const u8 index) const -> PlaylistTab* {
-        return tabs[index];
-    };
+    QFrame* const indicatorLine;
+    QScrollArea* const scrollArea;
+    QWidget* const tabContainer;
+    QHBoxLayout* const tabContainerLayout;
+    QHBoxLayout* const mainLayout;
 
-    [[nodiscard]] auto tabIndex(const PlaylistTab* tab) const -> i8 {
-        return i8(tabs.indexOf(tab));
-    };
-
-    QFrame* const indicatorLine = new QFrame(this);
-    QScrollArea* const scrollArea = new QScrollArea(this);
-    QWidget* const tabContainer = new QWidget(scrollArea);
-    QHBoxLayout* const tabContainerLayout = new QHBoxLayout(tabContainer);
-    QHBoxLayout* const mainLayout = new QHBoxLayout(this);
-
-    QVector<PlaylistTab*> tabs;
+    QVector<PlaylistTab*> tabs_;
 
     i8 currentIndex_ = -1;
     i8 previousIndex = -1;

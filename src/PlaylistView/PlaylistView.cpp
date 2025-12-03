@@ -1,16 +1,20 @@
 #include "PlaylistView.hpp"
 
-#include "Aliases.hpp"
-#include "Constants.hpp"
-#include "Enums.hpp"
-#include "ImageEffect.hpp"
 #include "PlaylistTabBar.hpp"
-#include "TrackProperties.hpp"
+#include "Settings.hpp"
 #include "TrackTree.hpp"
+#include "TrackTreeHeader.hpp"
+#include "TrackTreeModel.hpp"
+#include "Utils.hpp"
 
+#include <QDir>
 #include <QGraphicsBlurEffect>
 #include <QLabel>
+#include <QScreen>
+#include <QStackedWidget>
 #include <QStyledItemDelegate>
+#include <QTimer>
+#include <QVBoxLayout>
 
 class CustomDelegate : public QStyledItemDelegate {
    public:
@@ -26,7 +30,12 @@ class CustomDelegate : public QStyledItemDelegate {
     }
 };
 
-PlaylistView::PlaylistView(QWidget* const parent) : QWidget(parent) {
+PlaylistView::PlaylistView(QWidget* const parent) :
+    QWidget(parent),
+
+    tabBar_(new PlaylistTabBar(this)),
+    stackedWidget(new QStackedWidget(this)),
+    layout(new QVBoxLayout(this)) {
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(tabBar_, 0, Qt::AlignLeft);
     layout->addWidget(stackedWidget);
@@ -333,3 +342,123 @@ void PlaylistView::setBackgroundImage(
 auto PlaylistView::treeOpacity(const u8 index) const -> f32 {
     return tree(index)->opacity();
 }
+
+void PlaylistView::changeEvent(QEvent* const event) {
+    if (event->type() == QEvent::PaletteChange) {
+        for (const u8 idx : range(0, tabCount())) {
+            TrackTree* tree = this->tree(idx);
+            tree->setOpacity(tree->opacity());
+
+            // TODO: Tabs text repaint
+        }
+    }
+
+    QWidget::changeEvent(event);
+}
+
+void PlaylistView::setTabColor(const u8 index, const QString& color) {
+    tabBar_->setTabColor(index, color);
+};
+
+void PlaylistView::setTabLabel(const u8 index, const QString& label) {
+    tabBar_->setTabLabel(index, label);
+};
+
+[[nodiscard]] auto PlaylistView::tabCount() const -> u8 {
+    return tabBar_->tabCount();
+};
+
+[[nodiscard]] auto PlaylistView::currentIndex() const -> i8 {
+    return tabBar_->currentIndex();
+};
+
+[[nodiscard]] auto PlaylistView::currentBackgroundImage() const -> QLabel* {
+    return stackedWidget->currentWidget()->findChild<QLabel*>(
+        u"centerLabel"_qsv
+    );
+};
+
+[[nodiscard]] auto PlaylistView::backgroundImage(const u8 index) const
+    -> QLabel* {
+    return stackedWidget->widget(index)->findChild<QLabel*>(u"centerLabel"_qsv);
+};
+
+[[nodiscard]] auto PlaylistView::tree(const u8 index) const -> TrackTree* {
+    const QWidget* const widget = stackedWidget->widget(index);
+
+    if (widget == nullptr) {
+        return nullptr;
+    }
+
+    return widget->findChild<TrackTree*>(u"tree"_qsv);
+};
+
+[[nodiscard]] auto PlaylistView::currentTree() const -> TrackTree* {
+    return stackedWidget->currentWidget()->findChild<TrackTree*>(u"tree"_qsv);
+};
+
+[[nodiscard]] auto PlaylistView::tabLabel(const u8 index) const -> QString {
+    return tabBar_->tabLabel(index);
+};
+
+[[nodiscard]] auto PlaylistView::tabColor(const u8 index) const -> QString {
+    return tabBar_->tabColor(index);
+};
+
+[[nodiscard]] auto PlaylistView::currentPage() const -> QWidget* {
+    return stackedWidget->currentWidget();
+};
+
+[[nodiscard]] auto PlaylistView::page(const u8 index) const -> QWidget* {
+    return stackedWidget->widget(index);
+};
+
+[[nodiscard]] auto PlaylistView::backgroundImagePath(const u8 index) const
+    -> QString {
+    const QLabel* const centerLabel = backgroundImage(index);
+    return centerLabel->property("path").toString();
+};
+
+[[nodiscard]] auto PlaylistView::addTab(
+    const QString& label,
+    const array<TrackProperty, TRACK_PROPERTY_COUNT>& defaultColumns
+) -> u8 {
+    const u8 index = u8(stackedWidget->addWidget(createPage(defaultColumns)));
+    tabBar_->addTab(label);
+    return index;
+};
+
+void PlaylistView::createTabPage(const u8 index) {
+    if (stackedWidget->widget(index) != nullptr) {
+        return;
+    }
+
+    stackedWidget->insertWidget(index, createPage());
+};
+
+[[nodiscard]] auto PlaylistView::hasBackgroundImage(const u8 index) const
+    -> bool {
+    const QWidget* const widget = stackedWidget->widget(index);
+
+    if (widget == nullptr) {
+        return false;
+    }
+
+    const QLabel* const centerLabel = backgroundImage(index);
+    return centerLabel->property("path").isValid();
+};
+
+void PlaylistView::removePage(const u8 index) {
+    QWidget* const widget = stackedWidget->widget(index);
+    stackedWidget->removeWidget(widget);
+    delete widget;
+};
+
+void PlaylistView::changePage(const i8 index) {
+    stackedWidget->setCurrentIndex(index);
+    emit indexChanged(index);
+};
+
+void PlaylistView::setCurrentIndex(const i8 index) {
+    tabBar_->setCurrentIndex(index);
+};

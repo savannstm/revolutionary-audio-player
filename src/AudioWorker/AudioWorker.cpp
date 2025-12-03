@@ -188,3 +188,75 @@ void AudioWorker::startDevice() {
     ma_device_set_master_volume(&device, volume_);
     ma_device_start(&device);
 }
+
+void AudioWorker::pause() {
+    if (deviceInitialized) {
+        ma_device_stop(&device);
+    }
+}
+
+void AudioWorker::stop() {
+    if (deviceInitialized) {
+        ma_device_stop(&device);
+    }
+
+    audioStreamer->reset();
+}
+
+void AudioWorker::resume() {
+    if (deviceInitialized) {
+        ma_device_start(&device);
+    }
+}
+
+void AudioWorker::seekSecond(const u16 second) {
+    seeked = true;
+
+    audioStreamer->seekSecond(second);
+    ma_device_start(&device);
+}
+
+void AudioWorker::setVolume(const f32 volume) {
+    volume_ = volume;
+
+    if (deviceInitialized) {
+        ma_device_set_master_volume(&device, volume);
+    }
+}
+
+void AudioWorker::changeAudioDevice() {
+    if (deviceInitialized) {
+        const bool started = state() == ma_device_state_started;
+
+        ma_device_uninit(&device);
+
+        if (started) {
+            startDevice();
+        }
+    }
+}
+
+[[nodiscard]] auto AudioWorker::state() const -> ma_device_state {
+    if (!deviceInitialized) {
+        return ma_device_state_uninitialized;
+    }
+
+    return ma_device_get_state(&device);
+}
+
+void AudioWorker::endStream() {
+    ma_device_stop(&device);
+    emit streamEnded();
+}
+
+void AudioWorker::changeGain(const u8 band) {
+    audioStreamer->changeGain(band);
+}
+
+[[nodiscard]] auto AudioWorker::channels() -> AudioChannels {
+    return audioStreamer->channels();
+}
+
+void AudioWorker::prepareBuffer() {
+    audioStreamer->prepareBuffer();
+}

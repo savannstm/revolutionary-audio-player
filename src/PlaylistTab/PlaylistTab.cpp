@@ -1,13 +1,15 @@
 #include "PlaylistTab.hpp"
 
-#include "Aliases.hpp"
 #include "Constants.hpp"
 #include "PlaylistTabLabel.hpp"
 
 #include <QColorDialog>
 #include <QDrag>
+#include <QHBoxLayout>
 #include <QMenu>
 #include <QMimeData>
+#include <QMouseEvent>
+#include <QToolButton>
 
 PlaylistTab::PlaylistTab(
     const QString& text,
@@ -15,7 +17,9 @@ PlaylistTab::PlaylistTab(
     QWidget* const parent
 ) :
     QPushButton(parent),
-    label_(new PlaylistTabLabel(text, parent)) {
+    label_(new PlaylistTabLabel(text, parent)),
+    tabButton(new QToolButton(this)),
+    layout_(new QHBoxLayout(this)) {
     setObjectName(text);
     setContextMenuPolicy(Qt::CustomContextMenu);
 
@@ -94,6 +98,8 @@ void PlaylistTab::createContextMenu() {
 
     const QAction* const changeTabColor =
         menu->addAction(tr("Change Background Color"));
+
+    menu->addSeparator();
 
     const QAction* const removeToLeftAction =
         menu->addAction(tr("Remove All Tabs To Left"));
@@ -231,4 +237,12 @@ void PlaylistTab::setColor(const QString& color) {
             )
             .arg(qcolor.lighter(LIGHTNESS_FACTOR).name())
     );
+}
+
+void PlaylistTab::setLabelText(const QString& label) {
+    label_->setText(label);
+};
+
+[[nodiscard]] auto PlaylistTab::labelText() const -> QString {
+    return label_->text();
 }

@@ -2,6 +2,7 @@
 
 #include "Aliases.hpp"
 
+#include <QMouseEvent>
 #include <QStyle>
 #include <QStyleOptionSlider>
 

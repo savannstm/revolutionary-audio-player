@@ -1,10 +1,9 @@
 #pragma once
 
 #include "Aliases.hpp"
+#include "FWD.hpp"
 
 #include <QDialog>
-#include <QTreeWidget>
-#include <QVBoxLayout>
 
 class MetadataWindow : public QDialog {
     Q_OBJECT
@@ -16,6 +15,6 @@ class MetadataWindow : public QDialog {
     );
 
    private:
-    QTreeWidget* const treeWidget = new QTreeWidget(this);
-    QVBoxLayout* const layout = new QVBoxLayout(this);
+    QTreeWidget* const treeWidget;
+    QVBoxLayout* const layout;
 };

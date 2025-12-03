@@ -1,15 +1,15 @@
 #include "DockWidget.hpp"
 
-#include "Enums.hpp"
-
+#include <QLabel>
 #include <QMenu>
+#include <QTreeWidget>
 
 DockWidget::DockWidget(QWidget* const parent) : QSplitter(parent) {
     connect(
         this,
         &DockWidget::customContextMenuRequested,
         this,
-        [=, this] -> void {
+        [this] -> void {
         auto* const menu = new QMenu(this);
 
         const QAction* const moveToLeftAction =

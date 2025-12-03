@@ -2,9 +2,6 @@
 
 #include "ActionButton.hpp"
 
-#include <QMenu>
-#include <QMouseEvent>
-
 class IconTextButton : public ActionButton {
     Q_OBJECT
 

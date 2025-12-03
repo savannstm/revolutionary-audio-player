@@ -2,8 +2,6 @@
 
 #include "Aliases.hpp"
 
-#include <ranges>
-
 class IndexSet {
    public:
     auto insert(const u32 element) -> bool {

@@ -1,8 +1,13 @@
-#include "AudioStreamer.hpp"
+extern "C" {
+#define __STDC_CONSTANT_MACROS
+#include <libavfilter/avfilter.h>
+#include <libavfilter/buffersink.h>
+#include <libavfilter/buffersrc.h>
+#include <libavutil/avutil.h>
+}
 
-#include "Aliases.hpp"
-#include "Constants.hpp"
-#include "FFMpeg.hpp"
+#include "AudioStreamer.hpp"
+#include "Settings.hpp"
 
 struct Filter {
     cstr filter;

@@ -2,13 +2,9 @@
 
 #include "Constants.hpp"
 #include "Enums.hpp"
-#include "Settings.hpp"
+#include "FWD.hpp"
 
-#include <QCheckBox>
 #include <QDialog>
-#include <QProcess>
-#include <QPushButton>
-#include <QSpinBox>
 
 #ifdef Q_OS_WINDOWS
 #include <windows.h>
@@ -44,7 +40,7 @@ class VisualizerDialog : public QDialog {
     void applySettings();
     void openPreset(const QString& path);
 
-    VisualizerSettings settings;
+    VisualizerSettings& settings;
 
     QCheckBox* useRandomPresetsCheckbox;
     QLineEdit* randomPresetDirInput;

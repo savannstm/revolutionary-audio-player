@@ -1,7 +1,53 @@
-#include "RepeatRangeMenu.hpp"
+#include "TrackRepeatMenu.hpp"
 
-RepeatRangeMenu::RepeatRangeMenu(QWidget* const parent) :
-    QDialog(parent, Qt::FramelessWindowHint | Qt::Popup) {
+#include "CustomInput.hpp"
+#include "RangeSlider.hpp"
+#include "TimeValidator.hpp"
+#include "Utils.hpp"
+
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QTreeWidget>
+
+TrackRepeatMenu::TrackRepeatMenu(QWidget* const parent) :
+    QDialog(parent, Qt::FramelessWindowHint | Qt::Popup),
+    mainLayout(new QHBoxLayout(this)),
+
+    sliderLayoutWidget(new QWidget(this)),
+    sliderLayout(new QVBoxLayout(sliderLayoutWidget)),
+
+    treeLayoutWidget(new QWidget(this)),
+    treeWidgetLayout(new QVBoxLayout(treeLayoutWidget)),
+
+    timeValidator(new TimeValidator(sliderLayoutWidget)),
+    rangeSlider(new RangeSlider(sliderLayoutWidget)),
+
+    endTimeContainer(new QWidget(sliderLayoutWidget)),
+    endTimeLayout(new QHBoxLayout(endTimeContainer)),
+    endTimeLabel(new QLabel(tr("End time:"), endTimeContainer)),
+    endTimeInput(new CustomInput(u"00:00"_s, endTimeContainer)),
+
+    startTimeContainer(new QWidget(sliderLayoutWidget)),
+    startTimeLayout(new QHBoxLayout(startTimeContainer)),
+    startTimeLabel(new QLabel(tr("Start time:"), startTimeContainer)),
+    startTimeInput(new CustomInput(u"00:00"_s, startTimeContainer)),
+
+    treeWidget(new QTreeWidget(treeLayoutWidget)),
+
+    buttonsContainer(new QWidget(treeLayoutWidget)),
+    buttonsContainerLayout(new QHBoxLayout(buttonsContainer)),
+    addButton(new QPushButton(
+        QIcon::fromTheme(QIcon::ThemeIcon::ListAdd),
+        QString(),
+        buttonsContainer
+    )),
+    removeButton(new QPushButton(
+        QIcon::fromTheme(QIcon::ThemeIcon::ListRemove),
+        QString(),
+        buttonsContainer
+    )) {
     skipSections_.reserve(4);
 
     startTimeLayout->addWidget(startTimeLabel);
@@ -83,14 +129,14 @@ RepeatRangeMenu::RepeatRangeMenu(QWidget* const parent) :
         addButton,
         &QPushButton::pressed,
         this,
-        &RepeatRangeMenu::addSkipSection
+        &TrackRepeatMenu::addSkipSection
     );
 
     connect(
         removeButton,
         &QPushButton::pressed,
         this,
-        &RepeatRangeMenu::removeSkipSection
+        &TrackRepeatMenu::removeSkipSection
     );
 
     connect(
@@ -106,11 +152,11 @@ RepeatRangeMenu::RepeatRangeMenu(QWidget* const parent) :
         treeWidget,
         &QTreeWidget::itemChanged,
         this,
-        &RepeatRangeMenu::updateSkipSection
+        &TrackRepeatMenu::updateSkipSection
     );
 }
 
-void RepeatRangeMenu::updateSkipSection(
+void TrackRepeatMenu::updateSkipSection(
     QTreeWidgetItem* const item,
     const i32 column
 ) {
@@ -143,7 +189,7 @@ void RepeatRangeMenu::updateSkipSection(
     }
 }
 
-void RepeatRangeMenu::addSkipSection() {
+void TrackRepeatMenu::addSkipSection() {
     auto* const item = new QTreeWidgetItem();
     item->setText(0, u"00:00"_s);
     item->setText(1, u"00:00"_s);
@@ -152,11 +198,25 @@ void RepeatRangeMenu::addSkipSection() {
     skipSections_.emplace_back(0, 0);
 }
 
-void RepeatRangeMenu::removeSkipSection() {
+void TrackRepeatMenu::removeSkipSection() {
     const QModelIndex currentIndex = treeWidget->currentIndex();
 
     if (currentIndex.isValid()) {
         treeWidget->model()->removeRow(currentIndex.row());
         skipSections_.erase(skipSections_.begin() + currentIndex.row());
     }
+}
+
+void TrackRepeatMenu::setDuration(const u16 seconds) {
+    startSecond_ = 0;
+    endSecond_ = seconds;
+
+    treeWidget->clear();
+
+    rangeSlider->setLowValue(0);
+    rangeSlider->setMaximum(seconds);
+    rangeSlider->setHighValue(seconds);
+
+    startTimeInput->setText(u"00:00"_s);
+    endTimeInput->setText(secsToMins(seconds));
 }

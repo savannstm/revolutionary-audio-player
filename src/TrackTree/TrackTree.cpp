@@ -1,22 +1,26 @@
 #include "TrackTree.hpp"
 
 #include "Constants.hpp"
-#include "DurationConversions.hpp"
 #include "Enums.hpp"
-#include "ExtractMetadata.hpp"
 #include "Logger.hpp"
 #include "OptionMenu.hpp"
-#include "TrackProperties.hpp"
+#include "TrackTreeHeader.hpp"
 #include "TrackTreeItem.hpp"
+#include "TrackTreeModel.hpp"
+#include "Utils.hpp"
 
+#include <QApplication>
 #include <QDir>
 #include <QDrag>
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QThreadPool>
 
-TrackTree::TrackTree(QWidget* const parent) : QTreeView(parent) {
-    setHeader(musicHeader);
+TrackTree::TrackTree(QWidget* const parent) :
+    QTreeView(parent),
+    trackTreeHeader(new TrackTreeHeader(Qt::Horizontal, this)),
+    trackTreeModel(new TrackTreeModel(this)) {
+    setHeader(trackTreeHeader);
     setModel(trackTreeModel);
     setSelectionMode(QAbstractItemView::SingleSelection);
     setIndentation(1);
@@ -31,17 +35,39 @@ TrackTree::TrackTree(QWidget* const parent) : QTreeView(parent) {
     );
 
     connect(
-        musicHeader,
+        trackTreeHeader,
         &TrackTreeHeader::headerPressed,
         this,
         &TrackTree::handleHeaderPress
     );
 
     connect(
-        musicHeader,
+        trackTreeHeader,
         &TrackTreeHeader::sortIndicatorChanged,
         this,
         &TrackTree::resetSorting
+    );
+
+    connect(
+        trackTreeModel,
+        &TrackTreeModel::layoutAboutToBeChanged,
+        this,
+        [&](const QList<QPersistentModelIndex>& parents,
+            QAbstractItemModel::LayoutChangeHint hint) -> void {
+        persistentIndex = QPersistentModelIndex(currentIndex());
+    }
+    );
+
+    connect(
+        trackTreeModel,
+        &TrackTreeModel::layoutChanged,
+        this,
+        [&](const QList<QPersistentModelIndex>& parents,
+            QAbstractItemModel::LayoutChangeHint hint) -> void {
+        if (persistentIndex.isValid()) {
+            setCurrentIndex(QModelIndex(persistentIndex));
+        }
+    }
     );
 }
 
@@ -76,6 +102,7 @@ void TrackTree::mouseDoubleClickEvent(QMouseEvent* const event) {
 
 void TrackTree::mousePressEvent(QMouseEvent* const event) {
     const QModelIndex index = indexAt(event->pos());
+
     if (!index.isValid()) {
         draggedRow = UINT16_MAX;
         clearSelection();
@@ -115,6 +142,8 @@ void TrackTree::startDrag(const Qt::DropActions supportedActions) {
     drag->exec(supportedActions, defaultDropAction());
 }
 
+// TODO: Support moving multiple tracks
+// TODO: Refactor into `TrackTreeModel::moveRows`
 void TrackTree::dropEvent(QDropEvent* const event) {
     const QModelIndex targetIndex = indexAt(event->position().toPoint());
     if (!targetIndex.isValid()) {
@@ -136,14 +165,19 @@ void TrackTree::dropEvent(QDropEvent* const event) {
     const QByteArray data =
         mimeData->data(u"application/x-qabstractitemmodeldatalist"_s);
 
-    u16 sourceRow = *ras<const u16*>(data.constData());
+    const u16 sourceRowOrig = *ras<const u16*>(data.constData());
+
+    u16 sourceRowForRemoval = sourceRowOrig;
+    if (sourceRowForRemoval >= targetRow) {
+        sourceRowForRemoval += 1;
+    }
 
     vector<QStandardItem*> clonedItems;
     clonedItems.reserve(TRACK_PROPERTY_COUNT);
 
     for (const u8 column : range(0, TRACK_PROPERTY_COUNT - 1)) {
         clonedItems.emplace_back(
-            trackTreeModel->item(sourceRow, column)->clone()
+            trackTreeModel->item(sourceRowOrig, column)->clone()
         );
     }
 
@@ -153,16 +187,44 @@ void TrackTree::dropEvent(QDropEvent* const event) {
         trackTreeModel->setItem(targetRow, column, clonedItems[column]);
     }
 
-    if (sourceRow >= targetRow) {
-        sourceRow += 1;
-    }
+    const i32 previousSelectedRow =
+        currentIndex().isValid() ? currentIndex().row() : -1;
+    const i32 sourceRowOriginalIndex = i32(sourceRowOrig);
+    const i32 targetRowIndex = i32(targetRow);
 
-    trackTreeModel->removeRow(sourceRow);
+    trackTreeModel->removeRow(sourceRowForRemoval);
 
     for (const u16 row : range(0, trackTreeModel->rowCount())) {
         auto* const item = new QStandardItem();
         item->setData(row, Qt::EditRole);
         trackTreeModel->setItem(row, u8(TrackProperty::Order), item);
+    }
+
+    const i32 movedRowFinal = (sourceRowOriginalIndex < targetRowIndex)
+                                  ? (targetRowIndex - 1)
+                                  : targetRowIndex;
+
+    i32 newSelectedRow = previousSelectedRow;
+
+    if (previousSelectedRow == -1) {
+    } else if (previousSelectedRow == sourceRowOriginalIndex) {
+        newSelectedRow = movedRowFinal;
+    } else if (sourceRowOriginalIndex < targetRowIndex) {
+        if (previousSelectedRow > sourceRowOriginalIndex &&
+            previousSelectedRow <= targetRowIndex - 1) {
+            newSelectedRow = previousSelectedRow - 1;
+        }
+    } else {
+        if (previousSelectedRow >= targetRowIndex &&
+            previousSelectedRow < sourceRowOriginalIndex) {
+            newSelectedRow = previousSelectedRow + 1;
+        }
+    }
+
+    if (newSelectedRow >= 0 && newSelectedRow < trackTreeModel->rowCount()) {
+        setCurrentIndex(trackTreeModel->index(newSelectedRow, 0));
+    } else {
+        selectionModel()->clearCurrentIndex();
     }
 
     event->acceptProposedAction();
@@ -284,19 +346,11 @@ void TrackTree::addFileCUE(
 }
 
 void TrackTree::sortByPath() {
-    //! Don't forget about this cool persistent model index thing: it really
-    //! simplifies EVERYTHING
-    const QPersistentModelIndex persistent = currentIndex();
-
     for (u8 column = TRACK_PROPERTY_COUNT - 1; column >= 0; column--) {
         if (trackTreeModel->trackProperty(column) == TrackProperty::Path) {
             sortByColumn(column, Qt::AscendingOrder);
             break;
         }
-    }
-
-    if (persistent.isValid()) {
-        setCurrentIndex(persistent);
     }
 }
 
@@ -306,7 +360,7 @@ void TrackTree::fillTable(
     const bool fromArgs
 ) {
     QThreadPool::globalInstance()->start([=, this] -> void {
-        map<QString, CueInfo> cueInfos;
+        HashMap<QString, CUEInfo> CUEInfos;
         QString totalDuration;
 
         for (const u16 idx : range(0, paths.size())) {
@@ -315,28 +369,28 @@ void TrackTree::fillTable(
             const QString extension = info.suffix().toLower();
 
             if (extension == EXT_CUE) {
-                if (!cueInfos.contains(path)) {
+                if (!CUEInfos.contains(path)) {
                     auto cueFile = QFile(path);
 
                     if (!cueFile.open(QFile::ReadOnly | QFile::Text)) {
-                        // This is not likely to fail, because we just parsed
-                        // the contents from this cue file. But if it does fail,
-                        // just continue
+                        // This is not likely to fail, because we just
+                        // parsed the contents from this cue file. But if it
+                        // does fail, just continue
                         continue;
                     };
 
-                    cueInfos.emplace(path, parseCUE(cueFile, info));
+                    CUEInfos.emplace(path, parseCUE(cueFile, info));
                 }
 
-                if (cueInfos.contains(path)) {
+                if (CUEInfos.contains(path)) {
                     const auto& cueOffset = cueOffsets[idx];
 
                     if (totalDuration.isEmpty()) {
                         totalDuration =
-                            cueInfos[path].metadata[TrackProperty::Duration];
+                            CUEInfos[path].metadata[TrackProperty::Duration];
                     }
 
-                    const auto& tracks = cueInfos[path].tracks;
+                    const auto& tracks = CUEInfos[path].tracks;
                     const auto& offsets = views::transform(
                         tracks,
                         [this](const auto& track) -> u16 {
@@ -348,7 +402,8 @@ void TrackTree::fillTable(
 
                     if (idx != -1) {
                         const auto& track = tracks[idx];
-                        auto& metadata = cueInfos[path].metadata;
+                        auto& metadata =
+                            const_cast<TrackMetadata&>(CUEInfos[path].metadata);
 
                         metadata.insert_or_assign(
                             TrackProperty::TrackNumber,
@@ -383,7 +438,7 @@ void TrackTree::fillTable(
             }
 
             if (info.isFile() &&
-                !ranges::contains(ALLOWED_PLAYABLE_EXTENSIONS, extension)) {
+                !ranges::contains(SUPPORTED_PLAYABLE_EXTENSIONS, extension)) {
                 continue;
             }
 
@@ -444,7 +499,7 @@ void TrackTree::fillTable(
 
 void TrackTree::fillTableCUE(
     TrackMetadata& metadata,
-    const QList<CUETrack>& tracks,
+    const vector<CUETrack>& tracks,
     const QString& cueFilePath
 ) {
     const QString totalDuration = metadata[TrackProperty::Duration];
@@ -551,7 +606,7 @@ void TrackTree::resetSorting(
     const i32 /* unused */,
     const Qt::SortOrder sortOrder
 ) {
-    if (musicHeader->sortIndicatorSection() == -1) {
+    if (trackTreeHeader->sortIndicatorSection() == -1) {
         sortByPath();
     }
 };

@@ -1,18 +1,24 @@
 #include "CoverWindow.hpp"
 
 #include "Constants.hpp"
-#include "ExtractMetadata.hpp"
 #include "Logger.hpp"
+#include "Utils.hpp"
 
+#include <QApplication>
+#include <QHBoxLayout>
+#include <QLabel>
 #include <QMenu>
 #include <QPixmap>
+#include <QResizeEvent>
 
 CoverWindow::CoverWindow(
     const QString& coverPath,  // NOLINT
     const QString& title,
     QWidget* const parent
 ) :
-    QDialog(parent, Qt::Window) {
+    QDialog(parent, Qt::Window),
+    layout(new QHBoxLayout(this)),
+    coverLabel(new QLabel(this)) {
     setContextMenuPolicy(Qt::CustomContextMenu);
     setWindowTitle(title + tr(": Cover"));
     setMinimumSize(MINIMUM_COVER_SIZE);
@@ -114,4 +120,10 @@ void CoverWindow::resizeEvent(QResizeEvent* const event) {
 
     coverLabel->setPixmap(scaled);
     coverLabel->resize(scaled.size());
+}
+
+void CoverWindow::keyPressEvent(QKeyEvent* const event) {
+    if (event->key() == Qt::Key_F11) {
+        toggleFullscreen(isFullScreen());
+    }
 }

@@ -1,16 +1,9 @@
 #pragma once
 
-#include "TrackTreeHeader.hpp"
-#include "TrackTreeModel.hpp"
+#include "FWD.hpp"
+#include "Utils.hpp"
 
 #include <QTreeView>
-
-struct CUETrack {
-    QString title;
-    QString artist;
-    QString trackNumber;
-    u16 offset;
-};
 
 class TrackTree : public QTreeView {
     Q_OBJECT
@@ -29,7 +22,7 @@ class TrackTree : public QTreeView {
     };
 
     [[nodiscard]] constexpr auto header() const -> TrackTreeHeader* {
-        return musicHeader;
+        return trackTreeHeader;
     };
 
     void setOpacity(f32 opacity);
@@ -45,7 +38,7 @@ class TrackTree : public QTreeView {
     );
     void fillTableCUE(
         TrackMetadata& metadata,
-        const QList<CUETrack>& tracks,
+        const vector<CUETrack>& tracks,
         const QString& cueFilePath
     );
     auto deselect(i32 index = -1) -> QModelIndex;
@@ -79,10 +72,10 @@ class TrackTree : public QTreeView {
 
     vector<u16> order;
     QModelIndex index;
+    QPersistentModelIndex persistentIndex;
 
-    TrackTreeHeader* const musicHeader =
-        new TrackTreeHeader(Qt::Horizontal, this);
-    TrackTreeModel* const trackTreeModel = new TrackTreeModel(this);
+    TrackTreeHeader* const trackTreeHeader;
+    TrackTreeModel* const trackTreeModel;
 
     f32 opacity_ = 1.0F;
     u16 draggedRow;

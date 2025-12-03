@@ -2,7 +2,7 @@
 
 #include "Aliases.hpp"
 #include "Enums.hpp"
-#include "TrackTreeItem.hpp"
+#include "FWD.hpp"
 
 #include <QStandardItemModel>
 
@@ -12,10 +12,7 @@ class TrackTreeModel : public QStandardItemModel {
    public:
     explicit TrackTreeModel(QObject* parent = nullptr);
 
-    [[nodiscard]] auto item(const i32 row, const i32 column = 0) const
-        -> TrackTreeItem* {
-        return as<TrackTreeItem*>(QStandardItemModel::item(row, column));
-    }
+    [[nodiscard]] auto item(i32 row, i32 column = 0) const -> TrackTreeItem*;
 
     [[nodiscard]] auto itemFromIndex(const QModelIndex& index) const
         -> TrackTreeItem*;
@@ -31,18 +28,18 @@ class TrackTreeModel : public QStandardItemModel {
         return tracks.contains(path);
     };
 
+    auto moveRows(
+        const QModelIndex& srcParent,
+        i32 src,
+        i32 count,
+        const QModelIndex& destParent,
+        i32 dest
+    ) -> bool override;
+
    protected:
     [[nodiscard]] auto flags(const QModelIndex& index) const
-        -> Qt::ItemFlags override {
-        const Qt::ItemFlags defaultFlags = QStandardItemModel::flags(index);
-
-        if (!index.isValid()) {
-            return Qt::ItemIsDropEnabled | defaultFlags;
-        }
-
-        return defaultFlags & ~Qt::ItemIsDropEnabled;
-    }
+        -> Qt::ItemFlags override;
 
    private:
-    rapidhashset<QString> tracks;
+    HashSet<QString> tracks;
 };

@@ -6,8 +6,6 @@
 #include <QPixmap>
 
 class ScaledLabel : public QLabel {
-    QPixmap originalPixmap;
-
    public:
     ScaledLabel(QWidget* const parent = nullptr) : QLabel(parent) {
         setMinimumSize(MINIMUM_COVER_SIZE);
@@ -21,15 +19,17 @@ class ScaledLabel : public QLabel {
     }
 
    protected:
-    void resizeEvent(QResizeEvent* event) override {
+    void resizeEvent(QResizeEvent* const event) override {
         QLabel::resizeEvent(event);
         updateScaledPixmap();
     }
 
    private:
+    QPixmap originalPixmap;
+
     void updateScaledPixmap() {
         if (!originalPixmap.isNull()) {
-            QPixmap scaled = originalPixmap.scaled(
+            const QPixmap scaled = originalPixmap.scaled(
                 size(),
                 Qt::KeepAspectRatio,
                 Qt::SmoothTransformation

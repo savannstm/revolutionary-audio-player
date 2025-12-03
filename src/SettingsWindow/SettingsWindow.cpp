@@ -1,11 +1,15 @@
 #include "SettingsWindow.hpp"
 
 #include "Associations.hpp"
-#include "Constants.hpp"
+#include "DeviceMonitor.hpp"
 #include "Enums.hpp"
 #include "Logger.hpp"
+#include "Settings.hpp"
+#include "Utils.hpp"
+#include "ui_SettingsWindow.h"
 
 #include <QFileDialog>
+#include <QListWidget>
 #include <QStyleFactory>
 #include <QStyleHints>
 
@@ -14,7 +18,33 @@ SettingsWindow::SettingsWindow(
     QWidget* const parent
 ) :
     QDialog(parent),
-    settings(std::move(settings_)) {
+    settings(std::move(settings_)),
+
+    ui(setupUi()),
+    stackedWidget(ui->stackedWidget),
+    settingsList(ui->settingsList),
+
+    settingsDirectoryInput(ui->settingsDirInput),
+    playlistDirectoryInput(ui->playlistDirInput),
+    themeSelect(ui->themeSelect),
+    styleSelect(ui->styleSelect),
+    outputDeviceSelect(ui->outputDeviceSelect),
+
+    createMenuItemCheckbox(ui->createMenuItemCheckbox),
+    enabledAssociationsList(ui->enabledAssociationsList),
+    enableAllAudioButton(ui->enableAllAudioButton),
+    enableAllVideoButton(ui->enableAllVideoButton),
+    enableAllPlaylistsButton(ui->enableAllPlaylistsButton),
+    enableAllButton(ui->enableAllButton),
+    clearAllButton(ui->clearAllButton),
+    setButton(ui->setButton),
+
+    prioritizeExternalCheckbox(ui->prioritizeExternalCheckbox),
+    backgroundImageCheckbox(ui->backgroundImageCheckbox),
+    playlistNamingSelect(ui->playlistNamingSelect),
+    columnList(ui->columnList),
+
+    deviceMonitor(new DeviceMonitor(this)) {
     this->adjustSize();
 
     for (const QString& style : QStyleFactory::keys()) {
@@ -49,7 +79,7 @@ SettingsWindow::SettingsWindow(
 
     createMenuItemCheckbox->setChecked(settings->shell.contextMenuEntryEnabled);
     for (const auto [idx, ext] :
-         views::enumerate(ALLOWED_PLAYABLE_EXTENSIONS)) {
+         views::enumerate(SUPPORTED_PLAYABLE_EXTENSIONS)) {
         enabledAssociationsList->addItem(ext.toString());
 
         enabledAssociationsList->item(enabledAssociationsList->count() - 1)
@@ -307,9 +337,9 @@ void SettingsWindow::changeStyle(const QString& itemText) {
 }
 
 void SettingsWindow::enableAllAudio() {
-    for (u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
+    for (const u8 idx : range(0, SUPPORTED_PLAYABLE_EXTENSIONS.size())) {
         if (ranges::contains(
-                ALLOWED_AUDIO_EXTENSIONS,
+                SUPPORTED_AUDIO_EXTENSIONS,
                 enabledAssociationsList->item(idx)->text()
             )) {
             enabledAssociationsList->item(idx)->setCheckState(Qt::Checked);
@@ -318,9 +348,9 @@ void SettingsWindow::enableAllAudio() {
 }
 
 void SettingsWindow::enableAllVideo() {
-    for (u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
+    for (const u8 idx : range(0, SUPPORTED_PLAYABLE_EXTENSIONS.size())) {
         if (ranges::contains(
-                ALLOWED_VIDEO_EXTENSIONS,
+                SUPPORTED_VIDEO_EXTENSIONS,
                 enabledAssociationsList->item(idx)->text()
             )) {
             enabledAssociationsList->item(idx)->setCheckState(Qt::Checked);
@@ -329,9 +359,9 @@ void SettingsWindow::enableAllVideo() {
 }
 
 void SettingsWindow::enableAllPlaylists() {
-    for (u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
+    for (const u8 idx : range(0, SUPPORTED_PLAYABLE_EXTENSIONS.size())) {
         if (ranges::contains(
-                ALLOWED_PLAYLIST_EXTENSIONS,
+                SUPPORTED_PLAYLIST_EXTENSIONS,
                 enabledAssociationsList->item(idx)->text()
             )) {
             enabledAssociationsList->item(idx)->setCheckState(Qt::Checked);
@@ -340,19 +370,19 @@ void SettingsWindow::enableAllPlaylists() {
 }
 
 void SettingsWindow::enableAllAssociations() {
-    for (u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
+    for (const u8 idx : range(0, SUPPORTED_PLAYABLE_EXTENSIONS.size())) {
         enabledAssociationsList->item(idx)->setCheckState(Qt::Checked);
     }
 }
 
 void SettingsWindow::clearAllAssociations() {
-    for (u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
+    for (const u8 idx : range(0, SUPPORTED_PLAYABLE_EXTENSIONS.size())) {
         enabledAssociationsList->item(idx)->setCheckState(Qt::Unchecked);
     }
 }
 
 void SettingsWindow::setAssociations() {
-    for (u8 idx : range(0, ALLOWED_PLAYABLE_EXTENSIONS.size())) {
+    for (const u8 idx : range(0, SUPPORTED_PLAYABLE_EXTENSIONS.size())) {
         if (enabledAssociationsList->item(idx)->checkState() == Qt::Checked) {
             settings->shell.enabledAssociations |= Associations(1 << idx);
         } else {
@@ -390,16 +420,17 @@ void SettingsWindow::changeSettingsSection(const u16 row) {
 }
 
 void SettingsWindow::onDeviceAdded(const QString& deviceName) {
-    for (u8 idx : range(1, outputDeviceSelect->count())) {
+    for (const u8 idx : range(1, outputDeviceSelect->count())) {
         if (outputDeviceSelect->itemText(idx) == deviceName) {
             return;
         }
     }
+
     outputDeviceSelect->addItem(deviceName);
 }
 
 void SettingsWindow::onDeviceRemoved(const QString& deviceName) {
-    for (u8 idx : range(1, outputDeviceSelect->count())) {
+    for (const u8 idx : range(1, outputDeviceSelect->count())) {
         if (outputDeviceSelect->itemText(idx) == deviceName) {
             outputDeviceSelect->removeItem(idx);
             break;
@@ -417,4 +448,40 @@ void SettingsWindow::onOutputDeviceChanged(const u8 index) {
     }
 
     emit audioDeviceChanged();
+}
+
+auto SettingsWindow::setupUi() -> Ui::SettingsWindow* {
+    auto* const ui_ = new Ui::SettingsWindow();
+    ui_->setupUi(this);
+    return ui_;
+};
+
+void SettingsWindow::changeEvent(QEvent* const event) {
+    if (event->type() == QEvent::LanguageChange) {
+        ui->retranslateUi(this);
+        setTrackPropertiesLabels();
+        outputDeviceSelect->setItemText(0, tr("Default"));
+    }
+
+    QDialog::changeEvent(event);
+}
+
+void SettingsWindow::setTrackPropertiesLabels() {
+    columnList->clear();
+    const QStringList labels = trackPropertiesLabels();
+
+    for (const u8 property : range(1, TRACK_PROPERTY_COUNT)) {
+        columnList->addItem(labels[property]);
+        columnList->item(columnList->count() - 1)
+            ->setData(PROPERTY_ROLE, property);
+        columnList->item(columnList->count() - 1)
+            ->setCheckState(
+                ranges::contains(
+                    settings->playlist.defaultColumns,
+                    TrackProperty(property)
+                )
+                    ? Qt::Checked
+                    : Qt::Unchecked
+            );
+    }
 }

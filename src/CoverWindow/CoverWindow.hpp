@@ -1,11 +1,9 @@
 #pragma once
 
 #include "Aliases.hpp"
+#include "FWD.hpp"
 
 #include <QDialog>
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QResizeEvent>
 
 class CoverWindow : public QDialog {
     Q_OBJECT
@@ -21,19 +19,14 @@ class CoverWindow : public QDialog {
 
    protected:
     void resizeEvent(QResizeEvent* event) override;
-
-    void keyPressEvent(QKeyEvent* const event) override {
-        if (event->key() == Qt::Key_F11) {
-            toggleFullscreen(isFullScreen());
-        }
-    }
+    void keyPressEvent(QKeyEvent* event) override;
 
    private:
-    void showContextMenu(const QPoint& pos);
-    void toggleFullscreen(bool isFullscreen);
+    inline void showContextMenu(const QPoint& pos);
+    inline void toggleFullscreen(bool isFullscreen);
 
     QPixmap originalPixmap;
 
-    QHBoxLayout* const layout = new QHBoxLayout(this);
-    QLabel* const coverLabel = new QLabel(this);
+    QHBoxLayout* const layout;
+    QLabel* const coverLabel;
 };

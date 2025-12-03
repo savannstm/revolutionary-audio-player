@@ -1,13 +1,10 @@
 #pragma once
 
-#include "DeviceMonitor.hpp"
-#include "Settings.hpp"
-#include "TrackProperties.hpp"
-#include "ui_SettingsWindow.h"
+#include "Aliases.hpp"
+#include "FWD.hpp"
 
-#include <QCheckBox>
-#include <QComboBox>
 #include <QDialog>
+#include <miniaudio.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -30,68 +27,38 @@ class SettingsWindow : public QDialog {
     void audioDeviceChanged();
 
    protected:
-    void changeEvent(QEvent* const event) override {
-        if (event->type() == QEvent::LanguageChange) {
-            ui->retranslateUi(this);
-            setTrackPropertiesLabels();
-            outputDeviceSelect->setItemText(0, tr("Default"));
-        }
-
-        QDialog::changeEvent(event);
-    }
+    void changeEvent(QEvent* event) override;
 
    private:
-    void changeTheme(u8 state);
-    void locateSettingsDirectory();
-    void locatePlaylistDirectory();
-    void changeStyle(const QString& itemText);
+    inline void changeTheme(u8 state);
+    inline void locateSettingsDirectory();
+    inline void locatePlaylistDirectory();
+    inline void changeStyle(const QString& itemText);
 
-    void enableAllAudio();
-    void enableAllVideo();
-    void enableAllPlaylists();
-    void enableAllAssociations();
-    void clearAllAssociations();
-    void setAssociations();
-    void setContextMenuEntry(bool checked);
+    inline void enableAllAudio();
+    inline void enableAllVideo();
+    inline void enableAllPlaylists();
+    inline void enableAllAssociations();
+    inline void clearAllAssociations();
+    inline void setAssociations();
+    inline void setContextMenuEntry(bool checked);
 
-    void changePlaylistNaming(u8 index);
-    void togglePrioritizeExternal(bool checked);
-    void toggleBackgroundImage(bool checked);
+    inline void changePlaylistNaming(u8 index);
+    inline void togglePrioritizeExternal(bool checked);
+    inline void toggleBackgroundImage(bool checked);
 
-    void changeSettingsSection(u16 row);
+    inline void changeSettingsSection(u16 row);
 
-    void onDeviceAdded(const QString& deviceName);
-    void onDeviceRemoved(const QString& deviceName);
+    inline void onDeviceAdded(const QString& deviceName);
+    inline void onDeviceRemoved(const QString& deviceName);
 
-    void onOutputDeviceChanged(u8 index);
+    inline void onOutputDeviceChanged(u8 index);
 
-    auto setupUi() -> Ui::SettingsWindow* {
-        auto* const ui_ = new Ui::SettingsWindow();
-        ui_->setupUi(this);
-        return ui_;
-    };
+    inline auto setupUi() -> Ui::SettingsWindow*;
 
     inline void fetchDevices();
 
-    void setTrackPropertiesLabels() {
-        columnList->clear();
-        const QStringList labels = trackPropertiesLabels();
-
-        for (const u8 property : range(1, TRACK_PROPERTY_COUNT)) {
-            columnList->addItem(labels[property]);
-            columnList->item(columnList->count() - 1)
-                ->setData(PROPERTY_ROLE, property);
-            columnList->item(columnList->count() - 1)
-                ->setCheckState(
-                    ranges::contains(
-                        settings->playlist.defaultColumns,
-                        TrackProperty(property)
-                    )
-                        ? Qt::Checked
-                        : Qt::Unchecked
-                );
-        }
-    }
+    inline void setTrackPropertiesLabels();
 
     ma_context context;
     const ma_context_config config = ma_context_config_init();
@@ -100,36 +67,37 @@ class SettingsWindow : public QDialog {
 
     shared_ptr<Settings> settings;
 
-    DeviceMonitor* const deviceMonitor = new DeviceMonitor(this);
-    Ui::SettingsWindow* const ui = setupUi();
+    Ui::SettingsWindow* const ui;
 
-    QStackedWidget* const stackedWidget = ui->stackedWidget;
-    QListWidget* const settingsList = ui->settingsList;
+    QStackedWidget* const stackedWidget;
+    QListWidget* const settingsList;
 
     // Core
-    QLineEdit* const settingsDirectoryInput = ui->settingsDirInput;
-    QLineEdit* const playlistDirectoryInput = ui->playlistDirInput;
-    QComboBox* const themeSelect = ui->themeSelect;
-    QComboBox* const styleSelect = ui->styleSelect;
-    QComboBox* const outputDeviceSelect = ui->outputDeviceSelect;
+    QLineEdit* const settingsDirectoryInput;
+    QLineEdit* const playlistDirectoryInput;
+    QComboBox* const themeSelect;
+    QComboBox* const styleSelect;
+    QComboBox* const outputDeviceSelect;
 
     // Shell
-    QCheckBox* const createMenuItemCheckbox = ui->createMenuItemCheckbox;
-    QListWidget* const enabledAssociationsList = ui->enabledAssociationsList;
+    QCheckBox* const createMenuItemCheckbox;
+    QListWidget* const enabledAssociationsList;
 
-    QPushButton* const enableAllAudioButton = ui->enableAllAudioButton;
-    QPushButton* const enableAllVideoButton = ui->enableAllVideoButton;
-    QPushButton* const enableAllPlaylistsButton = ui->enableAllPlaylistsButton;
-    QPushButton* const enableAllButton = ui->enableAllButton;
-    QPushButton* const clearAllButton = ui->clearAllButton;
-    QPushButton* const setButton = ui->setButton;
+    QPushButton* const enableAllAudioButton;
+    QPushButton* const enableAllVideoButton;
+    QPushButton* const enableAllPlaylistsButton;
+    QPushButton* const enableAllButton;
+    QPushButton* const clearAllButton;
+    QPushButton* const setButton;
 
     // Playlists
-    QCheckBox* const prioritizeExternalCheckbox =
-        ui->prioritizeExternalCheckbox;
-    QCheckBox* const backgroundImageCheckbox = ui->backgroundImageCheckbox;
+    QCheckBox* const prioritizeExternalCheckbox;
 
-    QComboBox* const playlistNamingSelect = ui->playlistNamingSelect;
+    QCheckBox* const backgroundImageCheckbox;
 
-    QListWidget* const columnList = ui->columnList;
+    QComboBox* const playlistNamingSelect;
+
+    QListWidget* const columnList;
+
+    DeviceMonitor* const deviceMonitor;
 };

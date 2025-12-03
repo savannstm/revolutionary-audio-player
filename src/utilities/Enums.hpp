@@ -116,6 +116,7 @@ enum class AudioChannels : u8 {
     Surround222 = 24,
 };
 
+//! OGM is not an official standard by Xiph.org, so we'll never support it
 enum class Associations : u32 {
     None = 0,
     AAC = 1 << 0,
@@ -126,6 +127,9 @@ enum class Associations : u32 {
     MKA = 1 << 5,
     MP3 = 1 << 6,
     OGG = 1 << 7,
+    OGA = 1 << 17,
+    OGV = 1 << 18,
+    OGX = 1 << 19,
     OPUS = 1 << 8,
     WAV = 1 << 9,
     MKV = 1 << 10,

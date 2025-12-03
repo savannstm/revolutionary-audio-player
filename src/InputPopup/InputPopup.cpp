@@ -1,6 +1,7 @@
 #include "InputPopup.hpp"
 
 #include <QHideEvent>
+#include <QLineEdit>
 #include <QVBoxLayout>
 
 InputPopup::InputPopup(QWidget* const parent) :
@@ -39,4 +40,8 @@ void InputPopup::hideEvent(QHideEvent* const event) {
 void InputPopup::closeEvent(QCloseEvent* const event) {
     emit finished(lineEdit->text());
     QFrame::closeEvent(event);
+}
+
+void InputPopup::setValidator(const QValidator* const validator) {
+    lineEdit->setValidator(validator);
 }

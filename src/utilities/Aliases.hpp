@@ -3,20 +3,13 @@
 #include <QString>
 #include <atomic>
 #include <cstddef>
-#include <deque>
 #include <expected>
 #include <filesystem>
-#include <iostream>
-#include <map>
 #include <memory>
 #include <optional>
 #include <qtversionchecks.h>
-#include <qtypes.h>
-#include <queue>
 #include <ranges>
 #include <rapidhash.h>
-#include <set>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -28,10 +21,6 @@ using namespace std::literals::string_view_literals;
 namespace fs = std::filesystem;
 namespace views = std::views;
 namespace ranges = std::ranges;
-
-using qi64 = qint64;
-using qi32 = qint32;
-using qu64 = quint64;
 
 using usize = std::size_t;
 using isize = std::intptr_t;
@@ -53,27 +42,16 @@ using wcstr = const wchar*;
 using fs::path;
 using std::array;
 using std::atomic;
-using std::cerr;
-using std::cout;
-using std::deque;
 using std::expected;
 using std::format;
 using std::make_shared;
 using std::make_unique;
-using std::map;
 using std::nullopt;
 using std::optional;
-using std::println;
-using std::queue;
-using std::set;
 using std::shared_ptr;
 using std::span;
 using std::string;
 using std::string_view;
-using std::to_string;
-using std::tolower;
-using std::toupper;
-using std::tuple;
 using std::unique_ptr;
 using std::vector;
 using std::wstring;
@@ -89,15 +67,10 @@ using std::min;
 using std::powf;
 using std::sqrtf;
 
-using panic = std::runtime_error;
 template <typename T, typename E>
 using result = std::expected<T, E>;
 template <typename E>
-using err = std::unexpected<E>;
-template <typename K, typename V>
-using hashmap = std::unordered_map<K, V>;
-template <typename K>
-using hashset = std::unordered_set<K>;
+using Err = std::unexpected<E>;
 
 template <typename O, typename T>
 [[nodiscard]] constexpr auto as(T&& arg) -> O {

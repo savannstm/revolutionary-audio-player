@@ -1,21 +1,11 @@
 #pragma once
 
-extern "C" {
-#define __STDC_CONSTANT_MACROS
-#include <libavfilter/avfilter.h>
-#include <libavfilter/buffersink.h>
-#include <libavfilter/buffersrc.h>
-#include <libavutil/avutil.h>
-}
-
 #include "Aliases.hpp"
 #include "Constants.hpp"
-#include "ExtractMetadata.hpp"
 #include "FFMpeg.hpp"
+#include "FWD.hpp"
 #include "Logger.hpp"
-#include "Settings.hpp"
-
-#include <miniaudio.h>
+#include "Utils.hpp"
 
 using namespace FFmpeg;
 
@@ -57,7 +47,7 @@ class AudioStreamer : public QObject {
     usize preparedBuffers = 0;
 
     u16 minBufferSize = 0;
-    alignas(4) bool encodedLoselessFormat = false;
+    bool encodedLoselessFormat = false;
 
    signals:
     void streamEnded();
@@ -93,8 +83,11 @@ class AudioStreamer : public QObject {
     };
 
     array<u8, MIN_BUFFER_SIZE> leftoverBuffer;
-    Buffer* buffer;
 
+    shared_ptr<Settings> settings;
+    EqualizerSettings& eqSettings;
+
+    Buffer* buffer;
     usize bufferOffset = 0;
 
     const AVStream* audioStream;
@@ -110,9 +103,6 @@ class AudioStreamer : public QObject {
     AVFilterContext* limiterContext = nullptr;
     AVFilterContext* aformatContext = nullptr;
     AVFilterContext* abuffersinkContext = nullptr;
-
-    shared_ptr<Settings> settings;
-    EqualizerSettings& eqSettings;
 
     u32 sampleRate_ = 0;
     u32 fileKbps = 0;

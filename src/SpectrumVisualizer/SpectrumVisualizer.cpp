@@ -1,8 +1,8 @@
 #include "SpectrumVisualizer.hpp"
 
-#include "Constants.hpp"
 #include "Enums.hpp"
 #include "InputPopup.hpp"
+#include "Settings.hpp"
 
 #include <QDrag>
 #include <QIntValidator>
@@ -11,6 +11,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QScreen>
 #include <numbers>
 
 constexpr QSize MINIMUM_VISUALIZER_SIZE = QSize(128, 32);
@@ -22,7 +23,7 @@ SpectrumVisualizer::SpectrumVisualizer(
 ) :
     QFrame(parent),
     settings(settings_->spectrumVisualizer) {
-    setWindowTitle(tr("Spectrum Analyzer"));
+    setWindowTitle(tr("Spectrum Visualizer"));
     setMinimumSize(MINIMUM_VISUALIZER_SIZE);
     setContextMenuPolicy(Qt::CustomContextMenu);
     setFrameShape(QFrame::Panel);
@@ -88,7 +89,8 @@ void SpectrumVisualizer::buildPeaks() {
         fftSampleCount += frameCount;
     }
 
-    // Inners of FFmpeg's FFT don't allow less than N samples
+    // Inners of FFmpeg's FFT don't allow less than 512 samples, we use fixed
+    // amount that's higher
     if (fftSampleCount < FFT_SAMPLE_COUNT) {
         return;
     }
@@ -285,10 +287,7 @@ void SpectrumVisualizer::mousePressEvent(QMouseEvent* const event) {
     const bool isDetached = this->isDetached();
 
     if (!isDetached && event->type() == QEvent::MouseButtonDblClick) {
-        setParent(
-            nullptr,
-            Qt::Window | Qt::CustomizeWindowHint | Qt::WindowTitleHint
-        );
+        setParent(nullptr, Qt::Dialog);
         show();
 
         setContextMenuPolicy(Qt::CustomContextMenu);
@@ -297,7 +296,7 @@ void SpectrumVisualizer::mousePressEvent(QMouseEvent* const event) {
         auto* const drag = new QDrag(this);
         auto* const mime = new QMimeData();
 
-        mime->setText("spectrumvisualizer");
+        mime->setText(u"spectrumvisualizer"_s);
 
         drag->setMimeData(mime);
         drag->exec(Qt::MoveAction);
@@ -321,6 +320,8 @@ void SpectrumVisualizer::showCustomContextMenu() {
     QAction* const equalAction = modeMenu->addAction(tr("Peak (Equal)"));
     equalAction->setCheckable(true);
 
+    modeMenu->addSeparator();
+
     QAction* const waveformAction = modeMenu->addAction(tr("Waveform"));
     waveformAction->setCheckable(true);
 
@@ -342,27 +343,31 @@ void SpectrumVisualizer::showCustomContextMenu() {
     menu->addMenu(modeMenu);
 
     if (settings.mode != SpectrumVisualizerMode::Waveform) {
-        auto* const bandsMenu = new QMenu(menu);
-        bandsMenu->setTitle(tr("Band Count"));
+        menu->addSeparator();
 
-        QAction* const eighteenBandsAction =
+        auto* const bandsMenu = new QMenu(menu);
+        bandsMenu->setTitle(tr("Peak Count"));
+
+        QAction* const eighteenPeaksAction =
             bandsMenu->addAction(u"18"_s, this, [this] -> void {
             setBandCount(Bands::Eighteen);
         });
-        eighteenBandsAction->setCheckable(true);
+        eighteenPeaksAction->setCheckable(true);
 
-        QAction* const thirtyBandsAction =
+        QAction* const thirtyPeaksAction =
             bandsMenu->addAction(u"30"_s, this, [this] -> void {
             setBandCount(Bands::Thirty);
         });
-        thirtyBandsAction->setCheckable(true);
+        thirtyPeaksAction->setCheckable(true);
+
+        // TODO: Allow peaks count relative to the width option
 
         switch (settings.bands) {
             case Bands::Eighteen:
-                eighteenBandsAction->setChecked(true);
+                eighteenPeaksAction->setChecked(true);
                 break;
             case Bands::Thirty:
-                thirtyBandsAction->setChecked(true);
+                thirtyPeaksAction->setChecked(true);
                 break;
             default:
                 break;
@@ -370,7 +375,7 @@ void SpectrumVisualizer::showCustomContextMenu() {
 
         menu->addMenu(bandsMenu);
 
-        menu->addAction(tr("Change Peak Padding"), this, [this] -> void {
+        menu->addAction(tr("Change Peak Gap"), this, [this] -> void {
             auto* const inputPopup = new InputPopup(
                 QString::number(settings.peakPadding),
                 QCursor::pos(),
@@ -414,6 +419,8 @@ void SpectrumVisualizer::showCustomContextMenu() {
                 Qt::SingleShotConnection
             );
         });
+
+        menu->addSeparator();
     }
 
     auto* const presetMenu = new QMenu(menu);
@@ -450,6 +457,8 @@ void SpectrumVisualizer::showCustomContextMenu() {
     menu->addMenu(presetMenu);
 
     if (isDetached) {
+        menu->addSeparator();
+
         const bool isFullscreen = isFullScreen();
         const bool isOnTop = (windowFlags() & Qt::WindowStaysOnTopHint) != 0;
 
@@ -510,4 +519,27 @@ void SpectrumVisualizer::toggleFullscreen(const bool isFullscreen) {
     } else {
         showFullScreen();
     }
+}
+
+void SpectrumVisualizer::closeEvent(QCloseEvent* const event) {
+    event->ignore();
+    emit closed();
+}
+
+constexpr void SpectrumVisualizer::setMode(const SpectrumVisualizerMode mode_) {
+    settings.mode = mode_;
+}
+
+void SpectrumVisualizer::start() {
+    timer.start(SECOND_MS / u16(screen()->refreshRate()));
+}
+
+void SpectrumVisualizer::stop() {
+    timer.stop();
+}
+
+constexpr void SpectrumVisualizer::setBandCount(const Bands bands) {
+    settings.bands = bands;
+    frequencies =
+        span<const f32>(getFrequenciesForBands(bands), usize(settings.bands));
 }

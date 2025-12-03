@@ -1,7 +1,8 @@
 #pragma once
 
-#include "AudioStreamer.hpp"
-#include "Settings.hpp"
+#include "Aliases.hpp"
+#include "Constants.hpp"
+#include "FWD.hpp"
 
 #include <QObject>
 #include <miniaudio.h>
@@ -20,63 +21,18 @@ class AudioWorker : public QObject {
     ~AudioWorker() override;
 
     void start(const QString& path, u16 startSecond = UINT16_MAX);
+    void pause();
+    void stop();
+    void resume();
 
-    void pause() {
-        if (deviceInitialized) {
-            ma_device_stop(&device);
-        }
-    }
+    void seekSecond(u16 second);
+    void setVolume(f32 volume);
 
-    void stop() {
-        if (deviceInitialized) {
-            ma_device_stop(&device);
-        }
+    [[nodiscard]] auto state() const -> ma_device_state;
 
-        audioStreamer->reset();
-    }
+    void changeAudioDevice();
 
-    void resume() {
-        if (deviceInitialized) {
-            ma_device_start(&device);
-        }
-    }
-
-    void seekSecond(const u16 second) {
-        seeked = true;
-
-        audioStreamer->seekSecond(second);
-        ma_device_start(&device);
-    }
-
-    constexpr void setVolume(const f32 volume) {
-        volume_ = volume;
-
-        if (deviceInitialized) {
-            ma_device_set_master_volume(&device, volume);
-        }
-    }
-
-    [[nodiscard]] auto state() const -> ma_device_state {
-        if (!deviceInitialized) {
-            return ma_device_state_uninitialized;
-        }
-
-        return ma_device_get_state(&device);
-    }
-
-    void changeAudioDevice() {
-        if (deviceInitialized) {
-            const bool started = state() == ma_device_state_started;
-
-            ma_device_uninit(&device);
-
-            if (started) {
-                startDevice();
-            }
-        }
-    }
-
-    void changeGain(const u8 band) { audioStreamer->changeGain(band); }
+    void changeGain(u8 band);
 
     void toggleSpectrumVisualizer(const bool enabled) {
         spectrumVisualizerEnabled = enabled;
@@ -84,9 +40,7 @@ class AudioWorker : public QObject {
 
     void toggleVisualizer(const bool enabled) { visualizerEnabled = enabled; }
 
-    [[nodiscard]] auto channels() -> AudioChannels {
-        return audioStreamer->channels();
-    }
+    [[nodiscard]] auto channels() -> AudioChannels;
 
    signals:
     void progressUpdated(u16 second);
@@ -102,14 +56,9 @@ class AudioWorker : public QObject {
         u32 sampleCount
     );
 
-    void startDevice();
-
-    void prepareBuffer() { audioStreamer->prepareBuffer(); }
-
-    void endStream() {
-        ma_device_stop(&device);
-        emit streamEnded();
-    }
+    inline void startDevice();
+    inline void prepareBuffer();
+    inline void endStream();
 
     ma_device device;
     ma_device_config deviceConfig;

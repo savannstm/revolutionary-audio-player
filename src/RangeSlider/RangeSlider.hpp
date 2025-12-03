@@ -3,23 +3,19 @@
 #include "Aliases.hpp"
 
 #include <QKeyEvent>
-#include <QMouseEvent>
 #include <QPainter>
-#include <QStyle>
-#include <QStyleOption>
 #include <QWidget>
-#include <algorithm>
-#include <cmath>
 
 constexpr u16 DEFAULT_MAX = 100;
 constexpr u16 MINIMUM_WIDTH = 128;
 constexpr u16 MINIMUM_HEIGHT = 48;
+constexpr u16 HANDLE_RADIUS = 8;
 
 class RangeSlider : public QWidget {
     Q_OBJECT
 
    public:
-    explicit RangeSlider(QWidget* parent = nullptr) :
+    explicit RangeSlider(QWidget* const parent = nullptr) :
         QWidget(parent),
         maximumValue(DEFAULT_MAX),
         highVal(DEFAULT_MAX) {
@@ -67,9 +63,9 @@ class RangeSlider : public QWidget {
 
         minimumValue = minVal;
         maximumValue = maxVal;
-        lowVal = std::max<u16>(lowVal, minVal);
-        highVal = std::min<u16>(highVal, maxVal);
-        lowVal = std::min<u16>(lowVal, highVal);
+        lowVal = max<u16>(lowVal, minVal);
+        highVal = min<u16>(highVal, maxVal);
+        lowVal = min<u16>(lowVal, highVal);
 
         update();
         emit minimumChanged(minimumValue);
@@ -114,7 +110,7 @@ class RangeSlider : public QWidget {
         return { MINIMUM_WIDTH, MINIMUM_HEIGHT };
     }
 
-    void paintEvent(QPaintEvent* /* event */) override {
+    void paintEvent(QPaintEvent* const /* event */) override {
         QPainter painter = QPainter(this);
         painter.setRenderHint(QPainter::Antialiasing);
 
@@ -138,7 +134,7 @@ class RangeSlider : public QWidget {
         painter.drawEllipse(highHandle);
     }
 
-    void mousePressEvent(QMouseEvent* event) override {
+    void mousePressEvent(QMouseEvent* const event) override {
         if ((event->buttons() & Qt::LeftButton) != 0) {
             const u16 xPos = event->pos().x();
             const u16 hit = hitTest(event->pos());
@@ -169,7 +165,7 @@ class RangeSlider : public QWidget {
         }
     }
 
-    void mouseMoveEvent(QMouseEvent* event) override {
+    void mouseMoveEvent(QMouseEvent* const event) override {
         if (dragging != Dragging::None) {
             const u16 xPos = event->pos().x();
             const u16 newPos = xPos - dragOffset;
@@ -185,14 +181,13 @@ class RangeSlider : public QWidget {
         }
     }
 
-    void mouseReleaseEvent(QMouseEvent* /* event */) override {
+    void mouseReleaseEvent(QMouseEvent* const /* event */) override {
         dragging = None;
     }
 
-    void keyPressEvent(QKeyEvent* event) override {
-        const u16 step = std::max<u16>(1, (maximumValue - minimumValue) / 100);
-        const u16 bigStep =
-            std::max<u16>(1, (maximumValue - minimumValue) / 10);
+    void keyPressEvent(QKeyEvent* const event) override {
+        const u16 step = max<u16>(1, (maximumValue - minimumValue) / 100);
+        const u16 bigStep = max<u16>(1, (maximumValue - minimumValue) / 10);
 
         const bool shift = (event->modifiers() & Qt::ShiftModifier) != 0;
         bool handled = true;
@@ -267,7 +262,7 @@ class RangeSlider : public QWidget {
     }
 
     [[nodiscard]] auto handleRectForValue(const u16 value) const -> QRect {
-        const u16 radius = handleRadius;
+        const u16 radius = HANDLE_RADIUS;
         const QPoint point = posToPoint(value);
 
         return { point.x() - radius,
@@ -336,8 +331,6 @@ class RangeSlider : public QWidget {
 
         return -1;
     }
-
-    constexpr static u16 handleRadius = 8;
 
     u16 minimumValue = 0;
     u16 maximumValue = 0;

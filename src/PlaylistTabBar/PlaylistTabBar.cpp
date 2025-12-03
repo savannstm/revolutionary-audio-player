@@ -1,11 +1,19 @@
 #include "PlaylistTabBar.hpp"
 
-#include "Enums.hpp"
 #include "PlaylistTab.hpp"
 
+#include <QDragEnterEvent>
+#include <QHBoxLayout>
 #include <QMimeData>
+#include <QScrollArea>
 
-PlaylistTabBar::PlaylistTabBar(QWidget* const parent) : QWidget(parent) {
+PlaylistTabBar::PlaylistTabBar(QWidget* const parent) :
+    QWidget(parent),
+    indicatorLine(new QFrame(this)),
+    scrollArea(new QScrollArea(this)),
+    tabContainer(new QWidget(scrollArea)),
+    tabContainerLayout(new QHBoxLayout(tabContainer)),
+    mainLayout(new QHBoxLayout(this)) {
     setAcceptDrops(true);
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
@@ -37,7 +45,7 @@ PlaylistTabBar::PlaylistTabBar(QWidget* const parent) : QWidget(parent) {
 }
 
 PlaylistTabBar::~PlaylistTabBar() {
-    qDeleteAll(tabs);
+    qDeleteAll(tabs_);
 }
 
 void PlaylistTabBar::insertTab(
@@ -51,7 +59,7 @@ void PlaylistTabBar::insertTab(
 
     auto* const tab = new PlaylistTab(label, closable, this);
 
-    tabs.insert(index, tab);
+    tabs_.insert(index, tab);
     tabContainerLayout->insertWidget(index, tab);
 
     if (closable) {
@@ -97,13 +105,13 @@ void PlaylistTabBar::setCurrentIndex(const i8 index) {
         return;
     }
 
-    if (previousIndex != -1 && tabs.size() > previousIndex) {
-        tabs[previousIndex]->setChecked(false);
+    if (previousIndex != -1 && tabs_.size() > previousIndex) {
+        tabs_[previousIndex]->setChecked(false);
     }
 
     currentIndex_ = index;
     previousIndex = index;
-    tabs[index]->setChecked(true);
+    tabs_[index]->setChecked(true);
 }
 
 void PlaylistTabBar::removeTabs(const TabRemoveMode mode, const u8 startIndex) {
@@ -216,5 +224,40 @@ void PlaylistTabBar::dragMoveEvent(QDragMoveEvent* const event) {
         indicatorLine->hide();
     }
 
+    event->acceptProposedAction();
+}
+
+void PlaylistTabBar::addTab(const QString& label) {
+    insertTab(tabCount(), label, true);
+};
+
+void PlaylistTabBar::removeTab(const u8 index) {
+    PlaylistTab* const tab = tabs_.takeAt(index);
+    tabContainerLayout->removeWidget(tab);
+    delete tab;
+};
+
+void PlaylistTabBar::setScrollAreaWidth(const u16 width) {
+    scrollArea->setMinimumWidth(width);
+}
+
+void PlaylistTabBar::setTabColor(const u8 index, const QString& color) {
+    tabs_[index]->setColor(color);
+}
+
+[[nodiscard]] auto PlaylistTabBar::tabColor(const u8 index) const
+    -> const QString& {
+    return tabs_[index]->color();
+}
+
+void PlaylistTabBar::setTabLabel(const u8 index, const QString& label) {
+    tabs_[index]->setLabelText(label);
+};
+
+[[nodiscard]] auto PlaylistTabBar::tabLabel(const u8 index) const -> QString {
+    return tabs_[index]->labelText();
+};
+
+void PlaylistTabBar::dragEnterEvent(QDragEnterEvent* event) {
     event->acceptProposedAction();
 }

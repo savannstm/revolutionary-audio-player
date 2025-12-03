@@ -1,13 +1,10 @@
 #pragma once
 
-#include "CustomInput.hpp"
-#include "Settings.hpp"
-#include "ui_EqualizerMenu.h"
+#include "Aliases.hpp"
+#include "Constants.hpp"
+#include "FWD.hpp"
 
-#include <QComboBox>
 #include <QDialog>
-#include <QHBoxLayout>
-#include <QLabel>
 
 QT_BEGIN_NAMESPACE
 
@@ -34,7 +31,7 @@ class EqualizerMenu : public QDialog {
         QWidget* parent = nullptr
     );
 
-    ~EqualizerMenu() override { delete ui; }
+    ~EqualizerMenu() override;
 
     void saveSettings();
     void keyPressEvent(QKeyEvent* event) override;
@@ -80,40 +77,36 @@ class EqualizerMenu : public QDialog {
         optional<array<i8, THIRTY_BANDS>> bands = nullopt
     );
 
-    auto setupUi() -> Ui::EqualizerMenu* {
-        auto* const ui_ = new Ui::EqualizerMenu();
-        ui_->setupUi(this);
-        return ui_;
-    }
+    inline auto setupUi() -> Ui::EqualizerMenu*;
 
     array<SliderContainer, THIRTY_BANDS> sliders;
 
-    Ui::EqualizerMenu* const ui = setupUi();
+    Ui::EqualizerMenu* const ui;
 
     EqualizerSettings& settings;
 
-    QVBoxLayout* const layout = ui->verticalLayout;
+    QVBoxLayout* const layout;
 
-    QWidget* const firstSliderRow = ui->firstSliderRow;
-    QHBoxLayout* const firstSliderLayout = ui->firstSliderLayout;
+    QWidget* const firstSliderRow;
+    QHBoxLayout* const firstSliderLayout;
 
-    QWidget* const secondSliderRow = ui->secondSliderRow;
-    QHBoxLayout* const secondSliderLayout = ui->secondSliderLayout;
+    QWidget* const secondSliderRow;
+    QHBoxLayout* const secondSliderLayout;
 
-    QLabel* const bandSelectLabel = ui->bandSelectLabel;
-    QComboBox* const bandSelect = ui->bandSelect;
+    QLabel* const bandSelectLabel;
+    QComboBox* const bandSelect;
 
-    QLabel* const presetSelectLabel = ui->presetSelectLabel;
-    QComboBox* const presetSelect = ui->presetSelect;
+    QLabel* const presetSelectLabel;
+    QComboBox* const presetSelect;
 
-    QPushButton* const resetGainsButton = ui->resetGainsButton;
-    QPushButton* const newPresetButton = ui->newPresetButton;
-    QPushButton* const deletePresetButton = ui->deletePresetButton;
+    QPushButton* const resetGainsButton;
+    QPushButton* const newPresetButton;
+    QPushButton* const deletePresetButton;
 
-    QPushButton* const importPresetButton = ui->importPresetButton;
-    QPushButton* const exportPresetButton = ui->exportPresetButton;
+    QPushButton* const importPresetButton;
+    QPushButton* const exportPresetButton;
 
-    QPushButton* const toggleButton = ui->toggleButton;
+    QPushButton* const toggleButton;
 
     u8 previousPresetIndex = 0;
 };

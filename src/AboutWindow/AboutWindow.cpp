@@ -1,5 +1,7 @@
 #include "AboutWindow.hpp"
 
+#include "Constants.hpp"
+#include "ui_AboutWindow.h"
 #include "version.h"
 
 #include <libavutil/ffversion.h>
@@ -9,12 +11,14 @@
 #endif
 
 auto AboutWindow::setupUi() -> Ui::AboutWindow* {
-    auto* ui_ = new Ui::AboutWindow();
+    auto* const ui_ = new Ui::AboutWindow();
     ui_->setupUi(this);
     return ui_;
 }
 
-AboutWindow::AboutWindow(MainWindow* parent) : QDialog(parent) {
+AboutWindow::AboutWindow(QWidget* const parent) :
+    QDialog(parent),
+    ui(setupUi()) {
     ui->versionLabel->setText(u"RAP v"_s + APP_VERSION);
     ui->iconLabel->setPixmap(QPixmap(
         QApplication::applicationDirPath() + '/' +
@@ -33,4 +37,12 @@ AboutWindow::AboutWindow(MainWindow* parent) : QDialog(parent) {
 
 AboutWindow::~AboutWindow() {
     delete ui;
+}
+
+void AboutWindow::changeEvent(QEvent* const event) {
+    if (event->type() == QEvent::LanguageChange) {
+        ui->retranslateUi(this);
+    }
+
+    QDialog::changeEvent(event);
 }

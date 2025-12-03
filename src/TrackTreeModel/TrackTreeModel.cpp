@@ -1,7 +1,6 @@
 #include "TrackTreeModel.hpp"
 
 #include "Constants.hpp"
-#include "Enums.hpp"
 #include "TrackTreeItem.hpp"
 
 TrackTreeModel::TrackTreeModel(QObject* const parent) :
@@ -47,4 +46,28 @@ auto TrackTreeModel::removeRows(
     }
 
     return QStandardItemModel::removeRows(row, count, parent);
+}
+
+auto TrackTreeModel::moveRows(
+    const QModelIndex& srcParent,
+    i32 src,
+    i32 count,
+    const QModelIndex& destParent,
+    i32 dest
+) -> bool {}
+
+[[nodiscard]] auto TrackTreeModel::item(const i32 row, const i32 column) const
+    -> TrackTreeItem* {
+    return as<TrackTreeItem*>(QStandardItemModel::item(row, column));
+}
+
+[[nodiscard]] auto TrackTreeModel::flags(const QModelIndex& index) const
+    -> Qt::ItemFlags {
+    const Qt::ItemFlags defaultFlags = QStandardItemModel::flags(index);
+
+    if (!index.isValid()) {
+        return Qt::ItemIsDropEnabled | defaultFlags;
+    }
+
+    return defaultFlags & ~Qt::ItemIsDropEnabled;
 }

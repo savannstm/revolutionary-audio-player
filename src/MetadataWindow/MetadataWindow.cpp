@@ -1,7 +1,10 @@
 #include "MetadataWindow.hpp"
 
 #include "Enums.hpp"
-#include "TrackProperties.hpp"
+#include "Utils.hpp"
+
+#include <QTreeWidget>
+#include <QVBoxLayout>
 
 constexpr QSize METADATA_WINDOW_SIZE = QSize(800, 600);
 
@@ -9,7 +12,9 @@ MetadataWindow::MetadataWindow(
     const TrackMetadata& metadata,
     QWidget* const parent
 ) :
-    QDialog(parent) {
+    QDialog(parent),
+    treeWidget(new QTreeWidget(this)),
+    layout(new QVBoxLayout(this)) {
     setWindowTitle(metadata[TrackProperty::Title] + tr(": Metadata"));
 
     treeWidget->setColumnCount(2);
