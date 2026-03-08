@@ -14,6 +14,9 @@ inline void updateFileAssociationsOS(
     const Associations associations
 ) {}
 
+inline void
+updateFileAssociationsPathOS(const QString& appPath, const QString& iconPath) {}
+
 inline void createContextMenuEntryOS(const QString& appPath) {}
 
 inline void removeContextMenuEntryOS() {}

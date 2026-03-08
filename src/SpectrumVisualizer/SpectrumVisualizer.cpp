@@ -1,5 +1,6 @@
 #include "SpectrumVisualizer.hpp"
 
+#include "Constants.hpp"
 #include "Enums.hpp"
 #include "InputPopup.hpp"
 #include "Settings.hpp"
@@ -14,10 +15,7 @@
 #include <QScreen>
 #include <numbers>
 
-constexpr QSize MINIMUM_VISUALIZER_SIZE = QSize(128, 32);
-
 SpectrumVisualizer::SpectrumVisualizer(
-    const f32* const bufferData,
     const shared_ptr<Settings>& settings_,
     QWidget* const parent
 ) :
@@ -33,9 +31,7 @@ SpectrumVisualizer::SpectrumVisualizer(
     setBandCount(settings.bands);
     gradient = QGradient(settings.preset);
 
-    buffer = bufferData;
-
-    AVTXContext* fftCtxPtr = nullptr;
+    AVTXContext* fftCtxPtr = fftCtx.get();
 
     av_tx_init(
         &fftCtxPtr,
@@ -57,123 +53,6 @@ SpectrumVisualizer::SpectrumVisualizer(
         this,
         &SpectrumVisualizer::showCustomContextMenu
     );
-
-    connect(&timer, &QTimer::timeout, this, [this] -> void {
-        buildPeaks();
-        update();
-    });
-}
-
-void SpectrumVisualizer::buildPeaks() {
-    const u16 frameCount = (bufferSize / F32_SAMPLE_SIZE) / u8(channels);
-
-    if (channels == AudioChannels::Mono) {
-        memcpy(fftSamples.data() + fftSampleCount, buffer, bufferSize);
-    } else {
-        for (const u16 frame : range(0, frameCount)) {
-            f32 mixedSample = 0.0F;
-
-            for (const u8 channel : range(0, u8(channels))) {
-                const u32 sample = (frame * u8(channels)) + channel;
-                mixedSample += buffer[sample];
-            }
-
-            fftSamples[frame + fftSampleCount] = mixedSample / f32(channels);
-        }
-    }
-
-    if (channels == AudioChannels::Surround51 ||
-        bufferSize == MIN_BUFFER_SIZE_3BYTES) {
-        fftSampleCount += (1 << av_ceil_log2_c(frameCount));
-    } else {
-        fftSampleCount += frameCount;
-    }
-
-    // Inners of FFmpeg's FFT don't allow less than 512 samples, we use fixed
-    // amount that's higher
-    if (fftSampleCount < FFT_SAMPLE_COUNT) {
-        return;
-    }
-
-    fftSampleCount = 0;
-
-    for (const u16 idx : range(0, FFT_SAMPLE_COUNT)) {
-        constexpr f32 TWO_PI = std::numbers::pi_v<f32> * 2.0F;
-        const f32 hammingWindow =
-            0.54F -
-            (0.46F * cosf(TWO_PI * f32(idx) / f32(FFT_SAMPLE_COUNT - 1)));
-        fftSamples[idx] *= hammingWindow;
-    }
-
-    if (settings.mode != SpectrumVisualizerMode::Waveform) {
-        fft(fftCtx.get(), fftOutput.data(), fftSamples.data(), F32_SAMPLE_SIZE);
-
-        // Skip DC component
-        const auto fftOutputNoDC = span<AVComplexFloat>(
-            fftOutput.data() + 1,
-            FFT_OUTPUT_SAMPLE_COUNT - 1
-        );
-
-        /* CODE STOLEN FROM AUDACIOUS AUDIO PLAYER STARTS */
-        for (const u16 sample : range(0, FFT_OUTPUT_SAMPLE_COUNT - 1)) {
-            const AVComplexFloat complex = fftOutputNoDC[sample];
-
-            fftMagnitudes[sample] =
-                (sqrtf((complex.re * complex.re) + (complex.im * complex.im)) *
-                 2.0F) /
-                f32(FFT_SAMPLE_COUNT);
-        }
-
-        // Special treatment for Nyquist component
-        const AVComplexFloat nyquistComponent =
-            fftOutput[FFT_OUTPUT_SAMPLE_COUNT - 1];
-
-        fftMagnitudes[FFT_OUTPUT_SAMPLE_COUNT - 1] =
-            sqrtf(
-                (nyquistComponent.re * nyquistComponent.re) +
-                (nyquistComponent.im * nyquistComponent.im)
-            ) /
-            f32(FFT_SAMPLE_COUNT);
-
-        // Compute bins ranging from 0 to 22 kHz
-        for (const u8 band : range(0, u8(settings.bands) + 1)) {
-            fftBandBins[band] =
-                powf(FFT_OUTPUT_SAMPLE_COUNT, f32(band) / f32(settings.bands)) -
-                0.5F;
-        }
-
-        // Clear the peaks
-        ranges::fill_n(peaks.begin(), u8(settings.bands), 0.0F);
-
-        // Calculate peak magnitudes
-        for (const u8 band : range(0, u8(settings.bands))) {
-            const u16 start = u16(ceilf(fftBandBins[band]));
-            const u16 end = u16(floorf(fftBandBins[band + 1]));
-            f32 magnitude = 0;
-
-            if (end < start) {
-                magnitude += fftMagnitudes[end] *
-                             (fftBandBins[band + 1] - fftBandBins[band]);
-            } else {
-                if (start > 0) {
-                    magnitude += fftMagnitudes[start - 1] *
-                                 (f32(start) - fftBandBins[band]);
-                }
-
-                for (const u16 idx : range(start, end)) {
-                    magnitude += fftMagnitudes[idx];
-                }
-
-                if (end < FFT_OUTPUT_SAMPLE_COUNT) {
-                    magnitude +=
-                        fftMagnitudes[end] * (fftBandBins[band + 1] - f32(end));
-                }
-            }
-
-            peaks[band] = max<f32>(magnitude, peaks[band]);
-        }
-    }
-    /* CODE STOLEN FROM AUDACIOUS AUDIO PLAYER ENDS */
 }
 
 void SpectrumVisualizer::paintEvent(QPaintEvent* const event) {
@@ -183,15 +62,15 @@ void SpectrumVisualizer::paintEvent(QPaintEvent* const event) {
     const u16 width = this->width();
     const u16 height = this->height();
 
-    if (settings.mode == SpectrumVisualizerMode::Waveform) {
+    if (settings.mode == Mode::Waveform) {
         painter.setRenderHint(QPainter::Antialiasing);
 
         const f32 centerY = f32(height) / 2.0F;
-        const f32 sampleWidth = f32(width) / f32(FFT_SAMPLE_COUNT);
+        const f32 sampleWidth = f32(width) / f32(samples.size());
 
         f32 maxAmplitude = 0.0F;
-        for (const u16 idx : range(0, FFT_SAMPLE_COUNT)) {
-            maxAmplitude = max(maxAmplitude, fabsf(fftSamples[idx]));
+        for (const u16 idx : range<u16>(0, samples.size())) {
+            maxAmplitude = max(maxAmplitude, fabsf(samples[idx]));
         }
 
         if (maxAmplitude == 0.0F) {
@@ -201,9 +80,9 @@ void SpectrumVisualizer::paintEvent(QPaintEvent* const event) {
         QPainterPath waveformPath;
         waveformPath.moveTo(0, centerY);
 
-        for (const u16 idx : range(0, FFT_SAMPLE_COUNT)) {
+        for (const u16 idx : range<u16>(0, samples.size())) {
             const f32 xPos = f32(idx) * sampleWidth;
-            const f32 normalizedSample = fftSamples[idx] / maxAmplitude;
+            const f32 normalizedSample = samples[idx] / maxAmplitude;
             const f32 yPos = centerY - (normalizedSample * centerY * 0.9F);
 
             if (idx == 0) {
@@ -213,7 +92,7 @@ void SpectrumVisualizer::paintEvent(QPaintEvent* const event) {
             }
         }
 
-        QPen pen = QPen(gradient.stops().first().second);
+        auto pen = QPen(gradient.stops().first().second);
         pen.setWidth(2);
         painter.setPen(pen);
         painter.drawPath(waveformPath);
@@ -222,7 +101,7 @@ void SpectrumVisualizer::paintEvent(QPaintEvent* const event) {
 
         f32 maxPeak = 1;
 
-        if (settings.mode == SpectrumVisualizerMode::Relative) {
+        if (settings.mode == Mode::Relative) {
             maxPeak = *ranges::max_element(
                 span(peaks.begin(), usize(settings.bands))
             );
@@ -232,11 +111,12 @@ void SpectrumVisualizer::paintEvent(QPaintEvent* const event) {
             }
         }
 
-        for (const u8 band : range(0, u8(settings.bands))) {
+        for (const u8 band : range<u8>(0, u8(settings.bands))) {
             const f32 peak = peaks[band];
+
             f32 normalizedPeak;
 
-            if (settings.mode == SpectrumVisualizerMode::Relative) {
+            if (settings.mode == Mode::Relative) {
                 normalizedPeak = peak / maxPeak;
             } else {
                 constexpr f32 MIN_DBFS = -40;
@@ -246,7 +126,7 @@ void SpectrumVisualizer::paintEvent(QPaintEvent* const event) {
                     (20.0F * log10f(peak)) + settings.gainFactor;
                 normalizedPeak = (dBFSPeak - MIN_DBFS) / (MAX_DBFS - MIN_DBFS);
 
-                if (settings.mode == SpectrumVisualizerMode::Equal) {
+                if (settings.mode == Mode::Equal) {
                     constexpr f32 MIN_NORMALIZED = 0.35F;
 
                     if (normalizedPeak < MIN_NORMALIZED) {
@@ -276,7 +156,6 @@ void SpectrumVisualizer::paintEvent(QPaintEvent* const event) {
 void SpectrumVisualizer::reset() {
     ranges::fill_n(peaks.data(), u8(settings.bands), 0);
     update();
-    stop();
 }
 
 auto SpectrumVisualizer::isDetached() -> bool {
@@ -326,23 +205,23 @@ void SpectrumVisualizer::showCustomContextMenu() {
     waveformAction->setCheckable(true);
 
     switch (settings.mode) {
-        case SpectrumVisualizerMode::Relative:
+        case Mode::Relative:
             relativeAction->setChecked(true);
             break;
-        case SpectrumVisualizerMode::DBFS:
+        case Mode::DBFS:
             dBFSAction->setChecked(true);
             break;
-        case SpectrumVisualizerMode::Equal:
+        case Mode::Equal:
             equalAction->setChecked(true);
             break;
-        case SpectrumVisualizerMode::Waveform:
+        case Mode::Waveform:
             waveformAction->setChecked(true);
             break;
     }
 
     menu->addMenu(modeMenu);
 
-    if (settings.mode != SpectrumVisualizerMode::Waveform) {
+    if (settings.mode != Mode::Waveform) {
         menu->addSeparator();
 
         auto* const bandsMenu = new QMenu(menu);
@@ -427,7 +306,7 @@ void SpectrumVisualizer::showCustomContextMenu() {
     presetMenu->setTitle(tr("Presets"));
 
     constexpr auto unfilteredPresetRange =
-        range(1, QGradient::Preset::NumPresets);
+        range<u16>(1, QGradient::Preset::NumPresets);
 
     constexpr array<u16, 10> missingPresets = { 39,  40,  74, 141, 130,
                                                 135, 119, 71, 27,  105 };
@@ -485,13 +364,13 @@ void SpectrumVisualizer::showCustomContextMenu() {
     }
 
     if (selectedAction == relativeAction) {
-        settings.mode = SpectrumVisualizerMode::Relative;
+        settings.mode = Mode::Relative;
     } else if (selectedAction == dBFSAction) {
-        settings.mode = SpectrumVisualizerMode::DBFS;
+        settings.mode = Mode::DBFS;
     } else if (selectedAction == equalAction) {
-        settings.mode = SpectrumVisualizerMode::Equal;
+        settings.mode = Mode::Equal;
     } else if (selectedAction == waveformAction) {
-        settings.mode = SpectrumVisualizerMode::Waveform;
+        settings.mode = Mode::Waveform;
     }
 
     delete menu;
@@ -504,7 +383,7 @@ void SpectrumVisualizer::toggleFullscreen(const bool isFullscreen) {
         const QScreen* currentScreen = screen();
 
         if (currentScreen == nullptr) {
-            currentScreen = QApplication::primaryScreen();
+            currentScreen = qApp->primaryScreen();
         }
 
         const QRect screenGeometry = currentScreen->availableGeometry();
@@ -526,20 +405,91 @@ void SpectrumVisualizer::closeEvent(QCloseEvent* const event) {
     emit closed();
 }
 
-constexpr void SpectrumVisualizer::setMode(const SpectrumVisualizerMode mode_) {
+constexpr void SpectrumVisualizer::setMode(const Mode mode_) {
     settings.mode = mode_;
-}
-
-void SpectrumVisualizer::start() {
-    timer.start(SECOND_MS / u16(screen()->refreshRate()));
-}
-
-void SpectrumVisualizer::stop() {
-    timer.stop();
 }
 
 constexpr void SpectrumVisualizer::setBandCount(const Bands bands) {
     settings.bands = bands;
     frequencies =
         span<const f32>(getFrequenciesForBands(bands), usize(settings.bands));
+}
+
+void SpectrumVisualizer::buildPeaks() {
+    for (const u16 idx : range<u16>(0, FFT_SAMPLE_COUNT)) {
+        constexpr f32 TWO_PI = std::numbers::pi_v<f32> * 2.0F;
+        const f32 hammingWindow =
+            0.54F -
+            (0.46F * cosf(TWO_PI * f32(idx) / f32(FFT_SAMPLE_COUNT - 1)));
+        samples[idx] *= hammingWindow;
+    }
+
+    if (settings.mode != SpectrumVisualizer::Mode::Waveform) {
+        fft(fftCtx.get(), fftOutput.data(), samples.data(), F32_SIZE);
+
+        // Skip DC component
+        const auto fftOutputNoDC = span<const AVComplexFloat>(
+            fftOutput.data() + 1,
+            FFT_OUTPUT_COUNT - 1
+        );
+
+        /* CODE STOLEN FROM AUDACIOUS AUDIO PLAYER STARTS */
+        for (const u16 sample : range<u16>(0, FFT_OUTPUT_COUNT - 1)) {
+            const AVComplexFloat complex = fftOutputNoDC[sample];
+
+            fftMagnitudes[sample] =
+                (sqrtf((complex.re * complex.re) + (complex.im * complex.im)) *
+                 2.0F) /
+                f32(FFT_OUTPUT_COUNT);
+        }
+
+        // Special treatment for Nyquist component
+        const AVComplexFloat nyquistComponent = fftOutput[FFT_OUTPUT_COUNT - 1];
+
+        fftMagnitudes[FFT_OUTPUT_COUNT - 1] =
+            sqrtf(
+                (nyquistComponent.re * nyquistComponent.re) +
+                (nyquistComponent.im * nyquistComponent.im)
+            ) /
+            f32(FFT_OUTPUT_COUNT);
+
+        // Compute bins ranging from 0 to 22 kHz
+        for (const u8 band : range(0, u8(settings.bands) + 1)) {
+            fftBandBins[band] =
+                powf(f32(FFT_OUTPUT_COUNT), f32(band) / f32(settings.bands)) -
+                0.5F;
+        }
+
+        // Clear the peaks
+        ranges::fill_n(peaks.begin(), u8(settings.bands), 0.0F);
+
+        // Calculate peak magnitudes
+        for (const u8 band : range<u8>(0, u8(settings.bands))) {
+            const u16 start = u16(ceilf(fftBandBins[band]));
+            const u16 end = u16(floorf(fftBandBins[band + 1]));
+            f32 magnitude = 0;
+
+            if (end < start) {
+                magnitude += fftMagnitudes[end] *
+                             (fftBandBins[band + 1] - fftBandBins[band]);
+            } else {
+                if (start > 0) {
+                    magnitude += fftMagnitudes[start - 1] *
+                                 (f32(start) - fftBandBins[band]);
+                }
+
+                for (const u16 idx : range(start, end)) {
+                    magnitude += fftMagnitudes[idx];
+                }
+
+                if (end < FFT_OUTPUT_COUNT) {
+                    magnitude +=
+                        fftMagnitudes[end] * (fftBandBins[band + 1] - f32(end));
+                }
+            }
+
+            peaks[band] = max<f32>(magnitude, peaks[band]);
+        }
+    }
+    /* CODE STOLEN FROM AUDACIOUS AUDIO PLAYER ENDS */
 }

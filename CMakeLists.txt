@@ -3,8 +3,12 @@ cmake_minimum_required(VERSION 3.25)
 
 # Project definition
 set(PROJECT_NAME rap)
-set(PROJECT_VERSION "0.11.1")
+set(PROJECT_VERSION "0.12.0")
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES C CXX)
+
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=address,undefined,leak -fsanitize-address-use-after-scope")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize=address,undefined,leak -fsanitize-address-use-after-scope")
+set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fsanitize=address,undefined,leak -fsanitize-address-use-after-scope")
 
 option(ENABLE_PROJECTM "Enable projectM visualizer. If this option is enabled, projectM visualizer executable will be built alongside the application. Disable if you don't want audio visualization through OpenGL." ON)
 
@@ -89,18 +93,9 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     src/*.ts
 )
 
-list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/Visualizer/VisualizerSidecar.cpp)
 
 # Collect translation source files
 file(GLOB TRANSLATION_TS_FILES translations/*)
-
-# Add translations
-qt6_add_translations(
-    ${PROJECT_NAME}
-    TS_FILES ${TRANSLATION_TS_FILES}
-    SOURCES ${SOURCES}
-    QM_FILES_OUTPUT_VARIABLE TRANSLATION_QM_FILES
-)
 
 # Create the executable, but do not yet finalize it
 set(WINDOWS_APPLICATION_ICON "resources/${PROJECT_NAME}-logo.rc")
@@ -111,6 +106,17 @@ qt_add_executable(${PROJECT_NAME}
     ${QM_FILES}
     ${WINDOWS_APPLICATION_ICON}
 )
+
+qt_add_translations(
+    ${PROJECT_NAME}
+    TS_FILES ${TRANSLATION_TS_FILES}
+    SOURCES ${SOURCES}
+    QM_FILES_OUTPUT_VARIABLE TRANSLATION_QM_FILES
+)
+
+qt_add_resources(resources.qrc)
+
+target_sources(${PROJECT_NAME} PRIVATE resources.qrc)
 
 # Build mode macros for usage in C++
 target_compile_definitions(${PROJECT_NAME}
@@ -170,33 +176,35 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     swresample
 )
 
-# Compile visualizer sidecar, if projectM is enabled
-if (ENABLE_PROJECTM)
-    add_executable(rap-visualizer
-        src/Visualizer/VisualizerSidecar.cpp
+if (WIN32)
+    find_library(BIT7Z_LIBRARY bit7z)
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        ${BIT7Z_INCLUDE_DIRS}
     )
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        bit7z
+    )
+endif()
 
+if (ENABLE_PROJECTM)
     find_package(projectM4 REQUIRED)
     find_package(glfw3 REQUIRED)
 
-    set_target_properties(rap-visualizer PROPERTIES WIN32_EXECUTABLE TRUE)
-    target_include_directories(rap-visualizer PRIVATE src/Visualizer)
-
-    target_link_libraries(rap-visualizer PRIVATE
+    target_link_libraries(${PROJECT_NAME} PRIVATE
         libprojectM::projectM
         glfw
     )
 
     if (WIN32)
         find_package(GLEW REQUIRED)
-        target_link_libraries(rap-visualizer PRIVATE
+        target_link_libraries(${PROJECT_NAME} PRIVATE
             GLEW::GLEW
         )
     endif()
 
     if (LINUX)
         find_package(OpenGL REQUIRED)
-        target_link_libraries(rap-visualizer PRIVATE
+        target_link_libraries(${PROJECT_NAME} PRIVATE
             OpenGL::GL
         )
     endif()
@@ -226,23 +234,27 @@ install(TARGETS ${PROJECT_NAME}
 # Finalize the Qt executable setup
 qt_finalize_executable(${PROJECT_NAME})
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>/translations
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${TRANSLATION_QM_FILES}
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>/translations
-    COMMENT "Copying translation (.qm) files to the build configuration output directory"
-)
+if (WIN32)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>/icons
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/icons/rap-logo.ico
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>/icons
+        COMMENT "Copying rap-logo.ico to the target build directory"
+    )
+endif()
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>/icons
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${ICONS}
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>/icons
-    COMMENT "Copying icons to the build configuration output directory"
-)
+if (LINUX)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>/icons
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/icons/rap-logo.png
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>/icons
+        COMMENT "Copying rap-logo.png to the target build directory"
+    )
+endif()
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

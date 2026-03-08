@@ -1,10 +1,10 @@
 #include "CoverWindow.hpp"
 
 #include "Constants.hpp"
-#include "Logger.hpp"
 #include "Utils.hpp"
 
 #include <QApplication>
+#include <QDebug>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
@@ -43,7 +43,7 @@ void CoverWindow::updateCover(const QString& coverPath) {
     const auto extracted = extractCover(coverPath.toUtf8().constData());
 
     if (!extracted) {
-        LOG_WARN(extracted.error());
+        qWarning() << extracted.error();
         return;
     }
 
@@ -86,7 +86,7 @@ void CoverWindow::toggleFullscreen(const bool isFullscreen) {
         const QScreen* currentScreen = screen();
 
         if (currentScreen == nullptr) {
-            currentScreen = QApplication::primaryScreen();
+            currentScreen = qApp->primaryScreen();
         }
 
         const QRect screenGeometry = currentScreen->availableGeometry();

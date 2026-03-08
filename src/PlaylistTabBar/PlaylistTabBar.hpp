@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Aliases.hpp"
-#include "Enums.hpp"
 #include "FWD.hpp"
+#include "PlaylistView.hpp"
 
 #include <QWidget>
 
@@ -51,7 +51,7 @@ class PlaylistTabBar : public QWidget {
         return i8(tabs_.indexOf(tab));
     };
 
-    [[nodiscard]] auto tabs() const -> const QVector<PlaylistTab*>& {
+    [[nodiscard]] auto tabs() const -> const QList<PlaylistTab*>& {
         return tabs_;
     }
 
@@ -59,7 +59,7 @@ class PlaylistTabBar : public QWidget {
     void indexChanged(i8 index);
     void tabAdded(u8 index);
     void addButtonClicked(u8 index);
-    void tabsRemoved(TabRemoveMode mode, u8 index);
+    void tabsRemoved(PlaylistView::TabRemoveMode mode, u8 index);
     void filesDropped(QDropEvent* event);
 
    protected:
@@ -68,7 +68,7 @@ class PlaylistTabBar : public QWidget {
     void dropEvent(QDropEvent* event) override;
 
    private:
-    inline void removeTabs(TabRemoveMode mode, u8 index);
+    inline void removeTabs(PlaylistView::TabRemoveMode mode, u8 index);
 
     QFrame* const indicatorLine;
     QScrollArea* const scrollArea;
@@ -76,7 +76,7 @@ class PlaylistTabBar : public QWidget {
     QHBoxLayout* const tabContainerLayout;
     QHBoxLayout* const mainLayout;
 
-    QVector<PlaylistTab*> tabs_;
+    QList<PlaylistTab*> tabs_;
 
     i8 currentIndex_ = -1;
     i8 previousIndex = -1;

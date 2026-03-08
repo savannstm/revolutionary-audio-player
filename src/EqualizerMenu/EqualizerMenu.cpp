@@ -118,11 +118,11 @@ EqualizerMenu::EqualizerMenu(
             return;
         }
 
-        const QVector<i8> previousPreset =
+        const QList<i8> previousPreset =
             settings.presets[settings.bandCount][previousText];
 
         if (!settings.presets[settings.bandCount].contains(text)) {
-            settings.presets[settings.bandCount].insert(text, QVector<i8>());
+            settings.presets[settings.bandCount].insert(text, QList<i8>());
         }
 
         std::swap(
@@ -134,6 +134,16 @@ EqualizerMenu::EqualizerMenu(
         settings.presets[settings.bandCount].remove(previousText);
     }
     );
+}
+
+EqualizerMenu::~EqualizerMenu() {
+    delete ui;
+}
+
+auto EqualizerMenu::setupUi() -> Ui::EqualizerMenu* {
+    auto* const ui_ = new Ui::EqualizerMenu();
+    ui_->setupUi(this);
+    return ui_;
 }
 
 auto EqualizerMenu::createSliderElement(const u8 band, QWidget* const parent)
@@ -223,7 +233,7 @@ void EqualizerMenu::buildBands() {
     settings.frequencies = getFrequenciesForBands(settings.bandCount);
     settings.gains.fill(0);
 
-    for (const u8 band : range(0, u8(settings.bandCount))) {
+    for (const u8 band : range<u8>(0, u8(settings.bandCount))) {
         QWidget* const parent =
             band < THIRTY_BANDS / 2 ? firstSliderRow : secondSliderRow;
         QHBoxLayout* const parentLayout =
@@ -357,7 +367,7 @@ void EqualizerMenu::selectPreset(const i32 presetIndex) {
 
     auto& presetMap = settings.presets[settings.bandCount];
     if (usingCustomPreset && !presetMap.contains(presetName)) {
-        presetMap.insert(presetName, QVector<i8>(isize(settings.bandCount)));
+        presetMap.insert(presetName, QList<i8>(isize(settings.bandCount)));
     }
 
     for (const auto& [idx, elements] :
@@ -447,7 +457,7 @@ void EqualizerMenu::importPreset() {
         return;
     }
 
-    QFile presetFile = QFile(presetPath);
+    auto presetFile = QFile(presetPath);
 
     if (!presetFile.open(QFile::ReadOnly | QFile::Text)) {
         QMessageBox::critical(
@@ -495,7 +505,7 @@ void EqualizerMenu::exportPreset() {
     }
 
     const QByteArray presetData = serializePreset(preset);
-    QFileDialog::saveFileContent(presetData, presetName + u".rap"_s);
+    QFileDialog::saveFileContent(presetData, presetName + u".rap"_qssv);
 }
 
 void EqualizerMenu::savePreset(
@@ -505,23 +515,13 @@ void EqualizerMenu::savePreset(
 ) {
     const Bands bandCount =
         bandCountOpt ? bandCountOpt.value() : settings.bandCount;
-    settings.presets[bandCount][presetName] = QVector<i8>(isize(bandCount));
+    settings.presets[bandCount][presetName] = QList<i8>(isize(bandCount));
 
-    for (const u8 idx : range(0, u8(bandCount))) {
+    for (const u8 idx : range<u8>(0, u8(bandCount))) {
         const i8 gain =
             i8(bands ? bands.value()[idx]
                      : sliders[idx].dbInput->text().toInt());
 
         settings.presets[bandCount][presetName][idx] = gain;
     }
-}
-
-EqualizerMenu::~EqualizerMenu() {
-    delete ui;
-}
-
-auto EqualizerMenu::setupUi() -> Ui::EqualizerMenu* {
-    auto* const ui_ = new Ui::EqualizerMenu();
-    ui_->setupUi(this);
-    return ui_;
 }

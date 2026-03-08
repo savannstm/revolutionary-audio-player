@@ -1,9 +1,9 @@
 #include "TrackRepeatMenu.hpp"
 
 #include "CustomInput.hpp"
+#include "Duration.hpp"
 #include "RangeSlider.hpp"
 #include "TimeValidator.hpp"
-#include "Utils.hpp"
 
 #include <QHBoxLayout>
 #include <QLabel>
@@ -80,8 +80,8 @@ TrackRepeatMenu::TrackRepeatMenu(QWidget* const parent) :
         rangeSlider,
         &RangeSlider::lowValueChanged,
         this,
-        [this](const u16 second) -> void {
-        startTimeInput->setText(secsToMins(second));
+        [this](const u32 second) -> void {
+        startTimeInput->setText(Duration::secondsToString(second));
         startSecond_ = second;
     }
     );
@@ -90,8 +90,8 @@ TrackRepeatMenu::TrackRepeatMenu(QWidget* const parent) :
         rangeSlider,
         &RangeSlider::highValueChanged,
         this,
-        [this](const u16 second) -> void {
-        endTimeInput->setText(secsToMins(second));
+        [this](const u32 second) -> void {
+        endTimeInput->setText(Duration::secondsToString(second));
         endSecond_ = second;
     }
     );
@@ -101,28 +101,40 @@ TrackRepeatMenu::TrackRepeatMenu(QWidget* const parent) :
         &CustomInput::editingFinished,
         this,
         [this] -> void {
-        rangeSlider->setLowValue(timeToSecs(startTimeInput->text()));
+        rangeSlider->setLowValue(
+            Duration::stringToSeconds(startTimeInput->text()).value()
+        );
     }
     );
 
     connect(startTimeInput, &CustomInput::inputRejected, this, [this] -> void {
-        startTimeInput->setText(secsToMins(rangeSlider->lowValue()));
+        startTimeInput->setText(
+            Duration::secondsToString(rangeSlider->lowValue())
+        );
     });
 
     connect(startTimeInput, &CustomInput::unfocused, this, [this] -> void {
-        startTimeInput->setText(secsToMins(rangeSlider->lowValue()));
+        startTimeInput->setText(
+            Duration::secondsToString(rangeSlider->lowValue())
+        );
     });
 
     connect(endTimeInput, &CustomInput::editingFinished, this, [this] -> void {
-        rangeSlider->setHighValue(timeToSecs(endTimeInput->text()));
+        rangeSlider->setHighValue(
+            Duration::stringToSeconds(endTimeInput->text()).value()
+        );
     });
 
     connect(endTimeInput, &CustomInput::inputRejected, this, [this] -> void {
-        endTimeInput->setText(secsToMins(rangeSlider->highValue()));
+        endTimeInput->setText(
+            Duration::secondsToString(rangeSlider->highValue())
+        );
     });
 
     connect(endTimeInput, &CustomInput::unfocused, this, [this] -> void {
-        endTimeInput->setText(secsToMins(rangeSlider->highValue()));
+        endTimeInput->setText(
+            Duration::secondsToString(rangeSlider->highValue())
+        );
     });
 
     connect(
@@ -170,10 +182,10 @@ void TrackRepeatMenu::updateSkipSection(
         return;
     }
 
-    u16 seconds = timeToSecs(text);
+    u32 seconds = Duration::stringToSeconds(text).value();
 
     if (seconds > endSecond_) {
-        item->setText(column, secsToMins(endSecond_));
+        item->setText(column, Duration::secondsToString(endSecond_));
         seconds = endSecond_;
     }
 
@@ -207,7 +219,7 @@ void TrackRepeatMenu::removeSkipSection() {
     }
 }
 
-void TrackRepeatMenu::setDuration(const u16 seconds) {
+void TrackRepeatMenu::setDuration(const u32 seconds) {
     startSecond_ = 0;
     endSecond_ = seconds;
 
@@ -218,5 +230,5 @@ void TrackRepeatMenu::setDuration(const u16 seconds) {
     rangeSlider->setHighValue(seconds);
 
     startTimeInput->setText(u"00:00"_s);
-    endTimeInput->setText(secsToMins(seconds));
+    endTimeInput->setText(Duration::secondsToString(seconds));
 }

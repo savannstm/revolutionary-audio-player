@@ -1,20 +1,9 @@
 #pragma once
 
-#include "Constants.hpp"
-#include "Enums.hpp"
 #include "FWD.hpp"
+#include "Visualizer.hpp"
 
 #include <QDialog>
-
-#ifdef Q_OS_WINDOWS
-#include <windows.h>
-#else
-#include <sys/mman.h>
-#include <sys/stat.h>
-
-#include <fcntl.h>
-#include <unistd.h>
-#endif
 
 class VisualizerDialog : public QDialog {
     Q_OBJECT
@@ -26,16 +15,13 @@ class VisualizerDialog : public QDialog {
     );
     ~VisualizerDialog() override;
 
-    void setChannels(AudioChannels channels);
-    void addSamples(const f32* buffer);
-    void clear();
+    void setChannels(u8 channels);
+    void addSamples(const f32* samples);
 
    signals:
     void ready();
 
    private:
-    auto initSharedMemory() -> bool;
-
     void loadPreset();
     void applySettings();
     void openPreset(const QString& path);
@@ -52,12 +38,7 @@ class VisualizerDialog : public QDialog {
     QPushButton* presetButton;
     QPushButton* applyButton;
 
-    QProcess* process = nullptr;
-    VisualizerSharedData* sharedData = nullptr;
+    Visualizer* visualizer;
 
-#ifdef Q_OS_WINDOWS
-    HANDLE hMapFile = nullptr;
-#else
-    i32 shmFd = -1;
-#endif
+    u8 channels;
 };

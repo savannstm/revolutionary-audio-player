@@ -36,13 +36,13 @@ DockWidget::DockWidget(QWidget* const parent) : QSplitter(parent) {
         delete menu;
 
         if (selectedAction == moveToLeftAction) {
-            emit repositioned(DockWidgetPosition::Left);
+            emit repositioned(DockWidget::Position::Left);
         } else if (selectedAction == moveToRightAction) {
-            emit repositioned(DockWidgetPosition::Right);
+            emit repositioned(DockWidget::Position::Right);
         } else if (selectedAction == moveToTopAction) {
-            emit repositioned(DockWidgetPosition::Top);
+            emit repositioned(DockWidget::Position::Top);
         } else if (selectedAction == moveToBottomAction) {
-            emit repositioned(DockWidgetPosition::Bottom);
+            emit repositioned(DockWidget::Position::Bottom);
         } else if (selectedAction == showCoverAction) {
             if (dockCoverLabelHidden) {
                 dockCoverLabel->show();

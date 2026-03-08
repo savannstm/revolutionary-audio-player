@@ -1,85 +1,76 @@
 #pragma once
 
 #include "Aliases.hpp"
-#include "Constants.hpp"
+#include "AudioStreamer.hpp"
 #include "FWD.hpp"
 
-#include <QObject>
+#include <QTimer>
 #include <miniaudio.h>
+#include <thread>
 
 class AudioWorker : public QObject {
     Q_OBJECT
 
    public:
-    explicit AudioWorker(
-        shared_ptr<Settings>,
-        f32* spectrumVisualizerBuffer,
-        f32* visualizerBufferData,
-        QObject* parent = nullptr
-    );
-
+    explicit AudioWorker(shared_ptr<Settings>);
     ~AudioWorker() override;
 
-    void start(const QString& path, u16 startSecond = UINT16_MAX);
+    void startPlayback(const QString& path, i32 startSecond = -1);
     void pause();
-    void stop();
+    void stopPlayback();
     void resume();
-
-    void seekSecond(u16 second);
+    void seekSecond(i32 second);
     void setVolume(f32 volume);
+    void changeAudioDevice();
+    void changeGain();
 
     [[nodiscard]] auto state() const -> ma_device_state;
-
-    void changeAudioDevice();
-
-    void changeGain(u8 band);
-
-    void toggleSpectrumVisualizer(const bool enabled) {
-        spectrumVisualizerEnabled = enabled;
-    }
-
-    void toggleVisualizer(const bool enabled) { visualizerEnabled = enabled; }
-
-    [[nodiscard]] auto channels() -> AudioChannels;
+    [[nodiscard]] auto channels() const -> u8;
+    [[nodiscard]] auto sampleRate() const -> u32;
 
    signals:
-    void progressUpdated(u16 second);
-    void processedSamples();
+    void progressUpdated(u32 second);
     void streamEnded();
-    void audioProperties(u32 sampleRate, AudioChannels channels);
+    void audioProperties(u32 sampleRate, u8 channels);
+    void fftSamples(span<const f32> samples, u32 sampleRate);
 
    private:
-    static inline void dataCallback(
+    static void dataCallback(
         ma_device* device,
         void* output,
-        const void* /* input */,
+        const void* input,
         u32 sampleCount
     );
 
-    inline void startDevice();
-    inline void prepareBuffer();
-    inline void endStream();
+    void startDevice();
+
+    // Maximum possible sample rate in most cases is 768000. Since we required
+    // (sample_rate / 100) samples, this produces 7680. Since we want a power of
+    // two, this produces 8192.
+    array<f32, 8192> buffer;
 
     ma_device device;
     ma_device_config deviceConfig;
 
+    QTimer timer;
+
     shared_ptr<Settings> settings;
+    AudioStreamer* streamer;
+    std::jthread* streamerThread = nullptr;
 
-    AudioStreamer* audioStreamer = nullptr;
-    usize buffersIndex = 0;
-    usize bufferOffset = 0;
-
-    f32* spectrumVisualizerBuffer;
-    f32* visualizerBuffer;
+    u16 currentSamples = 0;
+    u16 requiredSamples;
 
     f32 volume_ = 1.0F;
+    u32 lastPlaybackSecond = 0;
 
-    u16 lastPlaybackSecond = 0;
-    u16 seekTargetSecond = 0;
-
-    bool spectrumVisualizerEnabled = false;
-    bool visualizerEnabled = false;
+    atomicI32 secondToSeek{ -1 };
+    atomicU32 playbackSecond{ 0 };
+    atomicBool streamEndedFlag{ false };
+    atomicBool paused{ false };
+    atomicBool readScheduled{ false };
+    atomicBool samplesAccumulated{ false };
 
     bool deviceInitialized = false;
-    bool seeked = false;
+    bool flag = false;
 };

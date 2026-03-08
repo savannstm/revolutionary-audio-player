@@ -14,14 +14,6 @@ namespace Ui {
 
 QT_END_NAMESPACE
 
-struct SliderContainer {
-    QWidget* container;
-    QSlider* slider;
-    QLabel* dbLabel;
-    CustomInput* dbInput;
-    QLabel* hzLabel;
-};
-
 class EqualizerMenu : public QDialog {
     Q_OBJECT
 
@@ -42,6 +34,14 @@ class EqualizerMenu : public QDialog {
     void gainChanged(u8 band);
 
    private:
+    struct SliderContainer {
+        QWidget* container;
+        QSlider* slider;
+        QLabel* dbLabel;
+        CustomInput* dbInput;
+        QLabel* hzLabel;
+    };
+
     inline void updateGain(
         const QString& string,
         QSlider* slider,
@@ -78,6 +78,10 @@ class EqualizerMenu : public QDialog {
     );
 
     inline auto setupUi() -> Ui::EqualizerMenu*;
+
+    static constexpr i8 MAX_GAIN = 20;
+    static constexpr i8 MIN_GAIN = -20;
+    static constexpr u8 GAIN_INPUT_FIXED_WIDTH = 32;
 
     array<SliderContainer, THIRTY_BANDS> sliders;
 

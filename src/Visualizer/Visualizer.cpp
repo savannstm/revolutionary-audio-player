@@ -1,87 +1,8 @@
-#include <array>
-#include <atomic>
-#include <iostream>
-#include <thread>
-#include <vector>
+#include "Visualizer.hpp"
 
-#ifdef _WIN32
-#include <GL/glew.h>
+#include "Constants.hpp"
 
-#include <windows.h>
-#else
-#include <sys/mman.h>
-#include <sys/stat.h>
-
-#include <fcntl.h>
-#include <unistd.h>
-#endif
-
-#include <GLFW/glfw3.h>
-#include <projectM-4/projectM.h>
-
-template <typename O, typename T>
-[[nodiscard]] constexpr auto as(T&& arg) -> O {
-    return static_cast<O>(std::forward<T>(arg));
-}
-
-using u8 = std::uint8_t;
-using u16 = std::uint16_t;
-using i32 = std::int32_t;
-using f32 = float;
-using f64 = double;
-using std::array;
-using std::atomic;
-using std::cerr;
-using std::cout;
-
-constexpr const char* VISUALIZER_SHARED_MEMORY_LABEL = "rap-visualizer";
-
-constexpr f64 DOUBLE_CLICK_DELTA = 0.25;
-
-constexpr u16 PRESET_PATH_LIMIT = 512;
-constexpr u16 DESIRED_SAMPLE_COUNT = 2048;
-constexpr u8 F32_SAMPLE_SIZE = sizeof(f32);
-
-constexpr u8 ICON_WIDTH = 32;
-constexpr u8 ICON_HEIGHT = 32;
-
-constexpr u16 MIN_WIDTH = 800;
-constexpr u16 MIN_HEIGHT = 600;
-
-enum class AudioChannels : u8 {
-    Zero = 0,
-    Mono = 1,
-    Stereo = 2,
-    Quad = 4,
-    Surround51 = 6,
-    Surround71 = 8,
-
-    Surround102 = 12,
-    Surround222 = 24,
-};
-
-struct VisualizerSharedData {
-    array<f32, DESIRED_SAMPLE_COUNT> audioBuffer;
-    array<char, PRESET_PATH_LIMIT> presetPath;
-
-    atomic<u16> bufferSize = 8192;
-    atomic<u16> fps = 60;
-    atomic<u16> meshWidth = 80;
-    atomic<u16> meshHeight = 40;
-
-    atomic<bool> loadPreset = false;
-    atomic<bool> presetRequested = false;
-
-    atomic<bool> running = true;
-    atomic<bool> hasNewData = false;
-
-    atomic<bool> newTrack = false;
-
-    atomic<AudioChannels> channels = AudioChannels::Zero;
-};
-
-// NOLINTBEGIN
-constinit array<u8, size_t(ICON_WIDTH * ICON_HEIGHT * 4)> ICON_DATA = {
+constinit array<u8, 32 * 32 * 4> ICON_DATA = {
     0,   0, 0, 0,   0,   0, 0, 0,   0,   0, 0, 0,   0,   0, 0, 0,
     0,   0, 0, 0,   0,   0, 0, 0,   0,   0, 0, 0,   204, 0, 0, 0,
     204, 0, 0, 10,  204, 0, 0, 94,  204, 0, 0, 70,  204, 0, 0, 26,
@@ -340,116 +261,42 @@ constinit array<u8, size_t(ICON_WIDTH * ICON_HEIGHT * 4)> ICON_DATA = {
     0,   0, 0, 0,   0,   0, 0, 0,   0,   0, 0, 0,   0,   0, 0, 0
 };
 
-// NOLINTEND
+Visualizer::Visualizer(const string& windowTitle, const string& texturePath) :
+    windowTitle(windowTitle),
+    texturePath(texturePath) {}
 
-class SharedMemory {
-   public:
-    VisualizerSharedData* data = nullptr;
+Visualizer::~Visualizer() {
+    quit();
+    wait();
+}
 
-#ifdef _WIN32
-    HANDLE hMapFile = nullptr;
+void Visualizer::submitAudioData(const f32* const samples) {
+    lock_guard<mutex> lock(audioMutex);
 
-    auto create(const char* const name) -> bool {
-        hMapFile = CreateFileMappingA(
-            INVALID_HANDLE_VALUE,
-            nullptr,
-            PAGE_READWRITE,
-            0,
-            sizeof(VisualizerSharedData),
-            name
-        );
+    memcpy(this->samples.data(), samples, FFT_SAMPLE_COUNT * F32_SIZE);
+    hasNewData.store(true);
+}
 
-        if (hMapFile == nullptr) {
-            return false;
-        }
+void Visualizer::loadPreset(const string& newPresetPath) {
+    lock_guard<mutex> lock(presetMutex);
+    presetPath = newPresetPath;
+    loadPreset_.store(true);
+}
 
-        data = (VisualizerSharedData*)MapViewOfFile(
-            hMapFile,
-            FILE_MAP_ALL_ACCESS,
-            0,
-            0,
-            sizeof(VisualizerSharedData)
-        );
+void Visualizer::setSettings(
+    const u16 width,
+    const u16 height,
+    const u16 newFPS
+) {
+    meshWidth.store(width);
+    meshHeight.store(height);
+    fps.store(newFPS);
+}
 
-        if (data == nullptr) {
-            CloseHandle(hMapFile);
-            return false;
-        }
-
-        new (data) VisualizerSharedData();
-        return true;
-    }
-
-    ~SharedMemory() {
-        if (data != nullptr) {
-            UnmapViewOfFile(data);
-        }
-
-        if (hMapFile != nullptr) {
-            CloseHandle(hMapFile);
-        }
-    }
-#else
-    i32 fd = -1;
-
-    auto create(const char* const name) -> bool {
-        fd = shm_open(name, O_CREAT | O_RDWR, 0666);
-        if (fd == -1) {
-            return false;
-        }
-
-        if (ftruncate(fd, sizeof(VisualizerSharedData)) == -1) {
-            close(fd);
-            return false;
-        }
-
-        data = (VisualizerSharedData*)mmap(
-            nullptr,
-            sizeof(VisualizerSharedData),
-            PROT_READ | PROT_WRITE,
-            MAP_SHARED,
-            fd,
-            0
-        );
-
-        if (data == MAP_FAILED) {
-            close(fd);
-            return false;
-        }
-
-        new (data) VisualizerSharedData();
-        return true;
-    }
-
-    ~SharedMemory() {
-        if ((data != nullptr) && data != MAP_FAILED) {
-            munmap(data, sizeof(VisualizerSharedData));
-            shm_unlink("rap-visualizer");
-        }
-
-        if (fd != -1) {
-            close(fd);
-        }
-    }
-#endif
-};
-
-struct FullscreenState {
-    i32 windowX = 0;
-    i32 windowY = 0;
-    i32 windowW;
-    i32 windowH;
-    bool fullscreen = false;
-};
-
-struct WindowContext {
-    projectm* pm;
-    VisualizerSharedData* shared;
-    f64 lastClickTime = 0.0;
-    FullscreenState fsState;
-};
-
-void toggleFullscreen(GLFWwindow* const window, FullscreenState& state) {
+void Visualizer::toggleFullscreen(
+    GLFWwindow* const window,
+    FullscreenState& state
+) {
     if (!state.fullscreen) {
         glfwGetWindowPos(window, &state.windowX, &state.windowY);
         glfwGetWindowSize(window, &state.windowW, &state.windowH);
@@ -483,7 +330,7 @@ void toggleFullscreen(GLFWwindow* const window, FullscreenState& state) {
     }
 }
 
-void resizeCallback(
+void Visualizer::resizeCallback(
     GLFWwindow* const window,
     const i32 width,
     const i32 height
@@ -496,10 +343,10 @@ void resizeCallback(
     }
 }
 
-void mouseClickCallback(
+void Visualizer::mouseClickCallback(
     GLFWwindow* const window,
     const i32 button,
-    const i32 action,  // NOLINT
+    const i32 action,
     const i32 mods
 ) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
@@ -515,16 +362,10 @@ void mouseClickCallback(
     }
 }
 
-auto main(i32 argc, char* argv[]) -> i32 {
-    SharedMemory sharedMemory;
-    if (!sharedMemory.create(VISUALIZER_SHARED_MEMORY_LABEL)) {
-        println(cerr, "Failed to create shared memory");
-        return 1;
-    }
-
+void Visualizer::run() {
     if (glfwInit() == 0) {
         println(cerr, "Failed to initialize GLFW");
-        return 1;
+        return;
     }
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -532,13 +373,18 @@ auto main(i32 argc, char* argv[]) -> i32 {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_FLOATING, GLFW_TRUE);
 
-    GLFWwindow* const window =
-        glfwCreateWindow(MIN_WIDTH, MIN_HEIGHT, argv[1], nullptr, nullptr);
+    GLFWwindow* const window = glfwCreateWindow(
+        MIN_WIDTH,
+        MIN_HEIGHT,
+        windowTitle.c_str(),
+        nullptr,
+        nullptr
+    );
 
     if (window == nullptr) {
         println(cerr, "Failed to create GLFW window");
         glfwTerminate();
-        return 1;
+        return;
     }
 
     glfwMakeContextCurrent(window);
@@ -547,14 +393,18 @@ auto main(i32 argc, char* argv[]) -> i32 {
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
         println(cerr, "Failed to initialize GLEW");
-        return 1;
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        return;
     }
 #endif
 
     projectm* const projectM = projectm_create();
     if (projectM == nullptr) {
         println(cerr, "Failed to create projectM instance");
-        return 1;
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        return;
     }
 
     glfwSetWindowSizeLimits(
@@ -570,9 +420,7 @@ auto main(i32 argc, char* argv[]) -> i32 {
 
     glfwSetWindowIcon(window, 1, &glfwIcon);
 
-    auto* const ctx = new WindowContext{ .pm = projectM,
-                                         .shared = sharedMemory.data,
-                                         .fsState = FullscreenState{} };
+    auto* const ctx = new WindowContext{ .pm = projectM };
     glfwSetWindowUserPointer(window, ctx);
 
     glfwSetFramebufferSizeCallback(window, resizeCallback);
@@ -585,25 +433,18 @@ auto main(i32 argc, char* argv[]) -> i32 {
     glViewport(0, 0, width, height);
 
     projectm_set_window_size(projectM, width, height);
-    projectm_set_fps(projectM, sharedMemory.data->fps.load());
-    projectm_set_mesh_size(
-        projectM,
-        sharedMemory.data->meshWidth.load(),
-        sharedMemory.data->meshHeight.load()
-    );
-    projectm_set_texture_search_paths(
-        projectM,
-        const_cast<const char**>(&argv[2]),
-        1
-    );
+    projectm_set_fps(projectM, fps.load());
+    projectm_set_mesh_size(projectM, meshWidth.load(), meshHeight.load());
 
-    println(cerr, "initialized");
+    const char* texturePath = this->texturePath.c_str();
+    projectm_set_texture_search_paths(projectM, &texturePath, 1);
+
+    println(cout, "Visualizer initialized");
 
     f64 nextFrameTime = glfwGetTime();
 
-    while ((glfwWindowShouldClose(window) == 0) &&
-           sharedMemory.data->running.load()) {
-        const f64 fps = sharedMemory.data->fps.load();
+    while (glfwWindowShouldClose(window) == 0) {
+        const f64 fps = this->fps.load();
         const f64 frameInterval = 1.0 / fps;
 
         const f64 currentTime = glfwGetTime();
@@ -615,37 +456,30 @@ auto main(i32 argc, char* argv[]) -> i32 {
 
         nextFrameTime = currentTime + frameInterval;
 
-        if (sharedMemory.data->loadPreset.exchange(false)) {
-            println(
-                cout,
-                "Loading preset: {}",
-                sharedMemory.data->presetPath.data()
-            );
+        if (loadPreset_.exchange(false)) {
+            string presetPath;
+            {
+                lock_guard<mutex> lock(presetMutex);
+                presetPath = presetPath;
+            }
 
-            projectm_load_preset_file(
-                projectM,
-                sharedMemory.data->presetPath.data(),
-                true
-            );
+            println(cout, "Loading preset: {}", presetPath);
+            projectm_load_preset_file(projectM, presetPath.c_str(), true);
         }
 
-        if (sharedMemory.data->newTrack.exchange(false)) {
-            projectm_load_preset_file(
-                projectM,
-                sharedMemory.data->presetPath.data(),
-                true
-            );
-        }
+        if (hasNewData.exchange(false)) {
+            array<f32, FFT_SAMPLE_COUNT> localBuffer;
 
-        if (sharedMemory.data->hasNewData.exchange(false)) {
-            const u16 bufferSize = sharedMemory.data->bufferSize.load();
-            const AudioChannels channels = sharedMemory.data->channels.load();
+            {
+                lock_guard<mutex> lock(audioMutex);
+                localBuffer = samples;
+            }
 
             projectm_pcm_add_float(
                 projectM,
-                sharedMemory.data->audioBuffer.data(),
-                bufferSize / (F32_SAMPLE_SIZE * u8(channels)),
-                projectm_channels(channels)
+                localBuffer.data(),
+                512,
+                projectm_channels::PROJECTM_MONO
             );
         }
 
@@ -656,64 +490,8 @@ auto main(i32 argc, char* argv[]) -> i32 {
         glfwPollEvents();
     }
 
+    delete ctx;
     projectm_destroy(projectM);
+    glfwDestroyWindow(window);
     glfwTerminate();
-
-    return 0;
 }
-
-#ifdef _WIN32
-// NOLINTBEGIN
-int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
-    int argcW = 0;
-
-    LPWSTR* argvW = CommandLineToArgvW(GetCommandLineW(), &argcW);
-    if (!argvW) {
-        return -1;
-    }
-
-    std::vector<std::string> utf8Args;
-    utf8Args.reserve(argcW);
-
-    std::vector<char*> argv;
-
-    for (int i = 0; i < argcW; i++) {
-        const int needed = WideCharToMultiByte(
-            CP_UTF8,
-            0,
-            argvW[i],
-            -1,
-            nullptr,
-            0,
-            nullptr,
-            nullptr
-        );
-
-        std::string utf8 = std::string(needed - 1, '\0');
-        WideCharToMultiByte(
-            CP_UTF8,
-            0,
-            argvW[i],
-            -1,
-            utf8.data(),
-            needed,
-            nullptr,
-            nullptr
-        );
-
-        utf8Args.push_back(std::move(utf8));
-    }
-
-    LocalFree(argvW);
-
-    argv.reserve(argcW);
-
-    for (auto& s : utf8Args) {
-        argv.push_back(s.data());
-    }
-
-    return main(argcW, argv.data());
-}
-
-// NOLINTEND
-#endif

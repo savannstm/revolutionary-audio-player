@@ -37,12 +37,16 @@ class QToolButton;
 class QObject;
 class QString;
 class QMargins;
+class QProgressBar;
+class QProgressDialog;
+class QNetworkReply;
+class QNetworkAccessManager;
 
 class PlaylistView;
-class TrackTree;
-class TrackTreeHeader;
-class TrackTreeModel;
-class TrackTreeItem;
+class TrackTable;
+class TrackTableHeader;
+class TrackTableModel;
+class TrackTableItem;
 
 class PlaylistTabBar;
 class PlaylistTab;
@@ -68,9 +72,14 @@ class EqualizerMenu;
 class VisualizerDialog;
 
 class Settings;
+class CoreSettings;
 class SpectrumVisualizerSettings;
 class EqualizerSettings;
 class VisualizerSettings;
 
 class IndexSet;
 class DeviceMonitor;
+
+class AutoUpdater;
+
+class ProgressLabel;

@@ -436,7 +436,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="progressLabel">
+        <widget class="ProgressLabel" name="progressLabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -546,104 +546,6 @@
           <string>Value</string>
          </property>
         </column>
-        <item>
-         <property name="text">
-          <string>Title</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Artist</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Track Number</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Album</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Album Artist</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Genre</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Year</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Duration</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Composer</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>BPM</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Language</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Disc Number</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Comment</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Publisher</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Bitrate</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Sample Rate</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Channels</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Format</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Path</string>
-         </property>
-        </item>
        </widget>
        <widget class="ScaledLabel" name="dockCoverLabel">
         <property name="sizePolicy">
@@ -670,7 +572,7 @@
      <x>0</x>
      <y>0</y>
      <width>885</width>
-     <height>33</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -692,6 +594,7 @@
     </property>
     <addaction name="actionAbout"/>
     <addaction name="actionDocumentation"/>
+    <addaction name="actionCheckForUpdates"/>
    </widget>
    <widget class="QMenu" name="menuPlaylist">
     <property name="title">
@@ -715,6 +618,11 @@
    <addaction name="menuPlaylist"/>
    <addaction name="menuLanguage"/>
    <addaction name="menuAbout"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar">
+   <property name="sizeGripEnabled">
+    <bool>false</bool>
+   </property>
   </widget>
   <action name="actionOpenFile">
    <property name="text">
@@ -848,6 +756,11 @@
     <string>Visualizer</string>
    </property>
   </action>
+  <action name="actionCheckForUpdates">
+   <property name="text">
+    <string>Check For Updates</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -881,6 +794,11 @@
    <extends>QSplitter</extends>
    <header>DockWidget.hpp</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ProgressLabel</class>
+   <extends>QLabel</extends>
+   <header>ProgressLabel.hpp</header>
   </customwidget>
  </customwidgets>
  <resources/>

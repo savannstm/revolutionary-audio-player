@@ -1,10 +1,11 @@
 #include "VisualizerDialog.hpp"
 
-#include "Logger.hpp"
+#include "Constants.hpp"
 #include "Settings.hpp"
 #include "Utils.hpp"
 
 #include <QCheckBox>
+#include <QDebug>
 #include <QDialog>
 #include <QFileDialog>
 #include <QFormLayout>
@@ -23,26 +24,27 @@ VisualizerDialog::VisualizerDialog(
 ) :
     QDialog(parent, Qt::Window),
     settings(settings_->visualizer) {
-    if (!initSharedMemory()) {
-        reject();
-        return;
-    };
-
     setWindowTitle(tr("Visualizer Settings"));
     setFixedSize(VISUALIZER_DIALOG_SIZE);
 
     auto* const layout = new QFormLayout(this);
 
     fpsSpin = new QSpinBox(this);
-    fpsSpin->setRange(MIN_FPS, MAX_FPS);
+    fpsSpin->setRange(Visualizer::MIN_FPS, Visualizer::MAX_FPS);
     fpsSpin->setValue(
         settings.fps == 0 ? u16(screen()->refreshRate()) : settings.fps
     );
 
     meshWidthSpin = new QSpinBox(this);
     meshHeightSpin = new QSpinBox(this);
-    meshWidthSpin->setRange(MIN_MESH_SIZE, MAX_MESH_SIZE);
-    meshHeightSpin->setRange(MIN_MESH_SIZE, MAX_MESH_SIZE);
+    meshWidthSpin->setRange(
+        Visualizer::MIN_MESH_SIZE,
+        Visualizer::MAX_MESH_SIZE
+    );
+    meshHeightSpin->setRange(
+        Visualizer::MIN_MESH_SIZE,
+        Visualizer::MAX_MESH_SIZE
+    );
     meshWidthSpin->setValue(settings.meshWidth);
     meshHeightSpin->setValue(settings.meshHeight);
 
@@ -101,167 +103,33 @@ VisualizerDialog::VisualizerDialog(
     }
     );
 
-    const QString visualizerPath = QApplication::applicationDirPath() +
-#ifdef Q_OS_WINDOWS
-                                   u"/rap-visualizer.exe"_qssv;
-#else
-                                   u"/rap-visualizer"_qssv;
-#endif
-
-    process = new QProcess(this);
-
-    connect(process, &QProcess::readyReadStandardOutput, this, [this] -> void {
-        const QByteArray data = process->readAllStandardOutput();
-
-        LOG_INFO(data);
-    });
-
-    connect(process, &QProcess::readyReadStandardError, this, [this] -> void {
-        const QByteArray data = process->readAllStandardError();
-
-        // Doesn't work with stdout
-        if (data.startsWith("initialized")) {
-            emit ready();
-        }
-
-        LOG_ERROR(data);
-    });
-
-    connect(
-        process,
-        &QProcess::finished,
-        this,
-        [this](const i32 exitCode, const QProcess::ExitStatus exitStatus)
-            -> void {
-        LOG_INFO(
-            u"Visualizer exited with code: "_s + QString::number(exitCode)
-        );
-        reject();
-        return;
-    }
+    visualizer = new Visualizer(
+        tr("Visualizer").toStdString(),
+        (qApp->applicationDirPath() + u"/visualizer/textures"_qssv)
+            .toStdString()
     );
 
     applySettings();
-
-    process->start(
-        visualizerPath,
-        { tr("Visualizer"),
-          QApplication::applicationDirPath() + u"/visualizer/textures"_qssv },
-        QProcess::ReadOnly
-    );
-
-    if (!process->waitForStarted(SECOND_MS * 2)) {
-        reject();
-        return;
-    }
-
-    openPreset(settings.presetPath);
-    sharedData->running.store(true);
+    visualizer->start();
 }
 
 VisualizerDialog::~VisualizerDialog() {
-    sharedData->running.store(false);
-
-    if (process != nullptr) {
-        process->terminate();
-        process->waitForFinished(SECOND_MS * 2);
-        process->kill();
-        process = nullptr;
-    }
-
-#ifdef Q_OS_WINDOWS
-    if (sharedData != nullptr) {
-        UnmapViewOfFile(sharedData);
-    }
-
-    if (hMapFile != nullptr) {
-        CloseHandle(hMapFile);
-    }
-#else
-    if (sharedData != nullptr && sharedData != MAP_FAILED) {
-        munmap(sharedData, sizeof(VisualizerSharedData));
-    }
-
-    if (shmFd != -1) {
-        ::close(shmFd);
-    }
-#endif
-}
-
-auto VisualizerDialog::initSharedMemory() -> bool {
-#ifdef Q_OS_WINDOWS
-    hMapFile = OpenFileMappingA(
-        FILE_MAP_ALL_ACCESS,
-        FALSE,
-        VISUALIZER_SHARED_MEMORY_LABEL
-    );
-
-    if (hMapFile == nullptr) {
-        hMapFile = CreateFileMappingA(
-            INVALID_HANDLE_VALUE,
-            nullptr,
-            PAGE_READWRITE,
-            0,
-            sizeof(VisualizerSharedData),
-            VISUALIZER_SHARED_MEMORY_LABEL
-        );
-    }
-
-    if (hMapFile == nullptr) {
-        return false;
-    }
-
-    sharedData = as<VisualizerSharedData*>(MapViewOfFile(
-        hMapFile,
-        FILE_MAP_ALL_ACCESS,
-        0,
-        0,
-        sizeof(VisualizerSharedData)
-    ));
-#else
-    shmFd = shm_open(VISUALIZER_SHARED_MEMORY_LABEL, O_RDWR, 0666);
-
-    if (shmFd == -1) {
-        shmFd =
-            shm_open(VISUALIZER_SHARED_MEMORY_LABEL, O_CREAT | O_RDWR, 0666);
-
-        if (shmFd != -1) {
-            ftruncate(shmFd, sizeof(VisualizerSharedData));
-        }
-    }
-
-    if (shmFd == -1) {
-        return false;
-    }
-
-    sharedData = (VisualizerSharedData*)mmap(
-        nullptr,
-        sizeof(VisualizerSharedData),
-        PROT_READ | PROT_WRITE,
-        MAP_SHARED,
-        shmFd,
-        0
-    );
-
-    if (sharedData == MAP_FAILED) {
-        sharedData = nullptr;
-    }
-#endif
-
-    return sharedData != nullptr;
+    delete visualizer;
 }
 
 void VisualizerDialog::applySettings() {
-    sharedData->fps.store(fpsSpin->value());
-    sharedData->meshWidth.store(meshWidthSpin->value());
-    sharedData->meshHeight.store(meshHeightSpin->value());
+    visualizer->setSettings(
+        meshWidthSpin->value(),
+        meshHeightSpin->value(),
+        fpsSpin->value()
+    );
 
     settings.fps = fpsSpin->value();
     settings.meshWidth = meshWidthSpin->value();
     settings.meshHeight = meshHeightSpin->value();
 }
 
-void VisualizerDialog::setChannels(const AudioChannels channels) {
+void VisualizerDialog::setChannels(const u8 channels) {
     if (useRandomPresetsCheckbox->isChecked()) {
         const QString randomPresetDir = randomPresetDirInput->text();
 
@@ -279,7 +147,7 @@ void VisualizerDialog::setChannels(const AudioChannels channels) {
         QStringList milkFiles;
 
         std::function<void(const QDir&)> readDir =
-            [&](const QDir& dir) -> void {
+            [&readDir, &milkFiles](const QDir& dir) -> void {
             const QFileInfoList files = dir.entryInfoList(
                 { u"*.milk"_s },
                 QDir::Files | QDir::Readable | QDir::NoDotAndDotDot
@@ -317,27 +185,11 @@ void VisualizerDialog::setChannels(const AudioChannels channels) {
         openPreset(presetPath);
     }
 
-    sharedData->newTrack.store(true);
-    sharedData->channels.store(channels);
-    sharedData->bufferSize.store(
-        channels == AudioChannels::Surround51 ? MIN_BUFFER_SIZE_3BYTES
-                                              : MIN_BUFFER_SIZE
-    );
+    this->channels = channels;
 }
 
-void VisualizerDialog::addSamples(const f32* const buffer) {
-    memcpy(
-        sharedData->audioBuffer.data(),
-        buffer,
-        sharedData->bufferSize.load()
-    );
-
-    sharedData->hasNewData.store(true);
-}
-
-void VisualizerDialog::clear() {
-    memset(sharedData->audioBuffer.data(), 0, sharedData->bufferSize.load());
-    sharedData->hasNewData.store(true);
+void VisualizerDialog::addSamples(const f32* const samples) {
+    visualizer->submitAudioData(samples);
 }
 
 void VisualizerDialog::loadPreset() {
@@ -356,16 +208,6 @@ void VisualizerDialog::openPreset(const QString& presetPath) {
         return;
     }
 
-    const QByteArray utf8Path = presetPath.toUtf8();
-
-    memcpy(
-        sharedData->presetPath.data(),
-        utf8Path.constData(),
-        utf8Path.size()
-    );
-
-    sharedData->presetPath[utf8Path.size()] = '\0';
-    sharedData->loadPreset.store(true);
-
+    visualizer->loadPreset(presetPath.toStdString());
     settings.presetPath = presetPath;
 }

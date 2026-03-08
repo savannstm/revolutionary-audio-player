@@ -2,33 +2,25 @@
 
 #include "Aliases.hpp"
 #include "Constants.hpp"
+#include "DockWidget.hpp"
 #include "Enums.hpp"
+#include "SpectrumVisualizer.hpp"
+#include "Visualizer.hpp"
 
 #include <QApplication>
 #include <QFile>
 #include <QGradient>
-#include <QJsonArray>
 #include <QJsonObject>
+#include <QVariantList>
 #include <miniaudio.h>
 
-template <typename T>
-auto toJsonArray(const T& container) -> QJsonArray;
+struct EqualizerSettings {
+    [[nodiscard]] auto toJSON() const -> QJsonObject;
+    static auto fromJSON(const QJsonObject& obj) -> EqualizerSettings;
 
-template <typename T, u16 N>
-auto fromJsonArray(const QJsonArray& jsonArray) -> array<T, N>;
-
-auto toStringList(const QJsonArray& jsonArray) -> QStringList;
-
-class EqualizerSettings {
-   public:
-    EqualizerSettings() = default;
-    explicit EqualizerSettings(const QJsonObject& obj);
-
-    [[nodiscard]] auto stringify() const -> QJsonObject;
-
-    QMap<Bands, QMap<QString, QVector<i8>>> presets = { { Bands::Ten, {} },
-                                                        { Bands::Eighteen, {} },
-                                                        { Bands::Thirty, {} } };
+    QMap<Bands, QMap<QString, QList<i8>>> presets = { { Bands::Ten, {} },
+                                                      { Bands::Eighteen, {} },
+                                                      { Bands::Thirty, {} } };
 
     array<i8, THIRTY_BANDS> gains;
 
@@ -41,24 +33,18 @@ class EqualizerSettings {
     Bands bandCount = Bands::Ten;
 };
 
-class DockWidgetSettings {
-   public:
-    explicit DockWidgetSettings() = default;
-    explicit DockWidgetSettings(const QJsonObject& obj);
-
-    [[nodiscard]] auto stringify() const -> QJsonObject;
+struct DockWidgetSettings {
+    [[nodiscard]] auto toJSON() const -> QJsonObject;
+    static auto fromJSON(const QJsonObject& obj) -> DockWidgetSettings;
 
     u16 size = 0;
     u16 imageSize = 0;
-    DockWidgetPosition position = DockWidgetPosition::Right;
+    DockWidget::Position position = DockWidget::Position::Right;
 };
 
-class SpectrumVisualizerSettings {
-   public:
-    explicit SpectrumVisualizerSettings() = default;
-    explicit SpectrumVisualizerSettings(const QJsonObject& obj);
-
-    [[nodiscard]] auto stringify() const -> QJsonObject;
+struct SpectrumVisualizerSettings {
+    [[nodiscard]] auto toJSON() const -> QJsonObject;
+    static auto fromJSON(const QJsonObject& obj) -> SpectrumVisualizerSettings;
 
     QGradient::Preset preset = QGradient::MorpheusDen;
 
@@ -67,21 +53,18 @@ class SpectrumVisualizerSettings {
 
     bool hidden = false;
     Bands bands = Bands::Eighteen;
-    SpectrumVisualizerMode mode = SpectrumVisualizerMode::DBFS;
+    SpectrumVisualizer::Mode mode = SpectrumVisualizer::Mode::DBFS;
 };
 
-class CoreSettings {
-   public:
-    explicit CoreSettings() = default;
-    explicit CoreSettings(const QJsonObject& obj);
-
-    [[nodiscard]] auto stringify() const -> QJsonObject;
+struct CoreSettings {
+    [[nodiscard]] auto toJSON() const -> QJsonObject;
+    static auto fromJSON(const QJsonObject& obj) -> CoreSettings;
 
     // Runtime only
     optional<ma_device_id> outputDeviceID;
 
-    QString settingsDir = QApplication::applicationDirPath();
-    QString playlistsDir = QApplication::applicationDirPath();
+    QString settingsDir = qApp->applicationDirPath();
+    QString playlistsDir = qApp->applicationDirPath();
 
     QString lastDir;
     QString outputDevice;
@@ -95,14 +78,14 @@ class CoreSettings {
     i8 currentTab = -1;
 
     Qt::ColorScheme applicationTheme;
+
+    bool checkForUpdates = true;
+    ProgressDisplayMode progressDisplayMode = ProgressDisplayMode::Elapsed;
 };
 
-class ShellIntegrationSettings {
-   public:
-    explicit ShellIntegrationSettings() = default;
-    explicit ShellIntegrationSettings(const QJsonObject& obj);
-
-    [[nodiscard]] auto stringify() const -> QJsonObject;
+struct ShellIntegrationSettings {
+    [[nodiscard]] auto toJSON() const -> QJsonObject;
+    static auto fromJSON(const QJsonObject& obj) -> ShellIntegrationSettings;
 
     // Enabled file extensions, as bitflags integer.
     Associations enabledAssociations;
@@ -111,15 +94,11 @@ class ShellIntegrationSettings {
     bool contextMenuEntryEnabled = false;
 };
 
-class PlaylistSettings {
-   public:
-    explicit PlaylistSettings() = default;
-    explicit PlaylistSettings(const QJsonObject& obj);
+struct PlaylistSettings {
+    [[nodiscard]] auto toJSON() const -> QJsonObject;
+    static auto fromJSON(const QJsonObject& obj) -> PlaylistSettings;
 
-    [[nodiscard]] auto stringify() const -> QJsonObject;
-
-    array<TrackProperty, TRACK_PROPERTY_COUNT> defaultColumns =
-        DEFAULT_COLUMN_PROPERTIES;
+    ColumnSettingsArray columns = DEFAULT_COLUMN_SETTINGS;
     PlaylistNaming playlistNaming = PlaylistNaming::DirectoryName;
 
     // Automatically set the playlist background from the track cover.
@@ -129,29 +108,23 @@ class PlaylistSettings {
     bool prioritizeExternalCover = false;
 };
 
-class VisualizerSettings {
-   public:
-    explicit VisualizerSettings() = default;
-    explicit VisualizerSettings(const QJsonObject& obj);
-
-    [[nodiscard]] auto stringify() const -> QJsonObject;
+struct VisualizerSettings {
+    [[nodiscard]] auto toJSON() const -> QJsonObject;
+    static auto fromJSON(const QJsonObject& obj) -> VisualizerSettings;
 
     bool useRandomPresets = false;
     QString randomPresetDir =
-        QApplication::applicationDirPath() + u"/visualizer/presets"_qssv;
+        qApp->applicationDirPath() + u"/visualizer/presets"_qssv;
     QString presetPath;
 
-    u16 meshWidth = DEFAULT_MESH_WIDTH;
-    u16 meshHeight = DEFAULT_MESH_HEIGHT;
+    u16 meshWidth = Visualizer::DEFAULT_MESH_WIDTH;
+    u16 meshHeight = Visualizer::DEFAULT_MESH_HEIGHT;
     u16 fps = 0;
 };
 
-class Settings {
-   public:
-    explicit Settings() = default;
-    explicit Settings(const QJsonObject& settingsObject);
-
-    [[nodiscard]] auto stringify() const -> QJsonObject;
+struct Settings {
+    [[nodiscard]] auto toJSON() const -> QJsonObject;
+    static auto fromJSON(const QJsonObject& obj) -> Settings;
     void save(QFile& file) const;
 
     CoreSettings core;
@@ -163,21 +136,12 @@ class Settings {
     DockWidgetSettings dockWidget;
 };
 
-class PlaylistObject {
-   public:
-    explicit PlaylistObject(const u16 rowCount) {
-        tracks.reserve(rowCount);
-        order.reserve(rowCount);
-        cueOffsets.reserve(rowCount);
-        cueFilePaths.reserve(rowCount);
-    };
+struct PlaylistObject {
+    [[nodiscard]] auto toJSON() const -> QJsonObject;
+    static auto fromJSON(const QJsonObject& obj) -> PlaylistObject;
+    static auto withRowCount(u32 rowCount) -> PlaylistObject;
 
-    explicit PlaylistObject(const QJsonObject& obj);
-
-    [[nodiscard]] auto stringify() const -> QJsonObject;
-
-    array<TrackProperty, TRACK_PROPERTY_COUNT> defaultColumns =
-        DEFAULT_COLUMN_PROPERTIES;
+    ColumnSettingsArray columns;
 
     QStringList tracks;
     QStringList order;

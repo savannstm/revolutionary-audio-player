@@ -11,43 +11,53 @@ using namespace magic_enum::bitwise_operators;
         static_cast<std::underlying_type_t<EnumType>>(EnumType::Member)
 
 enum class TrackProperty : u8 {
-    Play,
-    Title,
-    Artist,
-    TrackNumber,
     Album,
     AlbumArtist,
-    Genre,
-    Year,
-    Duration,
-    Composer,
-    BPM,
-    Language,
-    DiscNumber,
-    Comment,
-    Publisher,
+    Arranger,
+    Artist,
+    AudioFormat,
     Bitrate,
-    SampleRate,
+    BPM,
+    CatalogNumber,
     Channels,
-    Format,
+    Comment,
+    Compilation,
+    Composer,
+    Conductor,
+    CoverArt,
+    DiscNumber,
+    Duration,
+    FeaturingArtists,
+    Genre,
+    Grouping,
+    ISRC,
+    Label,
+    Language,
+    LastPlayed,
+    Lyricist,
+    Lyrics,
+    Order,
+    OriginalArtist,
+    OriginalReleaseDate,
     Path,
-    Order
+    PlayCount,
+    Producer,
+    Publisher,
+    Rating,
+    ReleaseDate,
+    Remixer,
+    SampleFormat,
+    SampleRate,
+    Subtitle,
+    Title,
+    TotalDiscs,
+    TotalTracks,
+    TrackNumber,
+    Year
 };
 
 constexpr u8 TRACK_PROPERTY_COUNT = magic_enum::enum_count<TrackProperty>();
-
-enum class Direction : u8 {
-    Forward,
-    BackwardRandom,
-    Backward,
-    ForwardRandom
-};
-
-enum class RepeatMode : u8 {
-    Off,
-    Track,
-    Playlist,
-};
+constexpr auto TRACK_PROPERTIES = magic_enum::enum_values<TrackProperty>();
 
 enum class PlaylistNaming : u8 {
     DirectoryName,
@@ -61,28 +71,7 @@ enum class PlaylistFileType : u8 {
     CUE
 };
 
-enum class TabRemoveMode : u8 {
-    Single,
-    ToLeft,
-    ToRight,
-    Other
-};
-
-enum class DockWidgetPosition : u8 {
-    Left,
-    Top,
-    Bottom,
-    Right
-};
-
-enum class SpectrumVisualizerMode : u8 {
-    Relative,
-    DBFS,
-    Equal,
-    Waveform
-};
-
-enum class Bands : u8 {
+enum Bands : u8 {
     Three = 3,
     Five = 5,
     Ten = 10,
@@ -96,29 +85,19 @@ ENUM_CONSTANT(Bands, Ten, TEN, BANDS);
 ENUM_CONSTANT(Bands, Eighteen, EIGHTEEN, BANDS);
 ENUM_CONSTANT(Bands, Thirty, THIRTY, BANDS);
 
-enum class SampleSize : u8 {
-    U8 = 1,
-    S16,
+constexpr Bands MAX_BANDS = *(magic_enum::enum_values<Bands>().end() - 1);
+
+enum SampleSize : u8 {
+    S16 = 2,
     S24,
+    // Alias for f32
     S32
-};
-
-enum class AudioChannels : u8 {
-    Zero = 0,
-    Mono = 1,
-    Stereo = 2,
-    Quad = 4,
-    Surround51 = 6,
-    Surround71 = 8,
-
-    // TODO: Support these someday
-    Surround102 = 12,
-    Surround222 = 24,
 };
 
 //! OGM is not an official standard by Xiph.org, so we'll never support it
 enum class Associations : u32 {
     None = 0,
+
     AAC = 1 << 0,
     AC3 = 1 << 1,
     ALAC = 1 << 2,
@@ -127,16 +106,37 @@ enum class Associations : u32 {
     MKA = 1 << 5,
     MP3 = 1 << 6,
     OGG = 1 << 7,
-    OGA = 1 << 17,
-    OGV = 1 << 18,
-    OGX = 1 << 19,
-    OPUS = 1 << 8,
-    WAV = 1 << 9,
-    MKV = 1 << 10,
-    MOV = 1 << 11,
-    MP4 = 1 << 12,
-    CUE = 1 << 13,
-    M3U = 1 << 14,
-    M3U8 = 1 << 15,
-    XSPF = 1 << 16,
+    OGA = 1 << 8,
+    OGV = 1 << 9,
+    OGX = 1 << 10,
+    OPUS = 1 << 11,
+    WAV = 1 << 12,
+
+    MKV = 1 << 13,
+    MOV = 1 << 14,
+    MP4 = 1 << 15,
+
+    CUE = 1 << 16,
+    M3U = 1 << 17,
+    M3U8 = 1 << 18,
+    XSPF = 1 << 19,
+};
+
+enum class ProgressDisplayMode : u8 {
+    Elapsed,
+    Remaining,
+};
+
+enum class TreeStatus : u8 {
+    Idle,
+    Suspended,
+    Playing
+};
+
+enum class AdvanceStatus : u8 {
+    PlaylistRepeated,
+    TrackRepeated,
+    TrackFinished,
+    PlaylistFinished,
+    PlaybackFinished,
 };

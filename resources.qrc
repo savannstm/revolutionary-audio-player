@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="logo.png">icons/rap-logo.png</file>
+        <file alias="ru.qm">build/rap.ru.qm</file>
+        <file alias="en.qm">build/rap.en.qm</file>
+    </qresource>
+</RCC>

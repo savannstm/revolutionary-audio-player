@@ -24,11 +24,11 @@ void CustomSlider::mouseMoveEvent(QMouseEvent* const event) {
             this
         );
 
-        const u16 sliderMin = groove.x();
-        const u16 sliderMax = groove.right() - (handle.width() / 2) + 1;
+        const i32 sliderMin = groove.x();
+        const i32 sliderMax = groove.right() - (handle.width() / 2) + 1;
 
         const u16 mouseX = event->pos().x();
-        const u16 value = QStyle::sliderValueFromPosition(
+        const i32 value = QStyle::sliderValueFromPosition(
             this->minimum(),
             this->maximum(),
             mouseX - sliderMin,
@@ -59,11 +59,11 @@ void CustomSlider::mousePressEvent(QMouseEvent* const event) {
             this
         );
 
-        const u16 sliderMin = groove.x();
-        const u16 sliderMax = groove.right() - (handle.width() / 2) + 1;
+        const i32 sliderMin = groove.x();
+        const i32 sliderMax = groove.right() - (handle.width() / 2) + 1;
 
         const u16 mouseX = event->pos().x();
-        const u16 value = QStyle::sliderValueFromPosition(
+        const i32 value = QStyle::sliderValueFromPosition(
             this->minimum(),
             this->maximum(),
             mouseX - sliderMin,

@@ -6,7 +6,6 @@
 #include "FWD.hpp"
 
 #include <QFrame>
-#include <QTimer>
 
 // TODO: Allow creating custom presets
 
@@ -14,39 +13,41 @@ class SpectrumVisualizer : public QFrame {
     Q_OBJECT
 
    public:
+    enum class Mode : u8 {
+        Relative,
+        DBFS,
+        Equal,
+        Waveform
+    };
+
     explicit SpectrumVisualizer(
-        const f32* bufferData,
         const shared_ptr<Settings>& settings_,
         QWidget* parent = nullptr
     );
 
-    constexpr void setMode(SpectrumVisualizerMode mode_);
+    constexpr void setMode(Mode mode_);
 
     constexpr void setGradient(const QGradient& gradient_) {
         gradient = gradient_;
     }
 
-    constexpr void setAudioProperties(const u32 rate, const AudioChannels chn) {
-        sampleRate = rate;
-        channels = chn;
-
-        if (channels == AudioChannels::Surround51) {
-            bufferSize = MIN_BUFFER_SIZE_3BYTES;
-        } else {
-            bufferSize = MIN_BUFFER_SIZE;
-        }
-    }
+    void visualize(f32* const samples) {
+        memcpy(
+            this->samples.data(),
+            samples,
+            usize(FFT_SAMPLE_COUNT * F32_SIZE)
+        );
+        buildPeaks();
+        update();
+    };
 
     constexpr void setBandCount(Bands bands);
 
     void reset();
-    void start();
-    void stop();
-
-    const f32* buffer;
 
    signals:
     void closed();
+    void samplesRequested();
 
    protected:
     void paintEvent(QPaintEvent* event) override;
@@ -54,35 +55,33 @@ class SpectrumVisualizer : public QFrame {
     void closeEvent(QCloseEvent* event) override;
 
    private:
-    inline void buildPeaks();
+    void buildPeaks();
     inline auto isDetached() -> bool;
     inline void showCustomContextMenu();
     inline void toggleFullscreen(bool isFullscreen);
 
-    array<f32, MIN_BUFFER_SIZE> fftSamples;
+    static constexpr QSize MINIMUM_VISUALIZER_SIZE = QSize(128, 32);
+    static constexpr u16 FFT_OUTPUT_COUNT = 257;
+
+    array<f32, FFT_SAMPLE_COUNT> samples;
     alignas(
         sizeof(i32) * CHAR_BIT
-    ) array<AVComplexFloat, FFT_OUTPUT_SAMPLE_COUNT> fftOutput;
-    array<f32, FFT_OUTPUT_SAMPLE_COUNT> fftMagnitudes;
-    array<f32, THIRTY_BANDS + 1> fftBandBins;
-    array<f32, THIRTY_BANDS> peaks;
+    ) array<AVComplexFloat, FFT_OUTPUT_COUNT> fftOutput;
+    array<f32, FFT_OUTPUT_COUNT> fftMagnitudes;
+    array<f32, usize(MAX_BANDS) + 1> fftBandBins;
+    array<f32, usize(MAX_BANDS)> peaks;
+
+    u32 fftCollectedCount;
+
+    FFmpeg::TXContext fftCtx;
+    av_tx_fn fft;
 
     QGradient gradient;
-    QTimer timer;
 
     span<const f32> frequencies = span<const f32>(
         getFrequenciesForBands(Bands::Eighteen),
         EIGHTEEN_BANDS
     );
-    FFmpeg::TXContext fftCtx;
-    av_tx_fn fft;
 
     SpectrumVisualizerSettings& settings;
-
-    u32 sampleRate = 0;
-
-    u16 bufferSize;
-    u16 fftSampleCount = 0;
-
-    AudioChannels channels;
 };

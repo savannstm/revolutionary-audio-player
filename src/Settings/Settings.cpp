@@ -1,7 +1,10 @@
 #include "Settings.hpp"
 
-#include "Logger.hpp"
+#include "Constants.hpp"
+#include "Enums.hpp"
 
+#include <QDebug>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QStyle>
 
@@ -21,7 +24,7 @@ auto fromJsonArray(const QJsonArray& jsonArray) -> array<T, N> {
     array<T, N> result{};
     const u16 count = min<u16>(jsonArray.size(), N);
 
-    for (const u16 idx : range(0, count)) {
+    for (const u16 idx : range<u16>(0, count)) {
         result[idx] = jsonArray[idx].toVariant().value<T>();
     }
 
@@ -32,33 +35,32 @@ auto toStringList(const QJsonArray& jsonArray) -> QStringList {
     QStringList list;
     list.reserve(jsonArray.size());
 
-    for (const auto& value : jsonArray) {
+    for (const auto value : jsonArray) {
         list.append(value.toString());
     }
 
     return list;
 }
 
-// EqualizerSettings implementation
-EqualizerSettings::EqualizerSettings(const QJsonObject& obj) {
-    enabled = obj[u"enabled"_qsv].toBool();
-    bandIndex = obj[u"bandIndex"_qsv].toInt();
-    presetIndex = obj[u"presetIndex"_qsv].toInt();
+auto EqualizerSettings::fromJSON(const QJsonObject& obj) -> EqualizerSettings {
+    QMap<Bands, QMap<QString, QList<i8>>> presets = { { Bands::Ten, {} },
+                                                      { Bands::Eighteen, {} },
+                                                      { Bands::Thirty, {} } };
 
-    const QJsonObject presetsObj = obj[u"presets"_qsv].toObject();
+    const QJsonObject presetsObj = obj["presets"_L1].toObject();
 
-    for (const QStringView bandKey : { u"10"_qsv, u"18"_qsv, u"30"_qsv }) {
+    for (const QLatin1StringView bandKey : { "10"_L1, "18"_L1, "30"_L1 }) {
         if (presetsObj.contains(bandKey)) {
             const QJsonObject bandPresetsObj = presetsObj[bandKey].toObject();
-            QMap<QString, QVector<i8>> bandPresets;
+            QMap<QString, QList<i8>> bandPresets;
 
             for (const QString& presetName : bandPresetsObj.keys()) {
                 const auto gainsArray = bandPresetsObj[presetName].toArray();
 
-                QVector<i8> gainsVec;
+                QList<i8> gainsVec;
                 gainsVec.reserve(gainsArray.size());
 
-                for (const auto& val : gainsArray) {
+                for (const auto val : gainsArray) {
                     gainsVec.emplace_back(i8(val.toInt()));
                 }
 
@@ -68,15 +70,16 @@ EqualizerSettings::EqualizerSettings(const QJsonObject& obj) {
             presets[Bands(bandKey.toInt())] = std::move(bandPresets);
         }
     }
+
+    return {
+        .presets = presets,
+        .presetIndex = u8(obj["presetIndex"_L1].toInt()),
+        .enabled = obj["enabled"_L1].toBool(),
+        .bandIndex = u8(obj["bandIndex"_L1].toInt()),
+    };
 }
 
-auto EqualizerSettings::stringify() const -> QJsonObject {
-    QJsonObject json;
-
-    json[u"enabled"_qsv] = enabled;
-    json[u"bandIndex"_qsv] = bandIndex;
-    json[u"presetIndex"_qsv] = presetIndex;
-
+auto EqualizerSettings::toJSON() const -> QJsonObject {
     QJsonObject presetsObj;
 
     for (const auto& [bandKey, bandPresets] : presets.toStdMap()) {
@@ -85,7 +88,7 @@ auto EqualizerSettings::stringify() const -> QJsonObject {
         for (const auto& [presetName, gainsVec] : bandPresets.toStdMap()) {
             QJsonArray gainsArray;
 
-            for (const auto& val : gainsVec) {
+            for (const auto val : gainsVec) {
                 gainsArray.append(val);
             }
 
@@ -95,80 +98,79 @@ auto EqualizerSettings::stringify() const -> QJsonObject {
         presetsObj[QString::number(u8(bandKey))] = bandPresetsObj;
     }
 
-    json[u"presets"_qsv] = presetsObj;
-
-    return json;
+    return {
+        { u"enabled"_s, enabled },
+        { u"bandIndex"_s, bandIndex },
+        { u"presetIndex"_s, presetIndex },
+        { u"presets"_s, presetsObj },
+    };
 }
 
-// DockWidgetSettings implementation
-DockWidgetSettings::DockWidgetSettings(const QJsonObject& obj) {
-    position = DockWidgetPosition(obj[u"position"_qsv].toInt());
-    size = obj[u"size"_qsv].toInt();
-    imageSize = obj[u"imageSize"_qsv].toInt();
+auto DockWidgetSettings::fromJSON(const QJsonObject& obj)
+    -> DockWidgetSettings {
+    return {
+        .size = u16(obj["size"_L1].toInt()),
+        .imageSize = u16(obj["imageSize"_L1].toInt()),
+        .position = DockWidget::Position(obj["position"_L1].toInt()),
+    };
 }
 
-auto DockWidgetSettings::stringify() const -> QJsonObject {
-    QJsonObject json;
-
-    json[u"size"_qsv] = size;
-    json[u"position"_qsv] = u8(position);
-    json[u"imageSize"_qsv] = imageSize;
-
-    return json;
+auto DockWidgetSettings::toJSON() const -> QJsonObject {
+    return {
+        { u"size"_s, size },
+        { u"position"_s, u8(position) },
+        { u"imageSize"_s, imageSize },
+    };
 }
 
-SpectrumVisualizerSettings::SpectrumVisualizerSettings(const QJsonObject& obj) {
-    gainFactor = f32(obj[u"gainFactor"_qsv].toDouble());
-    peakPadding = obj[u"peakPadding"_qsv].toInt();
-    hidden = obj[u"hidden"_qsv].toBool();
-    mode = SpectrumVisualizerMode(obj[u"mode"_qsv].toInt());
-    bands = Bands(obj[u"bands"_qsv].toInt());
-    preset = QGradient::Preset(obj[u"preset"_qsv].toInt());
+auto SpectrumVisualizerSettings::fromJSON(const QJsonObject& obj)
+    -> SpectrumVisualizerSettings {
+    return {
+        .preset = QGradient::Preset(obj["preset"_L1].toInt()),
+        .gainFactor = f32(obj["gainFactor"_L1].toDouble()),
+        .peakPadding = u8(obj["peakPadding"_L1].toInt()),
+        .hidden = obj["hidden"_L1].toBool(),
+        .bands = Bands(obj["bands"_L1].toInt()),
+        .mode = SpectrumVisualizer::Mode(obj["mode"_L1].toInt()),
+    };
 }
 
-auto SpectrumVisualizerSettings::stringify() const -> QJsonObject {
-    QJsonObject json;
-
-    json[u"gainFactor"_qsv] = gainFactor;
-    json[u"peakPadding"_qsv] = peakPadding;
-    json[u"hidden"_qsv] = hidden;
-    json[u"mode"_qsv] = u8(mode);
-    json[u"bands"_qsv] = u8(bands);
-    json[u"preset"_qsv] = preset;
-
-    return json;
+auto SpectrumVisualizerSettings::toJSON() const -> QJsonObject {
+    return {
+        { u"gainFactor"_s, gainFactor }, { u"peakPadding"_s, peakPadding },
+        { u"hidden"_s, hidden },         { u"mode"_s, u8(mode) },
+        { u"bands"_s, u8(bands) },       { u"preset"_s, preset },
+    };
 }
 
-VisualizerSettings::VisualizerSettings(const QJsonObject& obj) {
-    useRandomPresets = obj[u"useRandomPresets"_qsv].toBool();
-    randomPresetDir = obj[u"randomPresetDir"_qsv].toString();
-    meshWidth = obj[u"meshWidth"_qsv].toInt();
-    meshHeight = obj[u"meshHeight"_qsv].toInt();
-    fps = obj[u"fps"_qsv].toInt();
-    presetPath = obj[u"presetPath"_qsv].toString();
+auto VisualizerSettings::fromJSON(const QJsonObject& obj)
+    -> VisualizerSettings {
+    return {
+        .useRandomPresets = obj["useRandomPresets"_L1].toBool(),
+        .randomPresetDir = obj["randomPresetDir"_L1].toString(),
+        .presetPath = obj["presetPath"_L1].toString(),
+        .meshWidth = u16(obj["meshWidth"_L1].toInt()),
+        .meshHeight = u16(obj["meshHeight"_L1].toInt()),
+        .fps = u16(obj["fps"_L1].toInt()),
+    };
 }
 
-auto VisualizerSettings::stringify() const -> QJsonObject {
-    QJsonObject json;
-
-    json[u"useRandomPresets"_qsv] = useRandomPresets;
-    json[u"randomPresetDir"_qsv] = randomPresetDir;
-    json[u"meshWidth"_qsv] = meshWidth;
-    json[u"meshHeight"_qsv] = meshHeight;
-    json[u"fps"_qsv] = fps;
-    json[u"presetPath"_qsv] = presetPath;
-
-    return json;
+auto VisualizerSettings::toJSON() const -> QJsonObject {
+    return {
+        { u"useRandomPresets"_s, useRandomPresets },
+        { u"randomPresetDir"_s, randomPresetDir },
+        { u"meshWidth"_s, meshWidth },
+        { u"meshHeight"_s, meshHeight },
+        { u"fps"_s, fps },
+        { u"presetPath"_s, presetPath },
+    };
 }
 
-CoreSettings::CoreSettings(const QJsonObject& obj) {
-    lastDir = obj[u"lastDir"_qsv].toString();
-    outputDevice = obj[u"outputDevice"_qsv].toString();
-
+auto CoreSettings::fromJSON(const QJsonObject& obj) -> CoreSettings {
     ma_context context;
     ma_context_config config = ma_context_config_init();
     span<ma_device_info> playbackDevices;
-    ma_context_init(nullptr, -1, &config, &context);
+    ma_context_init(nullptr, 0, &config, &context);
 
     ma_device_info* playbackInfos = nullptr;
     u32 playbackCount = 0;
@@ -180,10 +182,12 @@ CoreSettings::CoreSettings(const QJsonObject& obj) {
             nullptr,
             nullptr
         ) != MA_SUCCESS) {
-        LOG_ERROR(u"Failed to get audio playback devices"_s);
+        qCritical() << "Failed to get audio playback devices"_L1;
     }
 
     playbackDevices = span<ma_device_info>(playbackInfos, playbackCount);
+    optional<ma_device_id> outputDeviceID;
+    QString outputDevice = obj["outputDevice"_L1].toString();
 
     for (const auto& device : playbackDevices) {
         if (outputDevice == device.name) {
@@ -193,152 +197,208 @@ CoreSettings::CoreSettings(const QJsonObject& obj) {
 
     ma_context_uninit(&context);
 
-    language = QLocale::Language(obj[u"language"_qsv].toBool());
+    return {
+        .outputDeviceID = outputDeviceID,
 
-    volume = obj[u"volume"_qsv].toInt();
-    currentTab = i8(obj[u"currentTab"_qsv].toInt());
+        .lastDir = obj["lastDir"_L1].toString(),
+        .outputDevice = std::move(outputDevice),
 
-    applicationStyle = obj[u"applicationStyle"_qsv].toString();
-    applicationTheme = Qt::ColorScheme(obj[u"applicationTheme"_qsv].toInt());
+        .applicationStyle = obj["applicationStyle"_L1].toString(),
+
+        .language = QLocale::Language(obj["language"_L1].toBool()),
+
+        .volume = u8(obj["volume"_L1].toInt()),
+        .currentTab = i8(obj["currentTab"_L1].toInt()),
+
+        .applicationTheme = Qt::ColorScheme(obj["applicationTheme"_L1].toInt()),
+
+        .checkForUpdates = obj["checkForUpdates"_L1].toBool(true),
+        .progressDisplayMode =
+            ProgressDisplayMode(obj["progressDisplayMode"_L1].toInt()),
+    };
 }
 
-auto CoreSettings::stringify() const -> QJsonObject {
-    QJsonObject json;
-
-    json[u"lastDir"_qsv] = lastDir;
-    json[u"outputDevice"_qsv] = outputDevice;
-
-    json[u"language"_qsv] = language;
-
-    json[u"volume"_qsv] = volume;
-    json[u"currentTab"_qsv] = currentTab;
-
-    json[u"applicationStyle"_qsv] = applicationStyle;
-    json[u"applicationTheme"_qsv] = u8(applicationTheme);
-
-    return json;
+auto CoreSettings::toJSON() const -> QJsonObject {
+    return {
+        { u"lastDir"_s, lastDir },
+        { u"outputDevice"_s, outputDevice },
+        { u"language"_s, language },
+        { u"volume"_s, volume },
+        { u"currentTab"_s, currentTab },
+        { u"applicationStyle"_s, applicationStyle },
+        { u"applicationTheme"_s, u8(applicationTheme) },
+        { u"checkForUpdates"_s, checkForUpdates },
+        { u"progressDisplayMode"_s, u8(progressDisplayMode) },
+    };
 }
 
-ShellIntegrationSettings::ShellIntegrationSettings(const QJsonObject& obj) {
-    enabledAssociations = Associations(obj[u"enabledAssociations"_qsv].toInt());
-    contextMenuEntryEnabled = obj[u"contextMenuEntryEnabled"_qsv].toBool();
+auto ShellIntegrationSettings::fromJSON(const QJsonObject& obj)
+    -> ShellIntegrationSettings {
+    return {
+        .enabledAssociations =
+            Associations(obj["enabledAssociations"_L1].toInt()),
+        .contextMenuEntryEnabled = obj["contextMenuEntryEnabled"_L1].toBool(),
+    };
 }
 
-auto ShellIntegrationSettings::stringify() const -> QJsonObject {
-    QJsonObject json;
-
-    json[u"enabledAssociations"_qsv] = i32(enabledAssociations);
-    json[u"contextMenuEntryEnabled"_qsv] = contextMenuEntryEnabled;
-
-    return json;
+auto ShellIntegrationSettings::toJSON() const -> QJsonObject {
+    return {
+        { u"enabledAssociations"_s, i32(enabledAssociations) },
+        { u"contextMenuEntryEnabled"_s, contextMenuEntryEnabled },
+    };
 }
 
-PlaylistSettings::PlaylistSettings(const QJsonObject& obj) {
-    QJsonArray columns = obj[u"defaultColumns"_qsv].toArray();
+auto PlaylistSettings::fromJSON(const QJsonObject& obj) -> PlaylistSettings {
+    const QJsonArray columnsArray = obj["columns"_L1].toArray();
+    ColumnSettingsArray columns;
 
-    for (const u8 idx : range(0, TRACK_PROPERTY_COUNT - 1)) {
-        defaultColumns[idx] = TrackProperty(columns[idx].toInt());
+    for (const auto [idx, val] : views::enumerate(columnsArray)) {
+        const QJsonObject settings = val.toObject();
+
+        columns[idx] = { .index = u8(settings["index"_L1].toInt()),
+                         .hidden = settings["hidden"_L1].toBool() };
     }
 
-    playlistNaming = PlaylistNaming(obj[u"playlistNaming"_qsv].toInt());
-    autoSetBackground = obj[u"autoSetBackground"_qsv].toBool();
-    prioritizeExternalCover = obj[u"autoSetBackground"_qsv].toBool();
+    return {
+        .columns = columns,
+        .playlistNaming = PlaylistNaming(obj["playlistNaming"_L1].toInt()),
+        .autoSetBackground = obj["autoSetBackground"_L1].toBool(),
+        .prioritizeExternalCover = obj["autoSetBackground"_L1].toBool(),
+    };
 }
 
-auto PlaylistSettings::stringify() const -> QJsonObject {
+auto PlaylistSettings::toJSON() const -> QJsonObject {
     QJsonObject json;
     QJsonArray columns;
 
-    for (const u8 idx : range(0, TRACK_PROPERTY_COUNT - 1)) {
-        columns.append(u8(defaultColumns[idx]));
+    for (const auto [index, hidden] : this->columns) {
+        QJsonObject columnSettings;
+        columnSettings["index"_L1] = index;
+        columnSettings["hidden"_L1] = hidden;
+        columns.append(columnSettings);
     }
 
-    json[u"defaultColumns"_qsv] = columns;
-    json[u"playlistNaming"_qsv] = u8(playlistNaming);
-    json[u"autoSetBackground"_qsv] = autoSetBackground;
-    json[u"prioritizeExternalCover"_qsv] = prioritizeExternalCover;
-
-    return json;
+    return {
+        { u"columns"_s, columns },
+        { u"playlistNaming"_s, u8(playlistNaming) },
+        { u"autoSetBackground"_s, autoSetBackground },
+        { u"prioritizeExternalCover"_s, prioritizeExternalCover },
+    };
 }
 
 // Settings implementation
-Settings::Settings(const QJsonObject& settingsObject) {
-    core = CoreSettings(settingsObject[u"core"_qsv].toObject());
-
-    shell = ShellIntegrationSettings(settingsObject[u"shell"_qsv].toObject());
-
-    playlist = PlaylistSettings(settingsObject[u"playlist"_qsv].toObject());
-
-    equalizer = EqualizerSettings(settingsObject[u"equalizer"_qsv].toObject());
-
-    dockWidget =
-        DockWidgetSettings(settingsObject[u"dockWidget"_qsv].toObject());
-
-    spectrumVisualizer = SpectrumVisualizerSettings(
-        settingsObject[u"spectrumVisualizer"_qsv].toObject()
-    );
-
-    visualizer =
-        VisualizerSettings(settingsObject[u"visualizer"_qsv].toObject());
+auto Settings::fromJSON(const QJsonObject& obj) -> Settings {
+    return {
+        .core = CoreSettings::fromJSON(obj["core"_L1].toObject()),
+        .shell = ShellIntegrationSettings::fromJSON(obj["shell"_L1].toObject()),
+        .playlist = PlaylistSettings::fromJSON(obj["playlist"_L1].toObject()),
+        .equalizer =
+            EqualizerSettings::fromJSON(obj["equalizer"_L1].toObject()),
+        .spectrumVisualizer = SpectrumVisualizerSettings::fromJSON(
+            obj["spectrumVisualizer"_L1].toObject()
+        ),
+        .visualizer =
+            VisualizerSettings::fromJSON(obj["visualizer"_L1].toObject()),
+        .dockWidget =
+            DockWidgetSettings::fromJSON(obj["dockWidget"_L1].toObject()),
+    };
 }
 
-auto Settings::stringify() const -> QJsonObject {
-    QJsonObject json;
-
-    json[u"core"_qsv] = core.stringify();
-    json[u"shell"_qsv] = shell.stringify();
-    json[u"playlist"_qsv] = playlist.stringify();
-    json[u"equalizer"_qsv] = equalizer.stringify();
-    json[u"dockWidget"_qsv] = dockWidget.stringify();
-    json[u"spectrumVisualizer"_qsv] = spectrumVisualizer.stringify();
-    json[u"visualizer"_qsv] = visualizer.stringify();
-
-    return json;
+auto Settings::toJSON() const -> QJsonObject {
+    return {
+        { u"core"_s, core.toJSON() },
+        { u"shell"_s, shell.toJSON() },
+        { u"playlist"_s, playlist.toJSON() },
+        { u"equalizer"_s, equalizer.toJSON() },
+        { u"dockWidget"_s, dockWidget.toJSON() },
+        { u"spectrumVisualizer"_s, spectrumVisualizer.toJSON() },
+        { u"visualizer"_s, visualizer.toJSON() },
+    };
 }
 
 void Settings::save(QFile& file) const {
-    file.write(QJsonDocument(stringify()).toJson(QJsonDocument::Compact));
+    file.write(QJsonDocument(toJSON()).toJson(QJsonDocument::Compact));
 }
 
-PlaylistObject::PlaylistObject(const QJsonObject& obj) {
-    defaultColumns = fromJsonArray<TrackProperty, TRACK_PROPERTY_COUNT>(
-        obj[u"defaultColumns"_qsv].toArray()
-    );
+auto PlaylistObject::withRowCount(const u32 rowCount) -> PlaylistObject {
+    QStringList tracks;
+    QStringList order;
+    QStringList cueFilePaths;
+    QVariantList cueOffsets;
 
-    tracks = toStringList(obj[u"tracks"_qsv].toArray());
-    order = toStringList(obj[u"order"_qsv].toArray());
-    cueFilePaths = toStringList(obj[u"cueFilePaths"_qsv].toArray());
+    tracks.reserve(rowCount);
+    order.reserve(rowCount);
+    cueOffsets.reserve(rowCount);
+    cueFilePaths.reserve(rowCount);
 
+    return {
+        .tracks = std::move(tracks),
+        .order = std::move(order),
+        .cueFilePaths = std::move(cueFilePaths),
+        .cueOffsets = std::move(cueOffsets),
+    };
+};
+
+auto PlaylistObject::fromJSON(const QJsonObject& obj) -> PlaylistObject {
+    const QJsonArray columnsArray = obj["columns"_L1].toArray();
+    ColumnSettingsArray columns;
+
+    for (const auto [idx, val] : views::enumerate(columnsArray)) {
+        const QJsonObject settings = val.toObject();
+
+        columns[idx] = { .index = u8(settings["index"_L1].toInt()),
+                         .hidden = settings["hidden"_L1].toBool() };
+    }
+
+    QStringList tracks = toStringList(obj["tracks"_L1].toArray());
+
+    QVariantList cueOffsets;
     cueOffsets.reserve(tracks.size());
 
-    const QJsonArray cueOffsetsArray = obj[u"cueOffsets"_qsv].toArray();
+    const QJsonArray cueOffsetsArray = obj["cueOffsets"_L1].toArray();
 
-    for (const auto& element : cueOffsetsArray) {
+    for (const auto element : cueOffsetsArray) {
         cueOffsets.append(element.toVariant());
     }
 
-    tabLabel = obj[u"tabLabel"_qsv].toString();
-    backgroundImagePath = obj[u"backgroundImagePath"_qsv].toString();
+    return {
+        .columns = columns,
+        .tracks = std::move(tracks),
+        .order = toStringList(obj["order"_L1].toArray()),
+        .cueFilePaths = toStringList(obj["cueFilePaths"_L1].toArray()),
 
-    tabColor = obj[u"tabColor"_qsv].toString();
-    backgroundOpacity = f32(obj[u"backgroundOpacity"_qsv].toDouble());
+        .cueOffsets = std::move(cueOffsets),
+
+        .tabLabel = obj["tabLabel"_L1].toString(),
+        .backgroundImagePath = obj["backgroundImagePath"_L1].toString(),
+
+        .tabColor = obj["tabColor"_L1].toString(),
+        .backgroundOpacity = f32(obj["backgroundOpacity"_L1].toDouble()),
+    };
 }
 
-auto PlaylistObject::stringify() const -> QJsonObject {
-    QJsonObject json;
+auto PlaylistObject::toJSON() const -> QJsonObject {
+    QJsonArray columns;
 
-    json[u"defaultColumns"_qsv] = toJsonArray(defaultColumns);
+    for (const auto [index, hidden] : this->columns) {
+        QJsonObject columnSettings;
+        columnSettings["index"_L1] = index;
+        columnSettings["hidden"_L1] = hidden;
+        columns.append(columnSettings);
+    }
 
-    json[u"tracks"_qsv] = QJsonArray::fromStringList(tracks);
-    json[u"order"_qsv] = QJsonArray::fromStringList(order);
-    json[u"cueOffsets"_qsv] = toJsonArray(cueOffsets);
-    json[u"cueFilePaths"_qsv] = toJsonArray(cueFilePaths);
+    return {
+        { u"columns"_s, columns },
 
-    json[u"tabLabel"_qsv] = tabLabel;
-    json[u"backgroundImagePath"_qsv] = backgroundImagePath;
+        { u"tracks"_s, QJsonArray::fromStringList(tracks) },
+        { u"order"_s, QJsonArray::fromStringList(order) },
+        { u"cueOffsets"_s, toJsonArray(cueOffsets) },
+        { u"cueFilePaths"_s, toJsonArray(cueFilePaths) },
 
-    json[u"tabColor"_qsv] = tabColor;
-    json[u"backgroundOpacity"_qsv] = backgroundOpacity;
+        { u"tabLabel"_s, tabLabel },
+        { u"backgroundImagePath"_s, backgroundImagePath },
 
-    return json;
+        { u"tabColor"_s, tabColor },
+        { u"backgroundOpacity"_s, backgroundOpacity },
+    };
 }

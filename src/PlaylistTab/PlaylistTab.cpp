@@ -120,7 +120,7 @@ void PlaylistTab::createContextMenu() {
         const QColor color = QColorDialog::getColor();
         const QString colorName = color.name();
 
-        if (colorName == u"#ffffff"_qsv || colorName == u"#000000"_qsv) {
+        if (colorName == "#ffffff"_L1 || colorName == "#000000"_L1) {
             setStyleSheet(QString());
         } else {
             setColor(colorName);
@@ -133,9 +133,11 @@ void PlaylistTab::createContextMenu() {
     } else {
         // NOLINTBEGIN Code is kinda understanable
         emit removeTabsRequested(
-            selectedAction == removeToLeftAction    ? TabRemoveMode::ToLeft
-            : selectedAction == removeToRightAction ? TabRemoveMode::ToRight
-                                                    : TabRemoveMode::Other
+            selectedAction == removeToLeftAction
+                ? PlaylistView::TabRemoveMode::ToLeft
+            : selectedAction == removeToRightAction
+                ? PlaylistView::TabRemoveMode::ToRight
+                : PlaylistView::TabRemoveMode::Other
         );
         // NOLINTEND
     }
@@ -229,11 +231,11 @@ void PlaylistTab::setColor(const QString& color) {
            (0.114F * f32(qcolor.blue())));
 
     setStyleSheet(
-        u"PlaylistTab { background-color: %1; }\nPlaylistTabLabel { color: %2 }\nQToolButton { color: %2; background-color: %3; }"_s
+        "PlaylistTab { background-color: %1; }\nPlaylistTabLabel { color: %2 }\nQToolButton { color: %2; background-color: %3; }"_L1
             .arg(color)
             .arg(
-                (brightness > BRIGHTNESS_THRESHOLD) ? u"#000000"_s
-                                                    : u"#FFFFFF"_s
+                (brightness > BRIGHTNESS_THRESHOLD) ? "#000000"_L1
+                                                    : "#FFFFFF"_L1
             )
             .arg(qcolor.lighter(LIGHTNESS_FACTOR).name())
     );

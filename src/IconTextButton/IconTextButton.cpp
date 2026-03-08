@@ -7,7 +7,7 @@
 void IconTextButton::paintEvent(QPaintEvent* const event) {
     event->ignore();
 
-    QPainter painter = QPainter(this);
+    auto painter = QPainter(this);
     QStyleOptionButton option;
     initStyleOption(&option);
 

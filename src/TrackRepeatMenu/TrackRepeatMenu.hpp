@@ -6,8 +6,8 @@
 #include <QDialog>
 
 struct SkipSection {
-    u16 start;
-    u16 end;
+    u32 start;
+    u32 end;
 };
 
 class TrackRepeatMenu : public QDialog {
@@ -16,11 +16,11 @@ class TrackRepeatMenu : public QDialog {
    public:
     explicit TrackRepeatMenu(QWidget* parent = nullptr);
 
-    void setDuration(u16 seconds);
+    void setDuration(u32 seconds);
 
-    [[nodiscard]] auto startSecond() const -> u16 { return startSecond_; }
+    [[nodiscard]] auto startSecond() const -> u32 { return startSecond_; }
 
-    [[nodiscard]] auto endSecond() const -> u16 { return endSecond_; }
+    [[nodiscard]] auto endSecond() const -> u32 { return endSecond_; }
 
     [[nodiscard]] auto skipSections() const -> const vector<SkipSection>& {
         return skipSections_;
@@ -61,6 +61,6 @@ class TrackRepeatMenu : public QDialog {
     QPushButton* const addButton;
     QPushButton* const removeButton;
 
-    u16 startSecond_ = 0;
-    u16 endSecond_ = 0;
+    u32 startSecond_ = 0;
+    u32 endSecond_ = 0;
 };

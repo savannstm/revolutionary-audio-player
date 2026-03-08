@@ -2,9 +2,7 @@
 
 #include <QAction>
 
-ActionButton::ActionButton(QWidget* parent) : QPushButton(parent) {}
-
-void ActionButton::setAction(QAction* action) {
+void ActionButton::setAction(QAction* const action) {
     if ((actionOwner != nullptr) && actionOwner != action) {
         disconnect(
             this,

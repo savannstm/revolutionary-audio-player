@@ -1,6 +1,6 @@
 #include "PulseAudioDeviceMonitor.hpp"
 
-#include "Logger.hpp"
+#include <QDebug>
 
 #ifdef Q_OS_LINUX
 PulseAudioDeviceMonitor::PulseAudioDeviceMonitor(QObject* const parent) :
@@ -20,13 +20,22 @@ PulseAudioDeviceMonitor::PulseAudioDeviceMonitor(QObject* const parent) :
 }
 
 PulseAudioDeviceMonitor::~PulseAudioDeviceMonitor() {
+    if (mainloop != nullptr) {
+        pa_mainloop_quit(mainloop, 0);
+    }
+
+    if (mainloopThread != nullptr) {
+        mainloopThread->quit();
+        mainloopThread->wait();
+        delete mainloopThread;
+    }
+
     if (context != nullptr) {
         pa_context_disconnect(context);
         pa_context_unref(context);
     }
 
     if (mainloop != nullptr) {
-        pa_mainloop_quit(mainloop, 0);
         pa_mainloop_free(mainloop);
     }
 }
@@ -72,8 +81,11 @@ void PulseAudioDeviceMonitor::contextStateCallback(
             break;
 
         case PA_CONTEXT_FAILED:
+            qCritical() << "PulseAudio context failed."_L1;
+            break;
+
         case PA_CONTEXT_TERMINATED:
-            LOG_ERROR(u"PulseAudio context failed."_s);
+            qCritical() << "PulseAudio context terminated."_L1;
             break;
 
         default:

@@ -1,7 +1,11 @@
-#include "Utils.hpp"
+// NOLINT
+#include "FFMpeg.hpp"
+// NOLINTEND
 
 #include "Constants.hpp"
-#include "FFMpeg.hpp"
+#include "Duration.hpp"
+#include "Enums.hpp"
+#include "Utils.hpp"
 
 #include <QDir>
 #include <QFileInfo>
@@ -12,67 +16,12 @@
 #include <QObject>
 #include <QPainter>
 #include <QTextStream>
+#include <numbers>
 
 using namespace FFmpeg;
 
-auto timeToSecs(const QString& time) -> u16 {
-    const QStringList parts = time.split(':');
-    u16 seconds;
-
-    if (parts.size() == 3) {
-        const u16 hours = parts[0].toUInt();
-        const u16 minutes = parts[1].toUInt();
-        const u16 secs = parts[2].toUInt();
-        seconds = (hours * HOUR_SECONDS) + (minutes * MINUTE_SECONDS) + secs;
-    } else if (parts.size() == 2) {
-        const u16 minutes = parts[0].toUInt();
-        const u16 secs = parts[1].toUInt();
-        seconds = (minutes * MINUTE_SECONDS) + secs;
-    }
-
-    return seconds;
-}
-
-auto secsToMins(const u16 totalSeconds) -> QString {
-    const u16 minutes = (totalSeconds % HOUR_SECONDS) / MINUTE_SECONDS;
-    const u16 seconds = totalSeconds % MINUTE_SECONDS;
-
-    QString result;
-    result.reserve(5);
-
-    result.append(QChar('0' + (minutes / 10)));
-    result.append(QChar('0' + (minutes % 10)));
-
-    result.append(':');
-
-    result.append(QChar('0' + (seconds / 10)));
-    result.append(QChar('0' + (seconds % 10)));
-
-    return result;
-}
-
-auto trackPropertiesLabels() -> QStringList {
-    return { QString(),
-             QObject::tr("Title"),
-             QObject::tr("Artist"),
-             QObject::tr("Track Number"),
-             QObject::tr("Album"),
-             QObject::tr("Album Artist"),
-             QObject::tr("Genre"),
-             QObject::tr("Year"),
-             QObject::tr("Duration"),
-             QObject::tr("Composer"),
-             QObject::tr("BPM"),
-             QObject::tr("Language"),
-             QObject::tr("Disc Number"),
-             QObject::tr("Comment"),
-             QObject::tr("Publisher"),
-             QObject::tr("Bitrate"),
-             QObject::tr("Sample Rate"),
-             QObject::tr("Channels"),
-             QObject::tr("Format"),
-             QObject::tr("Path"),
-             QObject::tr("Order") };
+auto trackPropertyLabel(const TrackProperty property) -> QString {
+    return QObject::tr(TRACK_PROPERTIES_INFOS[u8(property)].label);
 }
 
 // NOLINTBEGIN: xorshift32
@@ -113,7 +62,7 @@ auto parsePreset(const QByteArray& presetData)
     textStream.seek(textStream.pos() + 1);
     textStream >> bandCountString;
 
-    for (const u8 band : range(0, u8(preset.bandCount))) {
+    for (const u8 band : range<u8>(0, u8(preset.bandCount))) {
         QString bandString = QString::number(preset.bands[band]);
         textStream.seek(textStream.pos() + 1);
         textStream >> bandString;
@@ -145,55 +94,9 @@ auto serializePreset(const EqualizerPreset& preset) -> QByteArray {
     return presetData;
 }
 
-constexpr auto getXSPFTag(const TrackProperty property) -> QStringView {
-    switch (property) {
-        case TrackProperty::Title:
-            return u"title"_qsv;
-        case TrackProperty::Artist:
-            return u"creator"_qsv;
-        case TrackProperty::Album:
-            return u"album"_qsv;
-        case TrackProperty::AlbumArtist:
-            return u"albumArtist"_qsv;
-        case TrackProperty::Genre:
-            return u"genre"_qsv;
-        case TrackProperty::Duration:
-            return u"duration"_qsv;
-        case TrackProperty::TrackNumber:
-            return u"trackNum"_qsv;
-        case TrackProperty::Comment:
-            return u"annotation"_qsv;
-        case TrackProperty::Path:
-            return u"location"_qsv;
-        case TrackProperty::Composer:
-            return u"composer"_qsv;
-        case TrackProperty::Publisher:
-            return u"publisher"_qsv;
-        case TrackProperty::Year:
-            return u"year"_qsv;
-        case TrackProperty::BPM:
-            return u"bpm"_qsv;
-        case TrackProperty::Language:
-            return u"language"_qsv;
-        case TrackProperty::DiscNumber:
-            return u"disc"_qsv;
-        case TrackProperty::Bitrate:
-            return u"bitrate"_qsv;
-        case TrackProperty::SampleRate:
-            return u"samplerate"_qsv;
-        case TrackProperty::Channels:
-            return u"channels"_qsv;
-        case TrackProperty::Format:
-            return u"format"_qsv;
-        default:
-            return {};
-            break;
-    }
-}
-
 auto exportXSPF(
     const QString& outputPath,
-    const vector<TrackMetadata>& metadataVector
+    const vector<TrackMetadata>& metadataVec
 ) -> result<bool, QString> {
     auto file = QFile(outputPath);
 
@@ -211,12 +114,16 @@ auto exportXSPF(
     output << "<trackList>";
     output << '\n';
 
-    for (const auto& metadata : metadataVector) {
+    for (const auto& metadata : metadataVec) {
         output << "<track>";
         output << '\n';
 
-        for (const auto& [property, value] : views::drop(metadata, 1)) {
-            const QStringView tag = getXSPFTag(property);
+        for (const auto& [property, value] : metadata) {
+            cstr tag = TRACK_PROPERTIES_INFOS[u8(property)].xspfTag;
+
+            if (tag == nullptr) {
+                break;
+            }
 
             QString content = value;
 
@@ -263,19 +170,10 @@ auto exportM3U8(
         const QString title = metadata[TrackProperty::Title];
         const QString artist = metadata[TrackProperty::Artist];
         const QString path = metadata[TrackProperty::Path];
-        const QString durationStr = metadata[TrackProperty::Duration];
-
-        u16 duration = 0;
-
-        const QStringList strings = durationStr.split(':');
-        const QString& minutes = strings[0];
-        const QString& seconds = strings[1];
-
-        duration += minutes.toUInt() * MINUTE_SECONDS;
-        duration += seconds.toUInt();
+        const u32 durationSecs = metadata[TrackProperty::Duration].toUInt();
 
         output << "#EXTINF:";
-        output << duration << ',' << artist << " - " << title;
+        output << durationSecs << ',' << artist << " - " << title;
         output << '\n';
 
         output << QDir(outputPath.sliced(0, outputPath.lastIndexOf('/')))
@@ -297,7 +195,7 @@ auto parseCUE(QFile& cueFile, const QFileInfo& fileInfo) -> CUEInfo {
     auto input = QTextStream(&cueFile);
 
     bool listingTracks = false;
-    u16 offset = 0;
+    u32 offset = 0;
 
     optional<CUETrack> track;
     vector<CUETrack> tracks;
@@ -315,39 +213,42 @@ auto parseCUE(QFile& cueFile, const QFileInfo& fileInfo) -> CUEInfo {
         const QString line = input.readLine().trimmed();
 
         if (listingTracks) {
-            if (line.startsWith(u"TRACK"_qsv)) {
+            if (line.startsWith(u"TRACK")) {
                 addTrack();
                 track =
                     CUETrack{ .trackNumber = line.sliced(sizeof("TRACK"), 2) };
-            } else if (line.startsWith(u"TITLE"_qsv)) {
+            } else if (line.startsWith(u"TITLE")) {
                 track->title = sliceValue(line, "TITLE ");
-            } else if (line.startsWith(u"PERFORMER"_qsv)) {
+            } else if (line.startsWith(u"PERFORMER")) {
                 track->artist = sliceValue(line, "PERFORMER ");
-            } else if (line.startsWith(u"INDEX 01"_qsv)) {
-                track->offset = timeToSecs(line.sliced(sizeof("INDEX 01"), 5));
+            } else if (line.startsWith(u"INDEX 01")) {
+                track->offset = Duration::stringToSeconds(
+                                    line.sliced(sizeof("INDEX 01"), 5)
+                )
+                                    .value();
             }
         } else {
-            if (line.startsWith(u"PERFORMER"_qsv)) {
+            if (line.startsWith(u"PERFORMER")) {
                 metadata.insert_or_assign(
                     TrackProperty::Artist,
                     sliceValue(line, "PERFORMER ")
                 );
-            } else if (line.startsWith(u"TITLE"_qsv)) {
+            } else if (line.startsWith(u"TITLE")) {
                 metadata.insert_or_assign(
                     TrackProperty::Album,
                     sliceValue(line, "TITLE ")
                 );
-            } else if (line.startsWith(u"REM DATE"_qsv)) {
+            } else if (line.startsWith(u"REM DATE")) {
                 metadata.insert_or_assign(
                     TrackProperty::Year,
                     line.sliced(sizeof("REM DATE"))
                 );
-            } else if (line.startsWith(u"REM GENRE"_qsv)) {
+            } else if (line.startsWith(u"REM GENRE")) {
                 metadata.insert_or_assign(
                     TrackProperty::Genre,
                     sliceValue(line, "REM GENRE ")
                 );
-            } else if (line.startsWith(u"FILE"_qsv)) {
+            } else if (line.startsWith(u"FILE")) {
                 listingTracks = true;
 
                 const QString filename = line.sliced(
@@ -365,8 +266,8 @@ auto parseCUE(QFile& cueFile, const QFileInfo& fileInfo) -> CUEInfo {
 
                 metadata = std::move(extracted);
                 metadata.insert_or_assign(
-                    TrackProperty::Format,
-                    metadata[TrackProperty::Format] + u"/CUE"_qssv
+                    TrackProperty::AudioFormat,
+                    metadata[TrackProperty::AudioFormat] + u"/CUE"_qssv
                 );
             }
         }
@@ -406,7 +307,7 @@ auto applyEffectToImage(
     );
     res.fill(Qt::transparent);
 
-    QPainter painter = QPainter(&res);
+    auto painter = QPainter(&res);
     scene.render(
         &painter,
         QRectF(),
@@ -470,94 +371,112 @@ auto extractMetadata(const QString& filePath)
         return Err(FFMPEG_ERROR(err));
     }
 
-    const i8 audioStreamIndex = i8(err);
-    const AVStream* const audioStream =
-        formatContext->streams[audioStreamIndex];
-
-    const auto getTag = [&formatContext](cstr key) -> QString {
-        const AVDictionaryEntry* const tag =
-            av_dict_get(formatContext->metadata, key, nullptr, 0);
-        return tag ? tag->value : QString();
-    };
+    const AVStream* const audioStream = formatContext->streams[i8(err)];
 
     TrackMetadata metadata;
-    metadata.insert_or_assign(TrackProperty::Path, filePath);
+    metadata.reserve(TRACK_PROPERTY_COUNT);
 
-    const QString titleTag = getTag("title");
+    for (const auto prop : TRACK_PROPERTIES) {
+        switch (prop) {
+            case TrackProperty::Bitrate: {
+                // First get nominal bitrate of the
+                // codec
+                u32 bitrate = audioStream->codecpar->bit_rate;
 
-    if (titleTag.isEmpty()) {
-        isize lastIndex = filePath.lastIndexOf('/');
+                // If codec doesn't specify nominal bitrate or if it's loseless,
+                // get it from format context
+                if (bitrate == 0) {
+                    bitrate = formatContext->bit_rate;
+                }
 
-        if (lastIndex == -1) {
-            lastIndex = filePath.lastIndexOf('\\');
+                bitrate /= KB_BYTES;
+
+                const QString bitrateString = QString::number(bitrate) + 'k';
+
+                metadata.emplace(TrackProperty::Bitrate, bitrateString);
+                break;
+            }
+            case TrackProperty::SampleRate:
+                metadata.emplace(
+                    TrackProperty::SampleRate,
+                    QString::number(audioStream->codecpar->sample_rate)
+                );
+
+                break;
+            case TrackProperty::Channels:
+                metadata.emplace(
+                    TrackProperty::Channels,
+                    QString::number(
+                        audioStream->codecpar->ch_layout.nb_channels
+                    )
+                );
+
+                break;
+            case TrackProperty::AudioFormat: {
+                const QString formatName =
+                    avcodec_get_name(audioStream->codecpar->codec_id);
+                metadata.emplace(
+                    TrackProperty::AudioFormat,
+                    formatName.toUpper()
+                );
+                break;
+            }
+            case TrackProperty::Path:
+                metadata.emplace(TrackProperty::Path, filePath);
+                break;
+            case TrackProperty::Duration:
+                metadata.emplace(
+                    TrackProperty::Duration,
+                    QString::number(formatContext->duration / AV_TIME_BASE)
+                );
+                break;
+            case TrackProperty::SampleFormat: {
+                const auto fmt = AVSampleFormat(audioStream->codecpar->format);
+                cstr name = av_get_sample_fmt_name(fmt);
+
+                if (audioStream->codecpar->codec_id == AV_CODEC_ID_PCM_S24LE) {
+                    name = "S24";
+                }
+
+                metadata.emplace(
+                    TrackProperty::SampleFormat,
+                    (name != nullptr) ? QString::fromUtf8(name).toUpper()
+                                      : QString()
+                );
+                break;
+            }
+            default: {
+                QString value;
+
+                for (const cstr tag :
+                     TRACK_PROPERTIES_INFOS[u8(prop)].ffmpegTags) {
+                    if (tag == nullptr) {
+                        break;
+                    }
+
+                    if (const AVDictionaryEntry* const entry = av_dict_get(
+                            formatContext->metadata,
+                            tag,
+                            nullptr,
+                            0
+                        )) {
+                        value = QString::fromUtf8(entry->value);
+                        break;
+                    }
+                }
+
+                metadata.emplace(prop, value);
+                break;
+            }
         }
+    }
 
+    if (metadata[TrackProperty::Title].isEmpty()) {
         metadata.insert_or_assign(
             TrackProperty::Title,
-            filePath.sliced(lastIndex + 1)
+            QFileInfo(filePath).completeBaseName()
         );
-    } else {
-        metadata.insert_or_assign(TrackProperty::Title, titleTag);
     }
-
-    metadata.insert_or_assign(TrackProperty::Artist, getTag("artist"));
-    metadata.insert_or_assign(TrackProperty::Album, getTag("album"));
-    metadata.insert_or_assign(TrackProperty::TrackNumber, getTag("track"));
-    metadata.insert_or_assign(
-        TrackProperty::AlbumArtist,
-        getTag("album_artist")
-    );
-    metadata.insert_or_assign(TrackProperty::Genre, getTag("genre"));
-    metadata.insert_or_assign(TrackProperty::Year, getTag("date"));
-    metadata.insert_or_assign(TrackProperty::Composer, getTag("composer"));
-
-    for (const auto* const bpmTag : BPM_TAGS) {
-        const QString tag = getTag(bpmTag);
-
-        if (!tag.isEmpty()) {
-            metadata.insert_or_assign(TrackProperty::BPM, tag);
-            break;
-        }
-    }
-
-    metadata.emplace(TrackProperty::BPM, "");
-
-    metadata.insert_or_assign(TrackProperty::Language, getTag("language"));
-    metadata.insert_or_assign(TrackProperty::DiscNumber, getTag("disc"));
-    metadata.insert_or_assign(TrackProperty::Comment, getTag("comment"));
-    metadata.insert_or_assign(TrackProperty::Publisher, getTag("publisher"));
-    metadata.insert_or_assign(
-        TrackProperty::Duration,
-        secsToMins(formatContext->duration / AV_TIME_BASE)
-    );
-
-    // First get nominal bitrate of the codec
-    u32 bitrate = audioStream->codecpar->bit_rate;
-
-    // If codec doesn't specify nominal bitrate or if it's loseless, get it from
-    // format context
-    if (bitrate == 0) {
-        bitrate = formatContext->bit_rate;
-    }
-
-    bitrate /= KB_BYTES;
-
-    const QString bitrateString = QString::number(bitrate) + u"k"_qssv;
-
-    metadata.insert_or_assign(TrackProperty::Bitrate, bitrateString);
-
-    metadata.insert_or_assign(
-        TrackProperty::SampleRate,
-        QString::number(audioStream->codecpar->sample_rate)
-    );
-
-    metadata.insert_or_assign(
-        TrackProperty::Channels,
-        QString::number(audioStream->codecpar->ch_layout.nb_channels)
-    );
-
-    const QString formatName = formatContext->iformat->name;
-    metadata.insert_or_assign(TrackProperty::Format, formatName.toUpper());
 
     return metadata;
 }
@@ -615,4 +534,61 @@ auto extractCover(cstr path) -> result<vector<u8>, QString> {
     );
 
     return coverBytes;
+}
+
+inline auto sinc(const f64 value) -> f64 {
+    if (value == 0.0) {
+        return 1.0;
+    }
+
+    return std::sin(std::numbers::pi * value) / (std::numbers::pi * value);
+}
+
+inline auto blackman(const i32 sampleIdx, const i32 windowLength) -> f64 {
+    return 0.42 -
+           (0.5 *
+            std::cos(2.0 * std::numbers::pi * sampleIdx / (windowLength - 1))) +
+           (0.08 *
+            std::cos(4.0 * std::numbers::pi * sampleIdx / (windowLength - 1)));
+}
+
+void downsample(
+    const f32* const input,
+    f32* const output,
+    const u16 sampleCount,
+    const u32 sampleRate
+) {
+    const f64 resampleRatio = f64(FFT_SAMPLE_RATE) / sampleRate;
+
+    constexpr u8 FILTER_RADIUS = 32;
+    constexpr u8 FILTER_SIZE = (FILTER_RADIUS * 2) + 1;
+    const f64 cutoff = f64(FFT_SAMPLE_RATE) / sampleRate;
+
+    for (u16 outputIdx = 0; outputIdx < FFT_SAMPLE_COUNT; outputIdx++) {
+        const f64 mappedInputIdx = outputIdx / resampleRatio;
+        const i32 centerIdx = i32(std::floor(mappedInputIdx));
+
+        f64 sum = 0.0;
+        f64 norm = 0.0;
+
+        for (i32 kernelOffset = -FILTER_RADIUS; kernelOffset <= FILTER_RADIUS;
+             kernelOffset++) {
+            const i32 idx = centerIdx + kernelOffset;
+
+            if (idx < 0 || idx >= sampleCount) {
+                continue;
+            }
+
+            const f64 distance = mappedInputIdx - idx;
+
+            const f64 window =
+                blackman(kernelOffset + FILTER_RADIUS, FILTER_SIZE);
+            const f64 filterTap = cutoff * sinc(distance * cutoff) * window;
+
+            sum += input[idx] * filterTap;
+            norm += filterTap;
+        }
+
+        output[outputIdx] = (norm != 0.0) ? f32(sum / norm) : 0.0F;
+    }
 }

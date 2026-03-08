@@ -21,11 +21,11 @@ class TimeValidator : public QValidator {
             return Invalid;
         }
 
-        for (i32 i = 0; i < input.size(); ++i) {
-            const QChar chr = input.at(i);
+        for (const i32 idx : range<i32>(0, input.size())) {
+            const QChar chr = input.at(idx);
 
-            if (i == 2) {
-                if (chr != QChar(':')) {
+            if (idx == 2) {
+                if (chr != ':') {
                     return Invalid;
                 }
             } else {
@@ -55,7 +55,7 @@ class TimeValidator : public QValidator {
             return Invalid;
         }
 
-        if (minutes < 0 || minutes > 99) {
+        if (minutes < 0) {
             return Invalid;
         }
 

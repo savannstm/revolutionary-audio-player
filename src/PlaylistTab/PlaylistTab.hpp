@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Aliases.hpp"
-#include "Enums.hpp"
 #include "FWD.hpp"
+#include "PlaylistView.hpp"
 
 #include <QPushButton>
 
@@ -34,7 +34,7 @@ class PlaylistTab : public QPushButton {
     void clicked();
     void removeTabRequested();
     void addButtonClicked();
-    void removeTabsRequested(TabRemoveMode mode);
+    void removeTabsRequested(PlaylistView::TabRemoveMode mode);
 
    protected:
     void mousePressEvent(QMouseEvent* event) override;
@@ -47,6 +47,13 @@ class PlaylistTab : public QPushButton {
     inline void createContextMenu();
     inline void deselectLabel();
     inline void grab();
+
+    static constexpr QMargins TAB_MARGINS = { 8, 4, 8, 4 };
+    static constexpr u8 TAB_LABEL_RIGHT_MARGIN = 8;
+    static constexpr QSize PLAYLIST_TAB_CLOSE_BUTTON_SIZE = QSize(16, 16);
+
+    static constexpr u8 BRIGHTNESS_THRESHOLD = 128;
+    static constexpr u8 LIGHTNESS_FACTOR = 50;
 
     PlaylistTabLabel* const label_ = nullptr;
 

@@ -1,11 +1,17 @@
-#include "TrackTreeHeader.hpp"
-
 #include "Constants.hpp"
+#include "TrackTable.hpp"
+#include "TrackTableHeader.hpp"
 
 #include <QApplication>
 #include <QMouseEvent>
 
-void TrackTreeHeader::mousePressEvent(QMouseEvent* const event) {
+TrackTableHeader::TrackTableHeader(
+    const Qt::Orientation orientation,
+    TrackTable* const tree
+) :
+    QHeaderView(orientation, tree) {}
+
+void TrackTableHeader::mousePressEvent(QMouseEvent* const event) {
     pressedIndex = i8(logicalIndexAt(event->pos()));
     pressPos = event->pos();
     mousePressed = true;
@@ -14,7 +20,7 @@ void TrackTreeHeader::mousePressEvent(QMouseEvent* const event) {
     QHeaderView::mousePressEvent(event);
 }
 
-void TrackTreeHeader::mouseMoveEvent(QMouseEvent* const event) {
+void TrackTableHeader::mouseMoveEvent(QMouseEvent* const event) {
     if (mousePressed) {
         isDragging = true;
     }
@@ -22,7 +28,7 @@ void TrackTreeHeader::mouseMoveEvent(QMouseEvent* const event) {
     QHeaderView::mouseMoveEvent(event);
 }
 
-void TrackTreeHeader::mouseReleaseEvent(QMouseEvent* const event) {
+void TrackTableHeader::mouseReleaseEvent(QMouseEvent* const event) {
     if (!isDragging && pressedIndex != -1) {
         const u16 posX = event->pos().x();
         const u16 sectionStart = sectionPosition(pressedIndex);

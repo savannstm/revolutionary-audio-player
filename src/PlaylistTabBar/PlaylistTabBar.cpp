@@ -68,7 +68,7 @@ void PlaylistTabBar::insertTab(
             &PlaylistTab::removeTabRequested,
             this,
             [this, tab] -> void {
-            removeTabs(TabRemoveMode::Single, tabIndex(tab));
+            removeTabs(PlaylistView::TabRemoveMode::Single, tabIndex(tab));
         }
         );
 
@@ -80,7 +80,8 @@ void PlaylistTabBar::insertTab(
             tab,
             &PlaylistTab::removeTabsRequested,
             this,
-            [this, tab](const TabRemoveMode mode) -> void {
+            [this, tab](const PlaylistView::TabRemoveMode mode) -> void {
+            // TODO: If removing selected tab, change the index
             removeTabs(mode, tabIndex(tab));
         }
         );
@@ -114,39 +115,44 @@ void PlaylistTabBar::setCurrentIndex(const i8 index) {
     tabs_[index]->setChecked(true);
 }
 
-void PlaylistTabBar::removeTabs(const TabRemoveMode mode, const u8 startIndex) {
+void PlaylistTabBar::removeTabs(
+    const PlaylistView::TabRemoveMode mode,
+    const u8 startIndex
+) {
     const u8 count = tabCount();
 
-    if (mode != TabRemoveMode::Single && count == 0) {
+    if (mode != PlaylistView::TabRemoveMode::Single && count == 0) {
         return;
     }
 
     i8 newIndex = currentIndex_;
 
     switch (mode) {
-        case TabRemoveMode::Single:
+        case PlaylistView::TabRemoveMode::Single:
             removeTab(startIndex);
 
-            if (newIndex == 0) {
-                if (count > 1) {
-                    newIndex = 0;
-                } else {
-                    newIndex -= 1;
-                }
-            } else if (startIndex < newIndex) {
-                newIndex -= 1;
+            if (currentIndex_ >= startIndex) {
+                newIndex--;
+            }
+
+            if (count == 1) {
+                newIndex = -1;
             }
             break;
-        case TabRemoveMode::Other:
-        case TabRemoveMode::ToRight:
+        case PlaylistView::TabRemoveMode::Other:
+        case PlaylistView::TabRemoveMode::ToRight:
             for (i8 i = i8(count - 1); i > startIndex; i--) {
+                if (i <= newIndex) {
+                    newIndex -= 1;
+                }
+
                 removeTab(i);
             }
 
-            if (mode == TabRemoveMode::ToRight) {
+            if (mode == PlaylistView::TabRemoveMode::ToRight) {
                 break;
             }
-        case TabRemoveMode::ToLeft:
+        case PlaylistView::TabRemoveMode::ToLeft:
             for (i8 i = i8(startIndex - 1); i >= 0; i--) {
                 if (i < newIndex) {
                     newIndex -= 1;

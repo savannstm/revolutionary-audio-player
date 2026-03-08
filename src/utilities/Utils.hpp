@@ -15,7 +15,7 @@ struct CUETrack {
     QString title;
     QString artist;
     QString trackNumber;
-    u16 offset;
+    u32 offset;
 };
 
 struct CUEInfo {
@@ -30,10 +30,7 @@ static thread_local u32 seed =
     )
         .count();
 
-auto timeToSecs(const QString& time) -> u16;
-auto secsToMins(u16 totalSeconds) -> QString;
-
-auto trackPropertiesLabels() -> QStringList;
+auto trackPropertyLabel(TrackProperty property) -> QString;
 
 auto randint() -> u32;
 auto randint_range(u32 min, u32 max) -> u32;
@@ -42,7 +39,6 @@ auto parsePreset(const QByteArray& presetData)
     -> result<EqualizerPreset, QString>;
 auto serializePreset(const EqualizerPreset& preset) -> QByteArray;
 
-constexpr auto getXSPFTag(TrackProperty property) -> QStringView;
 auto exportXSPF(
     const QString& outputPath,
     const vector<TrackMetadata>& metadataVector
@@ -62,6 +58,7 @@ auto applyEffectToImage(
 auto FFmpegError(cstr file, i32 line, cstr func, i32 err) -> QString;
 #define FFMPEG_ERROR(err) FFmpegError(__FILE__, __LINE__, __func__, err)
 
-// TODO: Extract sample format
 auto extractMetadata(const QString& filePath) -> result<TrackMetadata, QString>;
 auto extractCover(cstr path) -> result<vector<u8>, QString>;
+
+void downsample(const f32* input, f32* output, u16 sampleCount, u32 sampleRate);

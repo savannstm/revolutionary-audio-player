@@ -3,6 +3,7 @@
 #include "Enums.hpp"
 
 void updateFileAssociations(Associations associations);
+void updateFileAssociationsPath();
 void createContextMenuEntry();
 void removeContextMenuEntry();
 

@@ -20,14 +20,8 @@ AboutWindow::AboutWindow(QWidget* const parent) :
     QDialog(parent),
     ui(setupUi()) {
     ui->versionLabel->setText(u"RAP v"_s + APP_VERSION);
-    ui->iconLabel->setPixmap(QPixmap(
-        QApplication::applicationDirPath() + '/' +
-        PNG_LOGO_PATH
-#if QT_VERSION_MINOR < 9
-            .toString()
-#endif
-    ));
-    ui->qtVersionLabel->setText(u"Qt "_s + QT_VERSION_STR);
+    ui->iconLabel->setPixmap(QPixmap(u":/logo.png"_s));
+    ui->qtVersionLabel->setText(u"Qt "_s + qVersion());
     ui->ffmpegVersionLabel->setText(u"FFmpeg "_s + FFMPEG_VERSION);
 
 #ifdef PROJECTM

@@ -5,7 +5,9 @@
 #include <cstddef>
 #include <expected>
 #include <filesystem>
+#include <iostream>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <qtversionchecks.h>
 #include <ranges>
@@ -39,15 +41,29 @@ using cstr = const char*;
 using wchar = wchar_t;
 using wcstr = const wchar*;
 
+using atomicBool = std::atomic_bool;
+using atomicU8 = std::atomic_uint8_t;
+using atomicI8 = std::atomic_int8_t;
+using atomicU16 = std::atomic_uint16_t;
+using atomicI16 = std::atomic_int16_t;
+using atomicU32 = std::atomic_uint32_t;
+using atomicI32 = std::atomic_int32_t;
+using atomicU64 = std::atomic_uint64_t;
+using atomicI64 = std::atomic_int64_t;
+
 using fs::path;
 using std::array;
-using std::atomic;
+using std::cerr;
+using std::cout;
 using std::expected;
 using std::format;
+using std::lock_guard;
 using std::make_shared;
 using std::make_unique;
+using std::mutex;
 using std::nullopt;
 using std::optional;
+using std::println;
 using std::shared_ptr;
 using std::span;
 using std::string;
@@ -82,7 +98,8 @@ template <typename O, typename T>
     return reinterpret_cast<O>(std::forward<T>(arg));
 }
 
-constexpr auto range(const usize from, const usize dest) {
+template <typename T = usize>
+constexpr auto range(const T from, const T dest) {
     return views::iota(from, dest);
 }
 
@@ -95,11 +112,6 @@ constexpr auto find_index(const R& range, const T& value) -> isize {
     }
 
     return ranges::distance(ranges::begin(range), item);
-}
-
-constexpr auto operator""_qsv(const char16_t* chr, const size_t size)
-    -> QStringView {
-    return { chr, isize(size) };
 }
 
 // Concatenation compatibility

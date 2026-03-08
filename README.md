@@ -12,29 +12,41 @@ The Revolutionary Audio Player, abbreviated RAP (which initially was named Rusty
 
 ## Features
 
--   [x] `mp3`, `flac`, `wav`, `ogg`, `oga`, `ogv`, `ogx`, `opus`, `m4a`, `mp4`, `mkv`, `aac`, `alac`, `mov`, `mka`, `ac3`, `eac3` audio default support.
--   [x] `png`, `jpeg`, `bmp`, `webp`, `tiff` cover image support.
--   [x] Optimized audio processing of any sample rate, up to 8 channels.
--   [x] Native look and the same capabilities on **any** platform.
--   [x] Interface, that keeps it simple.
--   [x] Completely portable. Leaves **no** traces in OS by default!
--   [x] Default tray icon support, close button only hides the window.
-    -   [x] Volume and progress sliders built **right inside** the tray icon menu!
--   [x] Built-in ready-to-use 3-, 5-, 10-, 18- and 30-band equalizers with presets.
--   [x] Flexible playlist system with:
-    -   [x] Track searching.
-    -   [x] Playlist background images system.
-    -   [x] `.xspf`, `.m3u8`, `.m3u` and `.cue` playlists import/export.
-    -   [x] Dock window with metadata.
--   [x] You can select a **range to repeat**, when repeat mode is set to repeat a single track.
--   [x] Peak visualizer.
--   [x] WinAMP-style incredible visualizer.
+- [x] `mp3`, `flac`, `wav`, `ogg`, `oga`, `ogv`, `ogx`, `opus`, `m4a`, `mp4`, `mkv`, `aac`, `alac`, `mov`, `mka`, `ac3`, `eac3` audio default support.
+- [x] `png`, `jpeg`, `bmp`, `webp`, `tiff` cover image support.
+- [x] Optimized audio processing of sample rates up to 2\*\*31, up to 255 channels.
+- [x] Native look and almost the same capabilities on **any** platform.
+- [x] Interface, that keeps it simple.
+- [x] Completely portable. Leaves **no** traces in OS by default!
+- [x] Default tray icon support, close button only hides the window.
+  - [x] Volume and progress sliders built **right inside** the tray icon menu!
+- [x] Built-in ready-to-use 3-, 5-, 10-, 18- and 30-band equalizers with presets.
+- [x] Flexible playlist system with:
+  - [x] Track searching.
+  - [x] Playlist background images system.
+  - [x] `.xspf`, `.m3u8`, `.m3u` and `.cue` playlists import/export.
+  - [x] Dock window with metadata.
+- [x] You can select a **range to repeat**, when repeat mode is set to repeat a single track.
+- [x] Peak visualizer.
+- [x] WinAMP-style incredible visualizer.
 
 ## Why a new audio player?
 
 There's many audio players already out there, big amount of which is either filled with unnecessary things, or just legacy, like the extremely cool Windows `foobar2000` audio player.
 
 This audio player emphasizes clean codebase, little amount of dependencies, simple interface, cross-platform distribution, and being easy overall.
+
+### Goals
+
+- Create a performant audio player with a clean codebase.
+- Bring user experience and convenience to the top.
+- Be the best recreational audio player out there (recreational relative to whatever audiophiles want from their audio players).
+
+### What we aren't trying to achieve
+
+- Be a sound format converter.
+- Be anything but an audio player for playing local files.
+- Support all and everything.
 
 ## Releases
 
@@ -48,13 +60,13 @@ We don't ship any presets for our visualizer.
 
 Here's where you can get the presets, from [projectM repository](https://github.com/projectM-visualizer/projectm):
 
--   [Cream of the Crop Pack](https://github.com/projectM-visualizer/presets-cream-of-the-crop) - A collection of about 10K
-    presets compiled by Jason Fletcher. Currently, projectM's default preset pack.
--   [Classic projectM Presets](https://github.com/projectM-visualizer/presets-projectm-classic) - A bit over 4K presets
-    shipped with previous versions of projectM.
--   [Milkdrop 2 Presets](https://github.com/projectM-visualizer/presets-milkdrop-original) - The original preset
-    collection shipped with Milkdrop and Winamp.
--   [En D Presets](https://github.com/projectM-visualizer/presets-en-d) - About 50 presets created by "En D".
+- [Cream of the Crop Pack](https://github.com/projectM-visualizer/presets-cream-of-the-crop) - A collection of about 10K
+  presets compiled by Jason Fletcher. Currently, projectM's default preset pack.
+- [Classic projectM Presets](https://github.com/projectM-visualizer/presets-projectm-classic) - A bit over 4K presets
+  shipped with previous versions of projectM.
+- [Milkdrop 2 Presets](https://github.com/projectM-visualizer/presets-milkdrop-original) - The original preset
+  collection shipped with Milkdrop and Winamp.
+- [En D Presets](https://github.com/projectM-visualizer/presets-en-d) - About 50 presets created by "En D".
 
 Included with projectM are the bltc201, Milkdrop 1 and 2, projectM, tryptonaut and yin collections. [You can grab these
 presets here](http://spiegelmc.com/pub/projectm_presets.zip).

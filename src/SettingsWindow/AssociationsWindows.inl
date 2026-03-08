@@ -255,6 +255,45 @@ inline void updateFileAssociationsOS(
     }
 }
 
+inline void updateFileAssociationsPathOS(
+    const QString& appPath_,
+    const QString& iconPath_
+) {
+    const wstring_view appPath = { ras<wcstr>(appPath_.utf16()),
+                                   usize(appPath_.size()) };
+
+    const wstring_view iconPath = { ras<wcstr>(iconPath_.utf16()),
+                                    usize(iconPath_.size()) };
+
+    for (const auto [idx, ext] :
+         views::enumerate(SUPPORTED_PLAYABLE_EXTENSIONS)) {
+        const wstring_view wextension = { ras<wcstr>(ext.utf16()),
+                                          usize(ext.size()) };
+
+        const wstring iconEntry = std::format(ICON_ENTRY_TEMPLATE, wextension);
+        const wstring shellCommandEntry =
+            std::format(SHELL_COMMAND_ENTRY_TEMPLATE, wextension);
+
+        const wstring iconEntryValue = format(LR"("{}")", iconPath);
+        setRegistryValue(
+            HKEY_CURRENT_USER,
+            iconEntry,
+            DEFAULT_KEY,
+            iconEntryValue,
+            REG_SZ
+        );
+
+        const wstring shellCommandValue = format(LR"("{}" "%1")", appPath);
+        setRegistryValue(
+            HKEY_CURRENT_USER,
+            shellCommandEntry,
+            DEFAULT_KEY,
+            shellCommandValue,
+            REG_SZ
+        );
+    }
+}
+
 inline void createContextMenuEntryOS(const QString& appPath_) {
     const wstring_view appPath = { ras<wcstr>(appPath_.utf16()),
                                    usize(appPath_.size()) };

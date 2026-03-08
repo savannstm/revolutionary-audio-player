@@ -46,3 +46,5 @@ plugins:
               - locale: ru
                 name: Русский
                 build: true
+                site_name: Документация для RAP
+                site_description: Документация для революционного аудио плеера

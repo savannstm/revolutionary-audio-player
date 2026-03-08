@@ -1,14 +1,15 @@
 #pragma once
 
 #include "Aliases.hpp"
+#include "FWD.hpp"
 
 #include <QHeaderView>
 
-class TrackTreeHeader : public QHeaderView {
+class TrackTableHeader : public QHeaderView {
     Q_OBJECT
 
    public:
-    using QHeaderView::QHeaderView;
+    explicit TrackTableHeader(Qt::Orientation orientation, TrackTable* tree);
 
    signals:
     void headerPressed(u8 index, Qt::MouseButton button);
@@ -19,6 +20,8 @@ class TrackTreeHeader : public QHeaderView {
     void mouseReleaseEvent(QMouseEvent* event) override;
 
    private:
+    static constexpr u8 HEADER_HANDLE_WIDTH = 4;
+
     QPoint pressPos;
     i8 pressedIndex = -1;
     bool isDragging = false;

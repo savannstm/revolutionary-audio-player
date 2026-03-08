@@ -15,6 +15,8 @@ class MetadataWindow : public QDialog {
     );
 
    private:
+    static constexpr QSize METADATA_WINDOW_SIZE = QSize(800, 600);
+
     QTreeWidget* const treeWidget;
     QVBoxLayout* const layout;
 };

@@ -4,148 +4,169 @@
 #include "Constants.hpp"
 #include "Settings.hpp"
 
-AudioWorker::AudioWorker(
-    shared_ptr<Settings> settings_,
-    f32* const spectrumVisualizerBuffer,
-    f32* const visualizerBuffer,
-    QObject* const parent
-) :
-    QObject(parent),
-    spectrumVisualizerBuffer(spectrumVisualizerBuffer),
-    visualizerBuffer(visualizerBuffer),
+#include <QMessageBox>
+#include <QScreen>
+#include <cmath>
+
+AudioWorker::AudioWorker(shared_ptr<Settings> settings_) :
     settings(std::move(settings_)),
-    audioStreamer(new AudioStreamer(settings, this)) {}
+    streamer(new AudioStreamer(settings)) {
+    timer.setInterval(
+        u16(f32(SECOND_MS) / f32(qApp->primaryScreen()->refreshRate()))
+    );
+
+    connect(&timer, &QTimer::timeout, this, [this] -> void {
+        // TODO: This shit probably needs to be refactored
+        if (samplesAccumulated.load(std::memory_order_acquire)) {
+            if (!flag) {
+                const auto fftWindow = span(buffer.data(), requiredSamples);
+                emit fftSamples(fftWindow, sampleRate());
+
+                QTimer::singleShot(20, this, [this] -> void {
+                    samplesAccumulated.store(false, std::memory_order_release);
+                    flag = false;
+                });
+
+                flag = true;
+            }
+        }
+
+        const u32 second = playbackSecond.load(std::memory_order_acquire);
+
+        if (second != lastPlaybackSecond) {
+            lastPlaybackSecond = second;
+            emit progressUpdated(second);
+        }
+
+        if (streamEndedFlag.exchange(false, std::memory_order_acq_rel)) {
+            stopPlayback();
+            emit streamEnded();
+        }
+    });
+
+    timer.start();
+}
 
 AudioWorker::~AudioWorker() {
-    ma_device_uninit(&device);
-};
+    timer.stop();
+    stopPlayback();
 
-void AudioWorker::start(const QString& path, const u16 startSecond) {
     if (deviceInitialized) {
         ma_device_uninit(&device);
         deviceInitialized = false;
     }
 
-    audioStreamer->start(path, startSecond);
-    startDevice();
+    delete streamer;
 }
 
-void AudioWorker::dataCallback(
-    ma_device* const device,
-    void* const output,
-    const void* const /* input */,
-    const u32 sampleCount
-) {
-    auto* const self = as<AudioWorker*>(device->pUserData);
-
-    if (self->seeked) {
-        self->buffersIndex = 0;
-        self->audioStreamer->flushBuffers();
-
-        for (const u8 idx : range(0, BUFFERS_QUEUE_SIZE)) {
-            QMetaObject::invokeMethod(
-                self,
-                &AudioWorker::prepareBuffer,
-                Qt::QueuedConnection
-            );
-        }
-
-        self->seeked = false;
-        return;
+void AudioWorker::startPlayback(const QString& path, const i32 startSecond) {
+    if (deviceInitialized) {
+        stopPlayback();
+        ma_device_uninit(&device);
+        deviceInitialized = false;
     }
 
-    AudioStreamer* const streamer = self->audioStreamer;
-    auto* buf = &streamer->buffers[self->buffersIndex];
+    const auto result = streamer->start(path.toStdString(), startSecond);
 
-    if (buf->buf.empty()) {
-        QMetaObject::invokeMethod(
-            self,
-            &AudioWorker::endStream,
-            Qt::QueuedConnection
+    if (!result) {
+        QMessageBox::information(
+            nullptr,
+            tr("Unable to play the track"),
+            result.error()
         );
         return;
     }
 
-    const u8* ptr = buf->buf.data();
-    usize size = buf->buf.size();
+    startDevice();
 
-    if (self->bufferOffset >= size) {
-        // Buffer drained
-        QMetaObject::invokeMethod(
-            self,
-            &AudioWorker::prepareBuffer,
-            Qt::QueuedConnection
-        );
+    streamerThread =
+        new std::jthread([this](const std::stop_token& stopToken) -> void {
+        while (!stopToken.stop_requested()) {
+            if (!paused.load(std::memory_order_acquire)) {
+                const i32 seekSecond =
+                    secondToSeek.exchange(-1, std::memory_order_acq_rel);
 
-        self->bufferOffset = 0;
-        self->buffersIndex++;
+                if (seekSecond != -1) {
+                    streamer->seekSecond(seekSecond);
+                }
 
-        if (self->buffersIndex == BUFFERS_QUEUE_SIZE) {
-            self->buffersIndex = 0;
+                if (readScheduled.exchange(false, std::memory_order_acq_rel)) {
+                    streamer->readData();
+                }
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
+    });
 
-        buf = &streamer->buffers[self->buffersIndex];
+    paused.store(false, std::memory_order_release);
+}
 
-        if (buf->buf.empty()) {
-            QMetaObject::invokeMethod(
-                self,
-                &AudioWorker::endStream,
-                Qt::QueuedConnection
-            );
-            return;
-        }
+void AudioWorker::pause() {
+    if (deviceInitialized) {
+        paused.store(true, std::memory_order_release);
+        ma_device_stop(&device);
+    }
+}
 
-        ptr = buf->buf.data();
-        size = buf->buf.size();
+void AudioWorker::stopPlayback() {
+    if (deviceInitialized) {
+        ma_device_stop(&device);
     }
 
-    const u64 bytesToCopy =
-        min<u64>(streamer->minBufferSize, size - self->bufferOffset);
-    const u8* src = ptr + self->bufferOffset;
+    if (streamerThread != nullptr) {
+        streamerThread->request_stop();
+        delete streamerThread;
+        streamerThread = nullptr;
 
-    // First we copy full-volume samples into the visualizers
-    if (self->spectrumVisualizerEnabled) {
-        memcpy(self->spectrumVisualizerBuffer, src, bytesToCopy);
+        streamer->reset();
     }
 
-    if (self->visualizerEnabled) {
-        memcpy(self->visualizerBuffer, src, bytesToCopy);
+    playbackSecond.store(0, std::memory_order_release);
+    secondToSeek.store(-1, std::memory_order_release);
+    readScheduled.store(false, std::memory_order_release);
+    paused.store(false, std::memory_order_release);
+    streamEndedFlag.store(false, std::memory_order_release);
+    samplesAccumulated.store(false, std::memory_order_release);
+    flag = false;
+
+    currentSamples = 0;
+}
+
+void AudioWorker::resume() {
+    if (deviceInitialized) {
+        paused.store(false, std::memory_order_release);
+        ma_device_start(&device);
+    }
+}
+
+void AudioWorker::seekSecond(const i32 second) {
+    secondToSeek.store(second, std::memory_order_release);
+}
+
+void AudioWorker::changeAudioDevice() {
+    if (!deviceInitialized) {
+        return;
     }
 
-    // Then we feed this to the output
-    memcpy(output, src, bytesToCopy);
+    const bool wasRunning = state() == ma_device_state_started;
+    ma_device_uninit(&device);
+    deviceInitialized = false;
 
-    // Clean up dirt
-    if (self->audioStreamer->minBufferSize > bytesToCopy) {
-        if (self->spectrumVisualizerEnabled) {
-            memset(
-                ras<u8*>(self->spectrumVisualizerBuffer) + bytesToCopy,
-                0,
-                streamer->minBufferSize - bytesToCopy
-            );
-        }
-
-        if (self->visualizerEnabled) {
-            memset(
-                ras<u8*>(self->visualizerBuffer) + bytesToCopy,
-                0,
-                streamer->minBufferSize - bytesToCopy
-            );
-        }
-
-        memset(
-            as<u8*>(output) + bytesToCopy,
-            0,
-            streamer->minBufferSize - bytesToCopy
-        );
+    if (wasRunning) {
+        startDevice();
     }
+}
 
-    self->bufferOffset += bytesToCopy;
-    emit self->processedSamples();
+void AudioWorker::changeGain() {
+    streamer->changeGain();
+}
 
-    if (buf->second != self->lastPlaybackSecond) {
-        emit self->progressUpdated(buf->second);
-        self->lastPlaybackSecond = buf->second;
+void AudioWorker::setVolume(const f32 volume) {
+    volume_ = volume;
+
+    if (deviceInitialized) {
+        ma_device_set_master_volume(&device, volume);
     }
 }
 
@@ -157,106 +178,121 @@ void AudioWorker::startDevice() {
             &settings->core.outputDeviceID.value();
     }
 
-    const u32 sampleRate = audioStreamer->sampleRate();
-    const AudioChannels channels = audioStreamer->channels();
+    const u32 sampleRate = streamer->sampleRate();
+    const u8 channels = streamer->channels();
 
     emit audioProperties(sampleRate, channels);
 
+    requiredSamples =
+        max<u16>(std::bit_ceil(sampleRate / 100), FFT_SAMPLE_COUNT);
     deviceConfig.playback.format = ma_format_f32;
-    deviceConfig.playback.channels = u8(channels);
+    deviceConfig.playback.channels = channels;
     deviceConfig.sampleRate = sampleRate;
     deviceConfig.periodSizeInFrames =
-        (channels == AudioChannels::Surround51 ? MIN_BUFFER_SIZE_3BYTES
-                                               : MIN_BUFFER_SIZE) /
-        (F32_SAMPLE_SIZE * u8(channels));
+        streamer->copySize() / (F32_SIZE * channels);
     deviceConfig.periods = 2;
     deviceConfig.dataCallback = &AudioWorker::dataCallback;
     deviceConfig.pUserData = this;
     deviceConfig.noClip = 1;
     deviceConfig.noPreSilencedOutputBuffer = 1;
 
-    const ma_result result = ma_device_init(nullptr, &deviceConfig, &device);
-
-    if (result != MA_SUCCESS) {
-        LOG_ERROR(ma_result_description(result));
+    if (ma_device_init(nullptr, &deviceConfig, &device) != MA_SUCCESS) {
         return;
     }
-
-    buffersIndex = 0;
 
     deviceInitialized = true;
     ma_device_set_master_volume(&device, volume_);
     ma_device_start(&device);
 }
 
-void AudioWorker::pause() {
-    if (deviceInitialized) {
-        ma_device_stop(&device);
+void AudioWorker::dataCallback(
+    ma_device* const device,
+    void* const output,
+    const void* const /* input */,
+    const u32 /* sampleCount */
+) {
+    auto* const self = as<AudioWorker*>(device->pUserData);
+
+    const optional<AudioStreamer::Block> block = self->streamer->consumeBlock();
+
+    if (!block) {
+        memset(output, 0, self->streamer->copySize());
+        self->streamEndedFlag.store(true, std::memory_order_release);
+        return;
     }
-}
 
-void AudioWorker::stop() {
-    if (deviceInitialized) {
-        ma_device_stop(&device);
+    self->readScheduled.store(true, std::memory_order_release);
+    memcpy(output, block->firstPart.data(), block->firstPart.size());
+
+    if (!block->secondPart.empty()) {
+        memcpy(
+            as<u8*>(output) + block->firstPart.size(),
+            block->secondPart.data(),
+            block->secondPart.size()
+        );
     }
 
-    audioStreamer->reset();
-}
+    const u16 written = block->firstPart.size() + block->secondPart.size();
 
-void AudioWorker::resume() {
-    if (deviceInitialized) {
-        ma_device_start(&device);
+    const u16 firstSampleCount = block->firstPart.size() / F32_SIZE;
+    const u16 frameCount = written / F32_SIZE;
+    const u8 channels = self->streamer->channels();
+
+    if (channels == 0) {
+        memset(output, 0, self->streamer->copySize());
+        return;
     }
-}
 
-void AudioWorker::seekSecond(const u16 second) {
-    seeked = true;
+    for (u32 frame = 0; frame + channels <= frameCount; frame += channels) {
+        if (self->samplesAccumulated.load(std::memory_order_acquire)) {
+            break;
+        }
 
-    audioStreamer->seekSecond(second);
-    ma_device_start(&device);
-}
+        f32 mixedSample = 0.0F;
 
-void AudioWorker::setVolume(const f32 volume) {
-    volume_ = volume;
+        for (const u8 channel : range<u8>(0, channels)) {
+            const u32 sampleIdx = frame + channel;
 
-    if (deviceInitialized) {
-        ma_device_set_master_volume(&device, volume);
-    }
-}
+            if (sampleIdx < firstSampleCount) {
+                mixedSample +=
+                    ras<const f32*>(block->firstPart.data())[sampleIdx];
+            } else {
+                mixedSample += ras<const f32*>(
+                    block->secondPart.data()
+                )[sampleIdx - firstSampleCount];
+            }
+        }
 
-void AudioWorker::changeAudioDevice() {
-    if (deviceInitialized) {
-        const bool started = state() == ma_device_state_started;
+        const f32 mixedFrameSample = mixedSample / f32(channels);
 
-        ma_device_uninit(&device);
+        self->buffer[self->currentSamples++] = mixedFrameSample;
 
-        if (started) {
-            startDevice();
+        if (self->currentSamples == self->requiredSamples) {
+            self->samplesAccumulated.store(true, std::memory_order_release);
+            self->currentSamples = 0;
         }
     }
-}
 
-[[nodiscard]] auto AudioWorker::state() const -> ma_device_state {
-    if (!deviceInitialized) {
-        return ma_device_state_uninitialized;
+    if (self->streamer->copySize() > written) {
+        memset(
+            as<u8*>(output) + written,
+            0,
+            self->streamer->copySize() - written
+        );
     }
 
-    return ma_device_get_state(&device);
+    self->playbackSecond.store(block->second, std::memory_order_release);
 }
 
-void AudioWorker::endStream() {
-    ma_device_stop(&device);
-    emit streamEnded();
+auto AudioWorker::state() const -> ma_device_state {
+    return deviceInitialized ? ma_device_get_state(&device)
+                             : ma_device_state_uninitialized;
 }
 
-void AudioWorker::changeGain(const u8 band) {
-    audioStreamer->changeGain(band);
+auto AudioWorker::channels() const -> u8 {
+    return streamer->channels();
 }
 
-[[nodiscard]] auto AudioWorker::channels() -> AudioChannels {
-    return audioStreamer->channels();
-}
-
-void AudioWorker::prepareBuffer() {
-    audioStreamer->prepareBuffer();
+auto AudioWorker::sampleRate() const -> u32 {
+    return streamer->sampleRate();
 }

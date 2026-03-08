@@ -1,12 +1,11 @@
 #include "MetadataWindow.hpp"
 
+#include "Duration.hpp"
 #include "Enums.hpp"
 #include "Utils.hpp"
 
 #include <QTreeWidget>
 #include <QVBoxLayout>
-
-constexpr QSize METADATA_WINDOW_SIZE = QSize(800, 600);
 
 MetadataWindow::MetadataWindow(
     const TrackMetadata& metadata,
@@ -20,11 +19,15 @@ MetadataWindow::MetadataWindow(
     treeWidget->setColumnCount(2);
     treeWidget->setHeaderLabels({ tr("Property"), tr("Value") });
 
-    for (const auto& [idx, label] :
-         views::drop(views::enumerate(trackPropertiesLabels()), 1)) {
+    for (const auto prop : TRACK_PROPERTIES) {
         auto* const item = new QTreeWidgetItem(treeWidget);
-        item->setText(0, label);
-        item->setText(1, metadata[TrackProperty(idx)]);
+        item->setText(0, trackPropertyLabel(prop));
+        item->setText(
+            1,
+            prop == TrackProperty::Duration
+                ? Duration::secondsToString(metadata[prop].toUInt())
+                : metadata[prop]
+        );
         treeWidget->addTopLevelItem(item);
     }
 

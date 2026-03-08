@@ -78,6 +78,7 @@ class SettingsWindow : public QDialog {
     QComboBox* const themeSelect;
     QComboBox* const styleSelect;
     QComboBox* const outputDeviceSelect;
+    QCheckBox* const checkForUpdatesCheckbox;
 
     // Shell
     QCheckBox* const createMenuItemCheckbox;

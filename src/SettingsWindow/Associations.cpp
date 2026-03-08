@@ -2,18 +2,19 @@
 
 #include <QApplication>
 
+// TODO: Add support for desktop actions that appear in the context menu of
+// taskbar applications (e.g. in KDE Plasma)
 #ifdef Q_OS_WINDOWS
 #include "AssociationsWindows.inl"
 
 void updateFileAssociations(const Associations associations) {
-    QString appDir = QApplication::applicationDirPath();
-    QString iconPath = appDir + '/' +
-                       ICO_LOGO_PATH
+    QString appDir = qApp->applicationDirPath();
+    QString iconPath = appDir + ICO_LOGO_PATH
 #if QT_VERSION_MINOR < 9
-                           .toString()
+                                    .toString()
 #endif
         ;
-    QString appPath = QApplication::applicationFilePath();
+    QString appPath = qApp->applicationFilePath();
 
     updateFileAssociationsOS(
         appPath.replace('/', '\\'),
@@ -22,8 +23,23 @@ void updateFileAssociations(const Associations associations) {
     );
 }
 
+void updateFileAssociationsPath() {
+    QString appDir = qApp->applicationDirPath();
+    QString iconPath = appDir + ICO_LOGO_PATH
+#if QT_VERSION_MINOR < 9
+                                    .toString()
+#endif
+        ;
+    QString appPath = qApp->applicationFilePath();
+
+    updateFileAssociationsPathOS(
+        appPath.replace('/', '\\'),
+        iconPath.replace('/', '\\')
+    );
+};
+
 void createContextMenuEntry() {
-    QString appPath = QApplication::applicationFilePath();
+    QString appPath = qApp->applicationFilePath();
     createContextMenuEntryOS(appPath.replace('/', '\\'));
 }
 
@@ -43,27 +59,37 @@ void removeContextMenuEntry() {
 #include "AssociationsLinux.inl"
 
 void updateFileAssociations(const Associations associations) {
-    const QString appDir = QApplication::applicationDirPath();
-    const QString iconPath = appDir + '/' +
-                             PNG_LOGO_PATH
+    const QString appDir = qApp->applicationDirPath();
+    const QString iconPath = appDir + PNG_LOGO_PATH
 #if QT_VERSION_MINOR < 9
-                                 .toString()
+                                          .toString()
 #endif
         ;
-    const QString appPath = QApplication::applicationFilePath();
+    const QString appPath = qApp->applicationFilePath();
 
     updateFileAssociationsOS(appPath, iconPath, associations);
 }
 
-void createContextMenuEntry() {
-    const QString appDir = QApplication::applicationDirPath();
-    const QString iconPath = appDir + '/' +
-                             PNG_LOGO_PATH
+void updateFileAssociationsPath() {
+    const QString appDir = qApp->applicationDirPath();
+    const QString iconPath = appDir + PNG_LOGO_PATH
 #if QT_VERSION_MINOR < 9
-                                 .toString()
+                                          .toString()
 #endif
         ;
-    const QString appPath = QApplication::applicationFilePath();
+    const QString appPath = qApp->applicationFilePath();
+
+    updateFileAssociationsPathOS(appPath, iconPath);
+};
+
+void createContextMenuEntry() {
+    const QString appDir = qApp->applicationDirPath();
+    const QString iconPath = appDir + PNG_LOGO_PATH
+#if QT_VERSION_MINOR < 9
+                                          .toString()
+#endif
+        ;
+    const QString appPath = qApp->applicationFilePath();
 
     createContextMenuEntryOS(appPath, iconPath);
 }

@@ -7,13 +7,7 @@
 
 #include <pulse/pulseaudio.h>
 
-#include <QDebug>
 #include <QThread>
-
-enum class SinkOp : u8 {
-    Added,
-    Changed
-};
 
 class PulseAudioDeviceMonitor : public QObject {
     Q_OBJECT
@@ -29,12 +23,17 @@ class PulseAudioDeviceMonitor : public QObject {
     void defaultDeviceChanged(const QString& deviceName);
 
    private:
+    enum class SinkOp : u8 {
+        Added,
+        Changed
+    };
+
     HashMap<u32, QString> deviceMap;
 
     pa_mainloop* mainloop = nullptr;
     pa_context* context = nullptr;
     QThread* const mainloopThread = QThread::create([this] -> void {
-        int ret;
+        i32 ret;
         pa_mainloop_run(mainloop, &ret);
     });
 
