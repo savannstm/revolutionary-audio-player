@@ -30,7 +30,7 @@ option(MA_ENABLE_WASAPI "Enable WASAPI backend in miniaudio. Only used with enab
 option(MA_DEBUG_OUTPUT "Enable miniaudio debug output" ON)
 
 # Set standards for C and C++
-set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
