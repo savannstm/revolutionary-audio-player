@@ -109,10 +109,6 @@ auto AudioStreamer::start(const string& path, const i32 startSecond)
     copySize_ =
         u16(floorf(f32(MIN_BUFFER_SIZE) / f32(frameSize)) * f32(frameSize));
 
-    if (startSecond != -1) {
-        seekSecond(startSecond);
-    }
-
     const AVCodecParameters* const codecpar = audioStream->codecpar;
     const AVCodecID codecID = codecpar->codec_id;
 
@@ -156,8 +152,14 @@ auto AudioStreamer::start(const string& path, const i32 startSecond)
     buf = new u8[bufSize];
     memset(buf, 0, bufSize);
 
-    readData();
     initializeFilters(true);
+
+    if (startSecond != -1) {
+        seekSecond(startSecond);
+    } else {
+        readData();
+    }
+
     return std::monostate();
 }
 
@@ -298,7 +300,8 @@ void AudioStreamer::readRaw() {
     }
 
     array<u8, MAX_RAW_READ_SIZE> rawBuffer;
-    const i32 read = avio_read(formatContext->pb, rawBuffer.data(), i32(bytesToRead));
+    const i32 read =
+        avio_read(formatContext->pb, rawBuffer.data(), i32(bytesToRead));
 
     if (read <= 0) {
         streamFinished_ = true;
