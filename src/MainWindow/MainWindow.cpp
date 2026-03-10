@@ -630,21 +630,24 @@ void MainWindow::processArgs(const QStringList& args) {
 
         const u8 index = playlistView->addTab(tabLabel);
 
-        TrackTable* const tree = playlistView->tree(index);
+        TrackTable* const table = playlistView->table(index);
 
         connect(
-            tree,
+            table,
             &TrackTable::fillingFinished,
             this,
-            [this, tree](const bool startPlaying) -> void {
+            [this, table](const bool startPlaying) -> void {
             if (startPlaying) {
-                playlistView->setPlayingIndex(tree, tree->model()->index(0, 0));
+                playlistView->setPlayingIndex(
+                    table,
+                    table->model()->index(0, 0)
+                );
             }
         },
             Qt::SingleShotConnection
         );
 
-        tree->fill(args, {}, true);
+        table->fill(args, {}, true);
         playlistView->setCurrentIndex(i8(index));
     }
 }
@@ -715,18 +718,19 @@ void MainWindow::dropEvent(QDropEvent* const event) {
         }
     }
 
-    TrackTable* tree = playlistView->currentTree();
+    TrackTable* table = playlistView->currentTable();
 
-    const bool outsideTree =
-        tree == nullptr ||
-        !QRect(tree->mapToGlobal(QPoint(0, 0)), tree->size()).contains(dropPos);
+    const bool outsideTable =
+        table == nullptr ||
+        !QRect(table->mapToGlobal(QPoint(0, 0)), table->size())
+             .contains(dropPos);
 
-    if (outsideTree) {
+    if (outsideTable) {
         for (const QString& dirPath : dirPaths) {
             const auto info = QFileInfo(dirPath);
-            auto* newTree =
-                playlistView->tree(playlistView->addTab(info.fileName()));
-            newTree->fill({ dirPath });
+            auto* newTable =
+                playlistView->table(playlistView->addTab(info.fileName()));
+            newTable->fill({ dirPath });
         }
 
         for (const QString& playlistPath : playlistPaths) {
@@ -736,16 +740,16 @@ void MainWindow::dropEvent(QDropEvent* const event) {
         if (!filePaths.isEmpty()) {
             const auto info = QFileInfo(filePaths[0]);
 
-            tree =
-                playlistView->tree(playlistView->addTab(info.dir().dirName()));
+            table =
+                playlistView->table(playlistView->addTab(info.dir().dirName()));
 
-            tree->fill(filePaths);
+            table->fill(filePaths);
         }
     } else {
-        tree->fill(dirPaths);
+        table->fill(dirPaths);
 
         if (!filePaths.isEmpty()) {
-            tree->fill(filePaths);
+            table->fill(filePaths);
         }
 
         for (const QString& playlistPath : playlistPaths) {
@@ -791,24 +795,24 @@ void MainWindow::loadPlaylists() {
 
         playlistView->setTabColor(index, playlist.tabColor);
 
-        TrackTable* const tree = playlistView->tree(index);
-        tree->setOpacity(playlist.backgroundOpacity);
+        TrackTable* const table = playlistView->table(index);
+        table->setOpacity(playlist.backgroundOpacity);
 
         if (!playlist.order.empty()) {
             connect(
-                tree,
+                table,
                 &TrackTable::fillingFinished,
                 this,
                 [=](const bool /* startPlaying */) -> void {
-                for (const i32 track : range(0, tree->model()->rowCount())) {
-                    tree->model()->setOrder(track, playlist.order[track]);
+                for (const i32 track : range(0, table->model()->rowCount())) {
+                    table->model()->setOrder(track, playlist.order[track]);
                 }
             },
                 Qt::SingleShotConnection
             );
         }
 
-        tree->fill(playlist.tracks, playlist.cueOffsets);
+        table->fill(playlist.tracks, playlist.cueOffsets);
 
         const QString& imagePath = playlist.backgroundImagePath;
 
@@ -859,8 +863,8 @@ auto MainWindow::savePlaylists() -> result<bool, QString> {
     QJsonArray playlistsArray;
 
     for (const u8 tab : range<u8>(0, playlistView->tabCount())) {
-        TrackTable* const tree = playlistView->tree(tab);
-        const TrackTableModel* const model = tree->model();
+        TrackTable* const table = playlistView->table(tab);
+        const TrackTableModel* const model = table->model();
 
         const i32 rowCount = model->rowCount();
 
@@ -869,10 +873,10 @@ auto MainWindow::savePlaylists() -> result<bool, QString> {
         playlistObject.backgroundImagePath =
             playlistView->backgroundImagePath(tab);
         playlistObject.tabColor = playlistView->tabColor(tab);
-        playlistObject.backgroundOpacity = tree->opacity();
+        playlistObject.backgroundOpacity = table->opacity();
 
         for (const i32 row : range<i32>(0, rowCount)) {
-            const TrackMetadata rowMetadata = tree->rowMetadata(row);
+            const TrackMetadata rowMetadata = table->rowMetadata(row);
             const QString& cueFilePath = model->cueFilePath(row);
             const u32 cueOffset = model->cueOffset(row);
 
@@ -884,7 +888,7 @@ auto MainWindow::savePlaylists() -> result<bool, QString> {
             playlistObject.cueOffsets.append(cueOffset);
         }
 
-        playlistObject.columns = tree->columnSettings();
+        playlistObject.columns = table->columnSettings();
         playlistsArray.append(playlistObject.toJSON());
     }
 
@@ -962,8 +966,8 @@ void MainWindow::retranslate(const QLocale::Language language) {
     const u8 tabCount = playlistView->tabCount();
 
     for (const u8 tab : range<u8>(0, tabCount)) {
-        TrackTable* const tree = playlistView->tree(tab);
-        TrackTableModel* const model = tree->model();
+        TrackTable* const table = playlistView->table(tab);
+        TrackTableModel* const model = table->model();
 
         for (const auto prop : TRACK_PROPERTIES) {
             model->setHeaderData(
@@ -971,10 +975,10 @@ void MainWindow::retranslate(const QLocale::Language language) {
                 Qt::Horizontal,
                 trackPropertyLabel(prop)
             );
-            tree->resizeColumnToContents(u8(prop));
+            table->resizeColumnToContents(u8(prop));
         }
 
-        tree->setColumnWidth(0, MINIMUM_TRACK_TABLE_COLUMN_SECTION_SIZE);
+        table->setColumnWidth(0, MINIMUM_TRACK_TABLE_COLUMN_SECTION_SIZE);
     }
 
     equalizerMenu->retranslate();
@@ -1146,12 +1150,12 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
         return;
     }
 
-    TrackTable* const tree = playlistView->currentTree();
-    TrackTableModel* const treeModel = tree->model();
+    TrackTable* const table = playlistView->currentTable();
+    TrackTableModel* const tableModel = table->model();
 
     switch (qApp->mouseButtons()) {
         case Qt::RightButton: {
-            const QModelIndex currentIndex = tree->currentIndex();
+            const QModelIndex currentIndex = table->currentIndex();
 
             auto* const menu = new QMenu(this);
 
@@ -1159,7 +1163,7 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
                 menu->addAction(tr("Remove Track"));
 
             const QModelIndexList selectedRows =
-                tree->selectionModel()->selectedRows();
+                table->selectionModel()->selectedRows();
             const QAction* removeSelectionAction = nullptr;
 
             if (selectedRows.size() > 2) {
@@ -1201,22 +1205,22 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
             }
 
             if (selectedAction == removeAction) {
-                treeModel->removeRow(index.row());
+                tableModel->removeRow(index.row());
 
-                tree->setCurrentIndex(
+                table->setCurrentIndex(
                     index.row() > currentIndex.row()
                         ? currentIndex
-                        : treeModel->index(currentIndex.row() - 1, 0)
+                        : tableModel->index(currentIndex.row() - 1, 0)
                 );
             } else if (selectedAction == clearAction) {
-                treeModel->removeRows(0, treeModel->rowCount());
+                tableModel->removeRows(0, tableModel->rowCount());
             } else if (selectedAction == metadataAction) {
                 auto* const metadataWindow =
-                    new MetadataWindow(tree->rowMetadata(index.row()), this);
+                    new MetadataWindow(table->rowMetadata(index.row()), this);
                 metadataWindow->setAttribute(Qt::WA_DeleteOnClose);
                 metadataWindow->show();
             } else if (selectedAction == coverAction) {
-                const TrackMetadata metadata = tree->rowMetadata(index.row());
+                const TrackMetadata metadata = table->rowMetadata(index.row());
 
                 auto* const coverWindow = new CoverWindow(
                     metadata[TrackProperty::Path],
@@ -1228,12 +1232,12 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
                 const QModelIndex& startRow = selectedRows.first();
                 const isize count = selectedRows.size();
 
-                treeModel->removeRows(startRow.row(), i32(count));
+                tableModel->removeRows(startRow.row(), i32(count));
 
-                tree->setCurrentIndex(
+                table->setCurrentIndex(
                     index.row() > currentIndex.row()
                         ? currentIndex
-                        : treeModel->index(
+                        : tableModel->index(
                               i32(currentIndex.row() - selectedRows.size()),
                               0
                           )
@@ -1281,7 +1285,7 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
                 );
             } else if (selectedAction == changeOpacityAction) {
                 auto* const opacityInput = new InputPopup(
-                    QString::number(tree->opacity(), 'f', 2),
+                    QString::number(table->opacity(), 'f', 2),
                     QCursor::pos(),
                     this
                 );
@@ -1295,9 +1299,9 @@ void MainWindow::handleTrackPress(const QModelIndex& index) {
                 connect(
                     opacityInput,
                     &InputPopup::finished,
-                    tree,
-                    [tree](const QString& text) -> void {
-                    tree->setOpacity(QLocale::system().toFloat(text));
+                    table,
+                    [table](const QString& text) -> void {
+                    table->setOpacity(QLocale::system().toFloat(text));
                 },
                     Qt::SingleShotConnection
                 );
@@ -1322,8 +1326,8 @@ void MainWindow::searchTrack() {
         previousSearchPrompt = input;
     }
 
-    TrackTable* const tree = playlistView->currentTree();
-    TrackTableModel* const treeModel = tree->model();
+    TrackTable* const table = playlistView->currentTable();
+    TrackTableModel* const tableModel = table->model();
 
     if (searchMatches.empty()) {
         const isize colonPos = input.indexOf(':');
@@ -1356,8 +1360,8 @@ void MainWindow::searchTrack() {
             }
         }
 
-        for (const i32 row : range(0, treeModel->rowCount())) {
-            const TrackMetadata metadata = tree->rowMetadata(row);
+        for (const i32 row : range(0, tableModel->rowCount())) {
+            const TrackMetadata metadata = table->rowMetadata(row);
             QString fieldValue;
 
             if (searchByTag) {
@@ -1372,7 +1376,7 @@ void MainWindow::searchTrack() {
 
             if (fieldValue.contains(value) ||
                 fieldValueLower.contains(valueLower)) {
-                searchMatches.append(treeModel->index(row, 0));
+                searchMatches.append(tableModel->index(row, 0));
             }
         }
 
@@ -1392,20 +1396,20 @@ void MainWindow::searchTrack() {
         searchMatchesPosition = 0;
     }
 
-    tree->selectionModel()->clearSelection();
+    table->selectionModel()->clearSelection();
 
     const QModelIndex& match = searchMatches[searchMatchesPosition++];
-    tree->scrollTo(match, QTreeView::PositionAtCenter);
-    tree->selectionModel()->select(
+    table->scrollTo(match, TrackTable::PositionAtCenter);
+    table->selectionModel()->select(
         match,
         QItemSelectionModel::Select | QItemSelectionModel::Rows
     );
 }
 
 void MainWindow::toggleSearchInput(const bool forceShow) {
-    TrackTable* const tree = playlistView->currentTree();
+    TrackTable* const table = playlistView->currentTable();
 
-    if (tree == nullptr) {
+    if (table == nullptr) {
         return;
     }
 
@@ -1415,7 +1419,7 @@ void MainWindow::toggleSearchInput(const bool forceShow) {
                          SEARCH_INPUT_POSITION_PADDING;
         const u16 yPos = 0 + SEARCH_INPUT_POSITION_PADDING;
 
-        searchTrackInput->move(tree->mapToGlobal(QPoint(xPos, yPos)));
+        searchTrackInput->move(table->mapToGlobal(QPoint(xPos, yPos)));
         searchTrackInput->raise();
         searchTrackInput->show();
         searchTrackInput->setFocus();
@@ -1547,19 +1551,19 @@ void MainWindow::addEntry(const bool createNewTab, const bool isFolder) {
         }
     }
 
-    TrackTable* tree = playlistView->currentTree();
+    TrackTable* table = playlistView->currentTable();
 
-    if (createNewTab || tree == nullptr) {
+    if (createNewTab || table == nullptr) {
         const u8 index = playlistView->addTab(
             settings->playlist.playlistNaming == PlaylistNaming::DirectoryName
                 ? QFileInfo(path).fileName()
                 : QString(),
             settings->playlist.columns
         );
-        tree = playlistView->tree(index);
+        table = playlistView->table(index);
     }
 
-    tree->fill({ path });
+    table->fill({ path });
 }
 
 void MainWindow::showAboutWindow() {
@@ -1671,18 +1675,18 @@ void MainWindow::setupTrayIcon() {
 }
 
 void MainWindow::updateStatusBar() {
-    TrackTable* const tree = playlistView->currentTree();
-    TrackTableModel* const treeModel = tree->model();
+    TrackTable* const table = playlistView->currentTable();
+    TrackTableModel* const tableModel = table->model();
 
-    if (treeModel != nullptr) {
+    if (tableModel != nullptr) {
         playlistTracksStatus->setText(
-            tr("%1 Tracks").arg(treeModel->rowCount())
+            tr("%1 Tracks").arg(tableModel->rowCount())
         );
         playlistDurationStatus->setText(
-            tree->duration().toString("hh:mm:ss"_L1)
+            table->duration().toString("hh:mm:ss"_L1)
         );
 
-        const QModelIndex index = tree->currentIndex();
+        const QModelIndex index = table->currentIndex();
 
         if (index.isValid()) {
             currentTrackStatus->setText(
@@ -1701,27 +1705,27 @@ auto MainWindow::changePlaylist(const i8 index) -> bool {
         return false;
     }
 
-    TrackTable* const tree = playlistView->tree(index);
-    TrackTableModel* const treeModel = tree->model();
+    TrackTable* const table = playlistView->table(index);
+    TrackTableModel* const model = table->model();
 
-    playlistTracksStatus->setText(tr("%1 Tracks").arg(treeModel->rowCount()));
-    playlistDurationStatus->setText(tree->duration().toString("hh:mm:ss"_L1));
+    playlistTracksStatus->setText(tr("%1 Tracks").arg(model->rowCount()));
+    playlistDurationStatus->setText(table->duration().toString("hh:mm:ss"_L1));
 
     return true;
 }
 
-void MainWindow::playTrack(TrackTable* const tree, const i32 row) {
+void MainWindow::playTrack(TrackTable* const table, const i32 row) {
     if (row == -1) {
         return;
     }
 
-    const TrackMetadata metadata = tree->rowMetadata(row);
+    const TrackMetadata metadata = table->rowMetadata(row);
 
     const bool playingCUE =
         metadata[TrackProperty::AudioFormat].toLower().endsWith(EXT_CUE);
 
     if (playingCUE) {
-        CUEOffset = tree->model()->cueOffset(row);
+        CUEOffset = table->model()->cueOffset(row);
     }
 
     togglePlayback(metadata[TrackProperty::Path], playingCUE ? CUEOffset : -1);
@@ -1851,7 +1855,7 @@ void MainWindow::togglePlayback(const QString& path, const i32 startSecond) {
             playButton->setToolTip(tr("Play"));
             actionTogglePlayback->setText(tr("Play"));
         } else if (state == ma_device_state_stopped &&
-                   playlistView->playingTree() != nullptr) {
+                   playlistView->playingTable() != nullptr) {
             audioWorker->resume();
 
             playButton->setIcon(pauseIcon);
@@ -1859,13 +1863,13 @@ void MainWindow::togglePlayback(const QString& path, const i32 startSecond) {
             actionTogglePlayback->setText(tr("Pause"));
         } else if (state == ma_device_state_uninitialized ||
                    state == ma_device_state_stopped) {
-            TrackTable* const tree = playlistView->currentTree();
+            TrackTable* const table = playlistView->currentTable();
 
-            if (tree == nullptr) {
+            if (table == nullptr) {
                 return;
             }
 
-            playlistView->setPlayingIndex(tree, tree->model()->index(0, 0));
+            playlistView->setPlayingIndex(table, table->model()->index(0, 0));
         }
     }
 }
@@ -1905,12 +1909,12 @@ void MainWindow::advancePlaylist(const PlaylistView::Direction direction) {
             break;
     }
 
-    if (result.tree == nullptr) {
+    if (result.table == nullptr) {
         stopPlayback();
         return;
     }
 
-    playTrack(result.tree, result.index.row());
+    playTrack(result.table, result.index.row());
 }
 
 void MainWindow::stopPlayback() {
@@ -2006,7 +2010,7 @@ void MainWindow::importPlaylist(const bool createNewTab, QString filePath) {
                              ? playlistView->addTab(tabName)
                              : currentIndex;
 
-        playlistView->tree(index)
+        playlistView->table(index)
             ->fillCUE(metadata, info.tracks, info.cueFilePath);
 
         return;
@@ -2068,7 +2072,7 @@ void MainWindow::importPlaylist(const bool createNewTab, QString filePath) {
                          ? playlistView->addTab(fileInfo.fileName())
                          : currentIndex;
 
-    playlistView->tree(index)->fill(filePaths);
+    playlistView->table(index)->fill(filePaths);
 }
 
 void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
@@ -2077,7 +2081,7 @@ void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
         return;
     }
 
-    const TrackTable* const tree = playlistView->tree(index);
+    const TrackTable* const table = playlistView->table(index);
 
     QString outputPath =
         QFileDialog::getExistingDirectory(this, tr("Select Output Directory"));
@@ -2106,12 +2110,12 @@ void MainWindow::exportPlaylist(const PlaylistFileType playlistType) {
         }
     }
 
-    const i32 rowCount = tree->model()->rowCount();
+    const i32 rowCount = table->model()->rowCount();
     vector<TrackMetadata> properties;
     properties.reserve(rowCount);
 
     for (const i32 row : range(0, rowCount)) {
-        properties.emplace_back(tree->rowMetadata(row));
+        properties.emplace_back(table->rowMetadata(row));
     }
 
     const auto result = playlistType == PlaylistFileType::XSPF

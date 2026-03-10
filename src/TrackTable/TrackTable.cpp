@@ -37,10 +37,10 @@ class TrackTableDelegate : public QStyledItemDelegate {
         const QStyleOptionViewItem& option,
         const QModelIndex& index
     ) const override {
-        const auto* const tree = as<const TrackTable*>(option.widget);
-        const bool isPlayingRow = tree != nullptr &&
-                                  tree->currentIndex().isValid() &&
-                                  index.row() == tree->currentIndex().row();
+        const auto* const table = as<const TrackTable*>(option.widget);
+        const bool isPlayingRow = table != nullptr &&
+                                  table->currentIndex().isValid() &&
+                                  index.row() == table->currentIndex().row();
         QStyleOptionViewItem modifiedOption = option;
 
         if (isPlayingRow) {
@@ -51,7 +51,7 @@ class TrackTableDelegate : public QStyledItemDelegate {
         i8 leftmostVisualIndex = INT8_MAX;
 
         for (const auto [idx, settings] :
-             views::enumerate(tree->columnSettings())) {
+             views::enumerate(table->columnSettings())) {
             if (!settings.hidden && settings.index < leftmostVisualIndex) {
                 leftmostVisualIndex = i8(settings.index);
                 leftmostShown = i8(idx);
@@ -82,10 +82,10 @@ class TrackTableDelegate : public QStyledItemDelegate {
 
         QStyledItemDelegate::paint(painter, modifiedOption, index);
 
-        if (tree != nullptr && index.row() == tree->currentIndex().row() &&
-            tree->status() != TreeStatus::Idle) {
+        if (table != nullptr && index.row() == table->currentIndex().row() &&
+            table->status() != TableStatus::Idle) {
             const QIcon icon = QIcon::fromTheme(
-                tree->status() == TreeStatus::Playing
+                table->status() == TableStatus::Playing
                     ? QIcon::ThemeIcon::MediaPlaybackStart
                     : QIcon::ThemeIcon::MediaPlaybackPause
             );
@@ -554,18 +554,18 @@ void TrackTable::setOpacity(const f32 opacity) {
     } else {
         const QPalette palette = qApp->palette();
 
-        QColor treeBackgroundColor = palette.color(QPalette::Base);
+        QColor tableBackgroundColor = palette.color(QPalette::Base);
         QColor headerBackgroundColor = palette.color(QPalette::Button);
 
-        treeBackgroundColor.setAlphaF(opacity);
+        tableBackgroundColor.setAlphaF(opacity);
         headerBackgroundColor.setAlphaF(opacity);
 
         setStyleSheet(
             u"TrackTable { background-color: rgba(%1, %2, %3, %4) }\nTrackTableHeader { background-color: rgba(%5, %6, %7, %8) }"_s
-                .arg(treeBackgroundColor.red())
-                .arg(treeBackgroundColor.green())
-                .arg(treeBackgroundColor.blue())
-                .arg(QString::number(treeBackgroundColor.alphaF(), 'f', 2))
+                .arg(tableBackgroundColor.red())
+                .arg(tableBackgroundColor.green())
+                .arg(tableBackgroundColor.blue())
+                .arg(QString::number(tableBackgroundColor.alphaF(), 'f', 2))
                 .arg(headerBackgroundColor.red())
                 .arg(headerBackgroundColor.green())
                 .arg(headerBackgroundColor.blue())

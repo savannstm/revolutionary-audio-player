@@ -88,10 +88,10 @@ auto PlaylistView::createPage(const optional<ColumnSettingsArray> cols)
     auto* const pageLayout = new QVBoxLayout(page);
     pageLayout->setContentsMargins(0, 0, 0, 0);
 
-    auto* const tree = new TrackTable(page);
-    TrackTableModel* const model = tree->model();
-    TrackTableHeader* const header = tree->header();
-    tree->setObjectName("tree"_L1);
+    auto* const table = new TrackTable(page);
+    TrackTableModel* const model = table->model();
+    TrackTableHeader* const header = table->header();
+    table->setObjectName("table"_L1);
 
     header->setDefaultAlignment(Qt::AlignLeft);
     header->setSectionsClickable(true);
@@ -110,18 +110,18 @@ auto PlaylistView::createPage(const optional<ColumnSettingsArray> cols)
     auto* const rightBackgroundLabel = new QLabel(page);
     rightBackgroundLabel->setObjectName("rightLabel"_L1);
 
-    pageLayout->addWidget(tree);
+    pageLayout->addWidget(table);
 
-    tree->setColumnSettings(cols.value_or(settings->playlist.columns));
+    table->setColumnSettings(cols.value_or(settings->playlist.columns));
 
     for (const auto prop : TRACK_PROPERTIES) {
-        const ColumnSettings col = tree->columnSettings()[u8(prop)];
+        const ColumnSettings col = table->columnSettings()[u8(prop)];
 
         model
             ->setHeaderData(u8(prop), Qt::Horizontal, trackPropertyLabel(prop));
 
         if (col.hidden) {
-            tree->hideColumn(u8(prop));
+            table->hideColumn(u8(prop));
         }
     };
 
@@ -129,7 +129,7 @@ auto PlaylistView::createPage(const optional<ColumnSettingsArray> cols)
     u8 moveCount = 0;
 
     for (const auto prop : TRACK_PROPERTIES) {
-        const ColumnSettings col = tree->columnSettings()[u8(prop)];
+        const ColumnSettings col = table->columnSettings()[u8(prop)];
         moves[moveCount++] = { u8(prop), col.index };
     }
 
@@ -148,8 +148,8 @@ auto PlaylistView::createPage(const optional<ColumnSettingsArray> cols)
     connect(
         header,
         &TrackTableHeader::sectionMoved,
-        tree,
-        [tree, header](const u8 logical, const u8 oldIndex, const u8 newIndex)
+        table,
+        [table, header](const u8 logical, const u8 oldIndex, const u8 newIndex)
             -> void {
         array<std::pair<u8, u8>, TRACK_PROPERTY_COUNT> visibleColumns;
         u8 visibleCount = 0;
@@ -171,22 +171,22 @@ auto PlaylistView::createPage(const optional<ColumnSettingsArray> cols)
 
         for (const u8 relativeIdx : range<u8>(0, visibleCount)) {
             const u8 logicalIdx = visibleColumns[relativeIdx].second;
-            tree->setColumnIndex(logicalIdx, u8(relativeIdx));
+            table->setColumnIndex(logicalIdx, u8(relativeIdx));
         }
     }
     );
 
     connect(
-        tree,
+        table,
         &TrackTable::playingChanged,
         this,
-        [this, tree](const QModelIndex& index) -> void {
-        setPlayingIndex(tree, index);
+        [this, table](const QModelIndex& index) -> void {
+        setPlayingIndex(table, index);
         // TODO: Add play indicator to playing tab
     }
     );
 
-    connect(tree, &TrackTable::pressed, this, &PlaylistView::trackPressed);
+    connect(table, &TrackTable::pressed, this, &PlaylistView::trackPressed);
 
     connect(
         model,
@@ -206,13 +206,13 @@ auto PlaylistView::createPage(const optional<ColumnSettingsArray> cols)
         emit layoutChanged();
     });
 
-    tree->sortByPath();
+    table->sortByPath();
 
     return page;
 }
 
-void PlaylistView::setTreeOpacity(const u8 index, const f32 opacity) const {
-    this->tree(index)->setOpacity(opacity);
+void PlaylistView::setTableOpacity(const u8 index, const f32 opacity) const {
+    this->table(index)->setOpacity(opacity);
 }
 
 void PlaylistView::removeBackgroundImage(const u8 index) const {
@@ -222,7 +222,7 @@ void PlaylistView::removeBackgroundImage(const u8 index) const {
         return;
     }
 
-    setTreeOpacity(index, 1.0F);
+    setTableOpacity(index, 1.0F);
 
     QWidget* const pageWidget = page(index);
     auto* leftLabel = pageWidget->findChild<QLabel*>("leftLabel"_L1);
@@ -253,11 +253,11 @@ void PlaylistView::setBackgroundImage(
     QLabel* const centerLabel = backgroundImage(index);
     const QWidget* const pageWidget = page(index);
 
-    const f32 currentOpacity = treeOpacity(index);
+    const f32 currentOpacity = tableOpacity(index);
 
-    setTreeOpacity(
+    setTableOpacity(
         index,
-        treeOpacity(index) == 1.0F ? HALF_TRANSPARENT : currentOpacity
+        tableOpacity(index) == 1.0F ? HALF_TRANSPARENT : currentOpacity
     );
 
     const u16 layoutWidth = screen()->size().width();
@@ -323,15 +323,15 @@ void PlaylistView::setBackgroundImage(
     centerLabel->setProperty("path", path);
 }
 
-auto PlaylistView::treeOpacity(const u8 index) const -> f32 {
-    return tree(index)->opacity();
+auto PlaylistView::tableOpacity(const u8 index) const -> f32 {
+    return table(index)->opacity();
 }
 
 void PlaylistView::changeEvent(QEvent* const event) {
     if (event->type() == QEvent::PaletteChange) {
         for (const u8 idx : range<u8>(0, tabCount())) {
-            TrackTable* const tree = this->tree(idx);
-            tree->setOpacity(tree->opacity());
+            TrackTable* const table = this->table(idx);
+            table->setOpacity(table->opacity());
 
             // TODO: Tabs text repaint
         }
@@ -360,8 +360,8 @@ void PlaylistView::setTabLabel(const u8 index, const QString& label) {
     return playingData.index;
 };
 
-[[nodiscard]] auto PlaylistView::playingTree() const -> TrackTable* {
-    return playingData.tree;
+[[nodiscard]] auto PlaylistView::playingTable() const -> TrackTable* {
+    return playingData.table;
 };
 
 [[nodiscard]] auto PlaylistView::currentBackgroundImage() const -> QLabel* {
@@ -373,18 +373,18 @@ void PlaylistView::setTabLabel(const u8 index, const QString& label) {
     return stackedWidget->widget(index)->findChild<QLabel*>("centerLabel"_L1);
 };
 
-[[nodiscard]] auto PlaylistView::tree(const u8 index) const -> TrackTable* {
+[[nodiscard]] auto PlaylistView::table(const u8 index) const -> TrackTable* {
     const QWidget* const widget = stackedWidget->widget(index);
 
     if (widget == nullptr) {
         return nullptr;
     }
 
-    return widget->findChild<TrackTable*>("tree"_L1);
+    return widget->findChild<TrackTable*>("table"_L1);
 };
 
-[[nodiscard]] auto PlaylistView::currentTree() const -> TrackTable* {
-    return tree(currentIndex());
+[[nodiscard]] auto PlaylistView::currentTable() const -> TrackTable* {
+    return table(currentIndex());
 };
 
 [[nodiscard]] auto PlaylistView::tabLabel(const u8 index) const -> QString {
@@ -454,53 +454,53 @@ void PlaylistView::setCurrentIndex(const i8 index) {
 };
 
 void PlaylistView::setPlayingIndex(
-    TrackTable* const tree,
+    TrackTable* const table,
     const QModelIndex& index
 ) {
-    if (playingData.tree != nullptr) {
-        playingData.tree->setStatus(TreeStatus::Suspended);
+    if (playingData.table != nullptr) {
+        playingData.table->setStatus(TableStatus::Suspended);
     }
 
     if (!random) {
         shuffledPlaylist = vector<QPersistentModelIndex>();
     }
 
-    const bool needShuffle = random && tree != playingTree();
+    const bool needShuffle = random && table != playingTable();
 
-    playingData = { .tree = tree, .index = index };
-    tree->setCurrentIndex(index);
-    tree->setStatus(TreeStatus::Playing);
+    playingData = { .table = table, .index = index };
+    table->setCurrentIndex(index);
+    table->setStatus(TableStatus::Playing);
 
     if (needShuffle) {
         shufflePlaylist();
     }
 
-    emit playingChanged(tree, index.row());
+    emit playingChanged(table, index.row());
 }
 
 void PlaylistView::resetPlayingIndex() {
-    TrackTable* const playingTree = this->playingTree();
+    TrackTable* const playingTable = this->playingTable();
 
-    if (playingTree == nullptr) {
+    if (playingTable == nullptr) {
         return;
     }
 
-    playingTree->setStatus(TreeStatus::Idle);
-    playingTree->setCurrentIndex(QModelIndex());
+    playingTable->setStatus(TableStatus::Idle);
+    playingTable->setCurrentIndex(QModelIndex());
 
-    playingData = { .tree = nullptr, .index = QModelIndex() };
+    playingData = { .table = nullptr, .index = QModelIndex() };
     shuffledPlaylist = vector<QPersistentModelIndex>();
 };
 
 auto PlaylistView::advance(const Direction direction) -> AdvanceResult {
     AdvanceResult result;
 
-    TrackTable* tree = playingTree();
-    if (tree == nullptr) {
+    TrackTable* table = playingTable();
+    if (table == nullptr) {
         return result;
     }
 
-    const TrackTableModel* model = tree->model();
+    const TrackTableModel* model = table->model();
     const u16 rowCount = model->rowCount();
     if (rowCount == 0) {
         return result;
@@ -544,13 +544,13 @@ auto PlaylistView::advance(const Direction direction) -> AdvanceResult {
                 break;
             }
 
-            tree->setCurrentIndex(QModelIndex());
-            tree->setStatus(TreeStatus::Idle);
+            table->setCurrentIndex(QModelIndex());
+            table->setStatus(TableStatus::Idle);
 
             if (repeatMode_ == RepeatMode::Off) {
-                while (advanceToNextTree()) {
-                    tree = playingTree();
-                    model = tree->model();
+                while (advanceToNextTable()) {
+                    table = playingTable();
+                    model = table->model();
 
                     if (model->rowCount() > 0) {
                         nextRow = 0;
@@ -558,7 +558,7 @@ auto PlaylistView::advance(const Direction direction) -> AdvanceResult {
                     }
                 }
 
-                if (playingTree() == nullptr) {
+                if (playingTable() == nullptr) {
                     result.status = AdvanceStatus::PlaylistFinished;
                     return result;
                 }
@@ -581,41 +581,42 @@ auto PlaylistView::advance(const Direction direction) -> AdvanceResult {
     }
 
     const QModelIndex nextIndex = model->index(nextRow, 0);
-    playingData = { .tree = tree, .index = nextIndex };
+    playingData = { .table = table, .index = nextIndex };
 
-    result.tree = tree;
+    result.table = table;
     result.index = nextIndex;
-    tree->setCurrentIndex(nextIndex);
+    table->setCurrentIndex(nextIndex);
 
     return result;
 }
 
-auto PlaylistView::advanceToNextTree() -> bool {
-    TrackTable* current = playingTree();
+auto PlaylistView::advanceToNextTable() -> bool {
+    TrackTable* current = playingTable();
 
     if (current == nullptr) {
-        playingData = { .tree = nullptr, .index = QModelIndex() };
+        playingData = { .table = nullptr, .index = QModelIndex() };
         return false;
     }
 
     bool nextIsSibling = false;
 
     for (const u8 idx : range<u8>(0, tabCount())) {
-        TrackTable* const tree = this->tree(idx);
+        TrackTable* const table = this->table(idx);
 
         if (nextIsSibling) {
-            playingData = { .tree = tree, .index = tree->model()->index(0, 0) };
+            playingData = { .table = table,
+                            .index = table->model()->index(0, 0) };
             return true;
         }
 
-        if (tree == current) {
+        if (table == current) {
             nextIsSibling = true;
         }
     }
 
-    current->setStatus(TreeStatus::Idle);
+    current->setStatus(TableStatus::Idle);
     current->setCurrentIndex(QModelIndex());
-    playingData = { .tree = nullptr, .index = QModelIndex() };
+    playingData = { .table = nullptr, .index = QModelIndex() };
 
     return false;
 }
@@ -631,7 +632,7 @@ struct RandIntGenerator {
 };
 
 void PlaylistView::shufflePlaylist() {
-    const TrackTableModel* model = playingTree()->model();
+    const TrackTableModel* model = playingTable()->model();
     const i32 rowCount = model->rowCount();
 
     if (shuffledPlaylist.capacity() < rowCount) {

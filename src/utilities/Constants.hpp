@@ -88,7 +88,7 @@ constexpr QSize MINIMUM_COVER_SIZE = QSize(256, 256);
 // Search input size constraints
 constexpr u8 MINIMUM_MATCHES_NUMBER = 32;
 
-// Playlist / Track Tree Config
+// Playlist / Track Table Config
 constexpr static u8 MINIMUM_TRACK_COUNT = 128;
 constexpr static u8 MINIMUM_TRACK_TABLE_COLUMN_SECTION_SIZE = 32;
 

@@ -1,15 +1,16 @@
+#include "TrackTableHeader.hpp"
+
 #include "Constants.hpp"
 #include "TrackTable.hpp"
-#include "TrackTableHeader.hpp"
 
 #include <QApplication>
 #include <QMouseEvent>
 
 TrackTableHeader::TrackTableHeader(
     const Qt::Orientation orientation,
-    TrackTable* const tree
+    TrackTable* const table
 ) :
-    QHeaderView(orientation, tree) {}
+    QHeaderView(orientation, table) {}
 
 void TrackTableHeader::mousePressEvent(QMouseEvent* const event) {
     pressedIndex = i8(logicalIndexAt(event->pos()));

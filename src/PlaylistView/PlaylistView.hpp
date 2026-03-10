@@ -9,13 +9,13 @@
 #include <QWidget>
 
 struct PlayingItem {
-    TrackTable* tree = nullptr;
+    TrackTable* table = nullptr;
     QPersistentModelIndex index;
 };
 
 struct AdvanceResult {
     QModelIndex index;
-    TrackTable* tree = nullptr;
+    TrackTable* table = nullptr;
     AdvanceStatus status;
 };
 
@@ -53,7 +53,7 @@ class PlaylistView : public QWidget {
         const QString& path
     ) const;
     void setCurrentIndex(i8 index);
-    void setPlayingIndex(TrackTable* tree, const QModelIndex& index);
+    void setPlayingIndex(TrackTable* table, const QModelIndex& index);
     void resetPlayingIndex();
     auto advance(Direction direction) -> AdvanceResult;
     [[nodiscard]] auto repeatMode() const -> RepeatMode;
@@ -67,11 +67,11 @@ class PlaylistView : public QWidget {
     [[nodiscard]] auto tabCount() const -> u8;
     [[nodiscard]] auto currentIndex() const -> i8;
     [[nodiscard]] auto playingIndex() const -> QModelIndex;
-    [[nodiscard]] auto playingTree() const -> TrackTable*;
+    [[nodiscard]] auto playingTable() const -> TrackTable*;
     [[nodiscard]] auto backgroundImage(u8 index) const -> QLabel*;
     [[nodiscard]] auto currentBackgroundImage() const -> QLabel*;
-    [[nodiscard]] auto tree(u8 index) const -> TrackTable*;
-    [[nodiscard]] auto currentTree() const -> TrackTable*;
+    [[nodiscard]] auto table(u8 index) const -> TrackTable*;
+    [[nodiscard]] auto currentTable() const -> TrackTable*;
     [[nodiscard]] auto tabLabel(u8 index) const -> QString;
     [[nodiscard]] auto tabColor(u8 index) const -> QString;
     [[nodiscard]] auto currentPage() const -> QWidget*;
@@ -97,24 +97,24 @@ class PlaylistView : public QWidget {
     void closeTabRequested(u8 index);
     void indexChanged(i8 index);
     void tabsRemoved(TabRemoveMode mode, u8 startIndex, u8 count);
-    void playingChanged(TrackTable* tree, i32 row);
+    void playingChanged(TrackTable* table, i32 row);
     void trackPressed(const QModelIndex& index);
     void rowsRemoved();
     void rowsInserted();
     void layoutChanged();
 
    protected:
-    // If this is put into a track tree, causes a deadlock
+    // If this is put into a track table, causes a deadlock
     void changeEvent(QEvent* event) override;
 
    private:
-    inline void setTreeOpacity(u8 index, f32 opacity) const;
+    inline void setTableOpacity(u8 index, f32 opacity) const;
 
-    [[nodiscard]] inline auto treeOpacity(u8 index) const -> f32;
+    [[nodiscard]] inline auto tableOpacity(u8 index) const -> f32;
 
     inline void changePage(i8 index);
 
-    inline auto advanceToNextTree() -> bool;
+    inline auto advanceToNextTable() -> bool;
 
     static constexpr f32 HALF_TRANSPARENT = 0.5;
     static constexpr f32 BLUR_SIGMA = 10;

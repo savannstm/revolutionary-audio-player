@@ -127,7 +127,7 @@ enum class ProgressDisplayMode : u8 {
     Remaining,
 };
 
-enum class TreeStatus : u8 {
+enum class TableStatus : u8 {
     Idle,
     Suspended,
     Playing

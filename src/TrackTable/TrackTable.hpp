@@ -67,9 +67,9 @@ class TrackTable : public QTableView {
         columnSettings_[column].hidden = hidden;
     }
 
-    [[nodiscard]] auto status() const -> TreeStatus { return status_; }
+    [[nodiscard]] auto status() const -> TableStatus { return status_; }
 
-    void setStatus(const TreeStatus status) { status_ = status; }
+    void setStatus(const TableStatus status) { status_ = status; }
 
     static constexpr u8 TRACK_TABLE_ROW_HEIGHT = 18;
 
@@ -116,5 +116,5 @@ class TrackTable : public QTableView {
 
     f32 opacity_ = 1.0F;
 
-    TreeStatus status_ = TreeStatus::Idle;
+    TableStatus status_ = TableStatus::Idle;
 };

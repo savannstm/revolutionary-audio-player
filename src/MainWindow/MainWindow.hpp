@@ -38,7 +38,7 @@ class MainWindow : public QMainWindow {
     inline void loadSettings();
     inline void advancePlaylist(PlaylistView::Direction direction);
     inline void updatePlaybackPosition();
-    inline void playTrack(TrackTable* tree, i32 row);
+    inline void playTrack(TrackTable* table, i32 row);
     inline void stopPlayback();
     inline void handleTrackPress(const QModelIndex& index);
     inline void searchTrack();

@@ -9,7 +9,7 @@ class TrackTableHeader : public QHeaderView {
     Q_OBJECT
 
    public:
-    explicit TrackTableHeader(Qt::Orientation orientation, TrackTable* tree);
+    explicit TrackTableHeader(Qt::Orientation orientation, TrackTable* table);
 
    signals:
     void headerPressed(u8 index, Qt::MouseButton button);
