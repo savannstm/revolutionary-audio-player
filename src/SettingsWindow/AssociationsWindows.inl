@@ -7,8 +7,9 @@
 #include "Aliases.hpp"
 #include "Constants.hpp"
 #include "Enums.hpp"
-#include "Logger.hpp"
 
+#include <QDebug>
+#include <QObject>
 #include <windows.h>
 
 constexpr wstring_view DEFAULT_KEY;
@@ -59,9 +60,9 @@ inline auto setRegistryValue(
     );
 
     if (result != ERROR_SUCCESS) {
-        LOG_ERROR(u"Failed to open/create registry entry: %1. Error: %2"_s
-                      .arg(entry)
-                      .arg(result));
+        qCritical() << "Failed to open/create registry entry: %1. Error: %2"_L1
+                           .arg(entry)
+                           .arg(result);
         return false;
     }
 
@@ -77,8 +78,9 @@ inline auto setRegistryValue(
     RegCloseKey(hkey);
 
     if (result != ERROR_SUCCESS) {
-        LOG_ERROR(u"Failed to set value for entry: %1. Error: %2"_s.arg(entry)
-                      .arg(result));
+        qCritical() << "Failed to set value for entry: %1. Error: %2"_L1
+                           .arg(entry)
+                           .arg(result);
         return false;
     }
 
@@ -90,8 +92,9 @@ inline auto removeRegistryEntry(const HKEY root, const wstring_view entry)
     const i32 result = RegDeleteTreeW(root, entry.data());
 
     if (result != ERROR_SUCCESS && result != ERROR_FILE_NOT_FOUND) {
-        LOG_ERROR(u"Failed to delete registry key: %1. Error: %2"_s.arg(entry)
-                      .arg(result));
+        qCritical() << "Failed to delete registry key: %1. Error: %2"_L1
+                           .arg(entry)
+                           .arg(result);
         return false;
     }
 
@@ -111,7 +114,9 @@ inline void updateFileAssociationsOS(
 
     for (const auto [idx, ext] :
          views::enumerate(SUPPORTED_PLAYABLE_EXTENSIONS)) {
-        const wstring_view wextension = { ras<wcstr>(ext.utf16()),
+        const QString utf16Ext = QString(ext);
+
+        const wstring_view wextension = { ras<wcstr>(utf16Ext.utf16()),
                                           usize(ext.size()) };
 
         if ((associations & Associations(1 << idx)) != Associations::None) {
@@ -267,7 +272,9 @@ inline void updateFileAssociationsPathOS(
 
     for (const auto [idx, ext] :
          views::enumerate(SUPPORTED_PLAYABLE_EXTENSIONS)) {
-        const wstring_view wextension = { ras<wcstr>(ext.utf16()),
+        const QString utf16Ext = QString(ext);
+
+        const wstring_view wextension = { ras<wcstr>(utf16Ext.utf16()),
                                           usize(ext.size()) };
 
         const wstring iconEntry = std::format(ICON_ENTRY_TEMPLATE, wextension);
@@ -338,11 +345,13 @@ inline void removeContextMenuEntryOS() {
 
     for (const auto [idx, ext] :
          views::enumerate(SUPPORTED_PLAYABLE_EXTENSIONS)) {
+        const QString utf16Ext = QString(ext);
+
         const u32 result = RegOpenKeyExW(
             HKEY_CURRENT_USER,
             std::format(
                 PROG_ID_ENTRY_TEMPLATE,
-                wstring_view(ras<wcstr>(ext.utf16()), ext.size())
+                wstring_view(ras<wcstr>(utf16Ext.utf16()), ext.size())
             )
                 .c_str(),
             0,
